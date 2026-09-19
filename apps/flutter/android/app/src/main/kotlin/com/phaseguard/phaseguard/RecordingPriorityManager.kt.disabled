@@ -1,0 +1,543 @@
+package com.phaseguard.phaseguard
+
+import android.content.Context
+import android.media.AudioManager
+import android.util.Log
+import io.flutter.plugin.common.MethodChannel
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+
+/**
+ * Priority-based recording system for PhaseGuard
+ * 
+ * Priority Order:
+ * 1. Cally (Shizuku + WrappedShellContext) - Primary
+ * 2. VoIP APIs (Vapi, Plivo) - First Fallback
+ * 3. Accessibility + Speakerphone - Second Fallback  
+ * 4. Bluetooth SCO - Third Fallback
+ * 5. Hardware Device - Last Resort
+ */
+class RecordingPriorityManager(private val context: Context) {
+    private val TAG = "RecordingPriorityManager"
+    
+    // Recording methods
+    private var callyRecorder: ShizukuAudioCapture? = null
+    private var voipRecorder: VoIPRecordingService? = null
+    private var accessibilityRecorder: AccessibilityCapture? = null
+    private var bluetoothRecorder: BluetoothScoCapture? = null
+    
+    // Current active method
+    private var currentMethod: RecordingMethod = RecordingMethod.NONE
+    private var currentPriority: Int = 0
+    
+    // Audio manager for speakerphone control
+    private val audioManager: AudioManager = context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
+    
+    /**
+     * Initialize all recording methods
+     */
+    fun initialize(messenger: io.flutter.plugin.common.BinaryMessenger) {
+        callyRecorder = ShizukuAudioCapture().apply {
+            initialize(messenger, context)
+        }
+        
+        voipRecorder = VoIPRecordingService(context)
+        
+        accessibilityRecorder = AccessibilityCapture.getInstance()
+        
+        bluetoothRecorder = BluetoothScoCapture().apply {
+            initialize(context, messenger)
+        }
+        
+        Log.i(TAG, "Recording priority manager initialized")
+    }
+    
+    /**
+     * Start recording with automatic priority selection
+     */
+    suspend fun startRecording(sampleRate: Int = 16000): RecordingResult = withContext(Dispatchers.IO) {
+        Log.i(TAG, "Starting recording with priority selection")
+        
+        // Try methods in priority order
+        for (priority in 1..5) {
+            val method = getMethodForPriority(priority)
+            val result = tryMethod(method, sampleRate)
+            
+            if (result.success) {
+                currentMethod = method
+                currentPriority = priority
+                Log.i(TAG, "Recording started with method: $method (priority: $priority)")
+                return@withContext result
+            }
+            
+            Log.w(TAG, "Method $method failed, trying next priority")
+        }
+        
+        // All methods failed
+        Log.e(TAG, "All recording methods failed")
+        return@withContext RecordingResult(
+            success = false,
+            method = RecordingMethod.NONE,
+            message = "All recording methods failed. Hardware device recommended."
+        )
+    }
+    
+    /**
+     * Stop current recording
+     */
+    suspend fun stopRecording(): RecordingResult = withContext(Dispatchers.IO) {
+        Log.i(TAG, "Stopping recording with method: $currentMethod")
+        
+        return@withContext when (currentMethod) {
+            RecordingMethod.CALLY -> stopCallyRecording()
+            RecordingMethod.VOIP -> stopVoIPRecording()
+            RecordingMethod.ACCESSIBILITY -> stopAccessibilityRecording()
+            RecordingMethod.BLUETOOTH -> stopBluetoothRecording()
+            RecordingMethod.HARDWARE -> RecordingResult(
+                success = true,
+                method = RecordingMethod.HARDWARE,
+                message = "Hardware device recording stopped"
+            )
+            RecordingMethod.NONE -> RecordingResult(
+                success = false,
+                method = RecordingMethod.NONE,
+                message = "No active recording to stop"
+            )
+        }
+    }
+    
+    /**
+     * Get recording method for priority level
+     */
+    private fun getMethodForPriority(priority: Int): RecordingMethod {
+        return when (priority) {
+            1 -> RecordingMethod.CALLY
+            2 -> RecordingMethod.VOIP
+            3 -> RecordingMethod.ACCESSIBILITY
+            4 -> RecordingMethod.BLUETOOTH
+            5 -> RecordingMethod.HARDWARE
+            else -> RecordingMethod.NONE
+        }
+    }
+    
+    /**
+     * Try a specific recording method
+     */
+    private suspend fun tryMethod(method: RecordingMethod, sampleRate: Int): RecordingResult {
+        return when (method) {
+            RecordingMethod.CALLY -> tryCallyRecording(sampleRate)
+            RecordingMethod.VOIP -> tryVoIPRecording(sampleRate)
+            RecordingMethod.ACCESSIBILITY -> tryAccessibilityRecording(sampleRate)
+            RecordingMethod.BLUETOOTH -> tryBluetoothRecording(sampleRate)
+            RecordingMethod.HARDWARE -> tryHardwareRecording()
+            RecordingMethod.NONE -> RecordingResult(
+                success = false,
+                method = RecordingMethod.NONE,
+                message = "No method specified"
+            )
+        }
+    }
+    
+    /**
+     * Try Cally recording (Primary)
+     */
+    private suspend fun tryCallyRecording(sampleRate: Int): RecordingResult {
+        Log.i(TAG, "Trying Cally recording")
+        
+        return try {
+            val cally = callyRecorder ?: return RecordingResult(
+                success = false,
+                method = RecordingMethod.CALLY,
+                message = "Cally recorder not initialized"
+            )
+            
+            // Check Cally health
+            val health = cally.getBypassHealth()
+            if (health != BypassHealth.Full && health != BypassHealth.Degraded) {
+                return RecordingResult(
+                    success = false,
+                    method = RecordingMethod.CALLY,
+                    message = "Cally bypass health: $health (not suitable)"
+                )
+            }
+            
+            // Start Cally recording
+            val result = cally.startElevatedCapture(
+                null, // mediaProjectionManager not needed
+                android.app.Activity.RESULT_CANCELED,
+                null,
+                sampleRate,
+                object : MethodChannel.Result {
+                    override fun success(result: Any?) {}
+                    override fun error(errorCode: String, errorMessage: String?, errorDetails: Any?) {}
+                    override fun notImplemented() {}
+                }
+            )
+            
+            RecordingResult(
+                success = true,
+                method = RecordingMethod.CALLY,
+                message = "Cally recording started successfully",
+                health = health.name
+            )
+        } catch (e: Exception) {
+            Log.e(TAG, "Cally recording failed: ${e.message}")
+            RecordingResult(
+                success = false,
+                method = RecordingMethod.CALLY,
+                message = "Cally recording failed: ${e.message}"
+            )
+        }
+    }
+    
+    /**
+     * Try VoIP recording (First Fallback)
+     */
+    private suspend fun tryVoIPRecording(sampleRate: Int): RecordingResult {
+        Log.i(TAG, "Trying VoIP recording")
+        
+        return try {
+            val voip = voipRecorder ?: return RecordingResult(
+                success = false,
+                method = RecordingMethod.VOIP,
+                message = "VoIP recorder not initialized"
+            )
+            
+            // Check VoIP service availability
+            if (!voip.isAvailable()) {
+                return RecordingResult(
+                    success = false,
+                    method = RecordingMethod.VOIP,
+                    message = "VoIP service not available (VoIP calls only)"
+                )
+            }
+            
+            // Start VoIP recording
+            val result = voip.startRecording(sampleRate)
+            
+            RecordingResult(
+                success = result.success,
+                method = RecordingMethod.VOIP,
+                message = result.message ?: "VoIP recording started"
+            )
+        } catch (e: Exception) {
+            Log.e(TAG, "VoIP recording failed: ${e.message}")
+            RecordingResult(
+                success = false,
+                method = RecordingMethod.VOIP,
+                message = "VoIP recording failed: ${e.message}"
+            )
+        }
+    }
+    
+    /**
+     * Try Accessibility + Speakerphone recording (Second Fallback)
+     */
+    private suspend fun tryAccessibilityRecording(sampleRate: Int): RecordingResult {
+        Log.i(TAG, "Trying Accessibility + Speakerphone recording")
+        
+        return try {
+            val accessibility = accessibilityRecorder ?: return RecordingResult(
+                success = false,
+                method = RecordingMethod.ACCESSIBILITY,
+                message = "Accessibility recorder not available"
+            )
+            
+            // Check if service is enabled
+            if (!accessibility.isServiceEnabled()) {
+                return RecordingResult(
+                    success = false,
+                    method = RecordingMethod.ACCESSIBILITY,
+                    message = "Accessibility service not enabled"
+                )
+            }
+            
+            // Enable speakerphone automatically
+            enableSpeakerphone()
+            
+            // Start accessibility recording
+            val result = accessibility.startRecording(sampleRate)
+            
+            RecordingResult(
+                success = result.success,
+                method = RecordingMethod.ACCESSIBILITY,
+                message = "Accessibility + Speakerphone recording started",
+                speakerphoneEnabled = true
+            )
+        } catch (e: Exception) {
+            Log.e(TAG, "Accessibility recording failed: ${e.message}")
+            RecordingResult(
+                success = false,
+                method = RecordingMethod.ACCESSIBILITY,
+                message = "Accessibility recording failed: ${e.message}"
+            )
+        }
+    }
+    
+    /**
+     * Try Bluetooth SCO recording (Third Fallback)
+     */
+    private suspend fun tryBluetoothRecording(sampleRate: Int): RecordingResult {
+        Log.i(TAG, "Trying Bluetooth SCO recording")
+        
+        return try {
+            val bluetooth = bluetoothRecorder ?: return RecordingResult(
+                success = false,
+                method = RecordingMethod.BLUETOOTH,
+                message = "Bluetooth recorder not initialized"
+            )
+            
+            // Check if headset is connected
+            val deviceInfo = bluetooth.getDeviceInfo()
+            if (deviceInfo["headsetConnected"] != true) {
+                return RecordingResult(
+                    success = false,
+                    method = RecordingMethod.BLUETOOTH,
+                    message = "Bluetooth headset not connected"
+                )
+            }
+            
+            // Start Bluetooth SCO recording
+            val result = bluetooth.startScoCapture(sampleRate, object : MethodChannel.Result {
+                override fun success(result: Any?) {}
+                override fun error(errorCode: String, errorMessage: String?, errorDetails: Any?) {}
+                override fun notImplemented() {}
+            })
+            
+            RecordingResult(
+                success = result.success,
+                method = RecordingMethod.BLUETOOTH,
+                message = "Bluetooth SCO recording started"
+            )
+        } catch (e: Exception) {
+            Log.e(TAG, "Bluetooth recording failed: ${e.message}")
+            RecordingResult(
+                success = false,
+                method = RecordingMethod.BLUETOOTH,
+                message = "Bluetooth recording failed: ${e.message}"
+            )
+        }
+    }
+    
+    /**
+     * Try Hardware device recommendation (Last Resort)
+     */
+    private suspend fun tryHardwareRecording(): RecordingResult {
+        Log.i(TAG, "Hardware device recommendation")
+        
+        return RecordingResult(
+            success = false,
+            method = RecordingMethod.HARDWARE,
+            message = "Hardware device required. RECAP S2 recommended for perfect call recording.",
+            hardwareRecommended = true,
+            hardwareOptions = listOf(
+                "RECAP S2 ($99) - Universal compatibility",
+                "Suisse Notes Pro - Vibration conduction",
+                "Voicit Go - Magnetic attachment"
+            )
+        )
+    }
+    
+    /**
+     * Stop specific recording methods
+     */
+    private suspend fun stopCallyRecording(): RecordingResult {
+        return try {
+            callyRecorder?.stopElevatedCapture(object : MethodChannel.Result {
+                override fun success(result: Any?) {}
+                override fun error(errorCode: String, errorMessage: String?, errorDetails: Any?) {}
+                override fun notImplemented() {}
+            })
+            
+            RecordingResult(
+                success = true,
+                method = RecordingMethod.CALLY,
+                message = "Cally recording stopped"
+            )
+        } catch (e: Exception) {
+            RecordingResult(
+                success = false,
+                method = RecordingMethod.CALLY,
+                message = "Failed to stop Cally recording: ${e.message}"
+            )
+        }
+    }
+    
+    private suspend fun stopVoIPRecording(): RecordingResult {
+        return try {
+            voipRecorder?.stopRecording()
+            
+            RecordingResult(
+                success = true,
+                method = RecordingMethod.VOIP,
+                message = "VoIP recording stopped"
+            )
+        } catch (e: Exception) {
+            RecordingResult(
+                success = false,
+                method = RecordingMethod.VOIP,
+                message = "Failed to stop VoIP recording: ${e.message}"
+            )
+        }
+    }
+    
+    private suspend fun stopAccessibilityRecording(): RecordingResult {
+        return try {
+            accessibilityRecorder?.stopRecording()
+            disableSpeakerphone()
+            
+            RecordingResult(
+                success = true,
+                method = RecordingMethod.ACCESSIBILITY,
+                message = "Accessibility + Speakerphone recording stopped"
+            )
+        } catch (e: Exception) {
+            RecordingResult(
+                success = false,
+                method = RecordingMethod.ACCESSIBILITY,
+                message = "Failed to stop accessibility recording: ${e.message}"
+            )
+        }
+    }
+    
+    private suspend fun stopBluetoothRecording(): RecordingResult {
+        return try {
+            bluetoothRecorder?.stopScoCapture(object : MethodChannel.Result {
+                override fun success(result: Any?) {}
+                override fun error(errorCode: String, errorMessage: String?, errorDetails: Any?) {}
+                override fun notImplemented() {}
+            })
+            
+            RecordingResult(
+                success = true,
+                method = RecordingMethod.BLUETOOTH,
+                message = "Bluetooth SCO recording stopped"
+            )
+        } catch (e: Exception) {
+            RecordingResult(
+                success = false,
+                method = RecordingMethod.BLUETOOTH,
+                message = "Failed to stop Bluetooth recording: ${e.message}"
+            )
+        }
+    }
+    
+    /**
+     * Enable speakerphone for accessibility recording
+     */
+    private fun enableSpeakerphone() {
+        try {
+            audioManager.isSpeakerphoneOn = true
+            Log.i(TAG, "Speakerphone enabled")
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to enable speakerphone: ${e.message}")
+        }
+    }
+    
+    /**
+     * Disable speakerphone
+     */
+    private fun disableSpeakerphone() {
+        try {
+            audioManager.isSpeakerphoneOn = false
+            Log.i(TAG, "Speakerphone disabled")
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to disable speakerphone: ${e.message}")
+        }
+    }
+    
+    /**
+     * Get current recording status
+     */
+    fun getRecordingStatus(): Map<String, Any> {
+        return mapOf(
+            "currentMethod" to currentMethod.name,
+            "currentPriority" to currentPriority,
+            "isRecording" to (currentMethod != RecordingMethod.NONE),
+            "methods" to mapOf(
+                "cally" to mapOf(
+                    "available" to (callyRecorder != null),
+                    "health" to (callyRecorder?.getBypassHealth()?.name ?: "Unknown")
+                ),
+                "voip" to mapOf(
+                    "available" to (voipRecorder?.isAvailable() ?: false)
+                ),
+                "accessibility" to mapOf(
+                    "available" to (accessibilityRecorder?.isServiceEnabled() ?: false)
+                ),
+                "bluetooth" to mapOf(
+                    "available" to (bluetoothRecorder?.getDeviceInfo()?.get("headsetConnected") ?: false)
+                )
+            )
+        )
+    }
+    
+    /**
+     * Cleanup resources
+     */
+    fun cleanup() {
+        callyRecorder?.cleanup()
+        voipRecorder?.cleanup()
+        bluetoothRecorder?.cleanup()
+        currentMethod = RecordingMethod.NONE
+        currentPriority = 0
+    }
+}
+
+/**
+ * Recording method enum
+ */
+enum class RecordingMethod {
+    NONE,
+    CALLY,          // Primary - Shizuku + WrappedShellContext
+    VOIP,           // First Fallback - Vapi/Plivo APIs
+    ACCESSIBILITY,  // Second Fallback - Accessibility + Speakerphone
+    BLUETOOTH,      // Third Fallback - Bluetooth SCO
+    HARDWARE        // Last Resort - Hardware device recommendation
+}
+
+/**
+ * Recording result data class
+ */
+data class RecordingResult(
+    val success: Boolean,
+    val method: RecordingMethod,
+    val message: String,
+    val health: String? = null,
+    val speakerphoneEnabled: Boolean = false,
+    val hardwareRecommended: Boolean = false,
+    val hardwareOptions: List<String>? = null
+)
+
+/**
+ * VoIP Recording Service (Placeholder for Vapi/Plivo integration)
+ */
+class VoIPRecordingService(private val context: Context) {
+    private val TAG = "VoIPRecordingService"
+    
+    fun isAvailable(): Boolean {
+        // Check if VoIP service is configured
+        // For now, return false as placeholder
+        return false
+    }
+    
+    suspend fun startRecording(sampleRate: Int): RecordingResult {
+        // Placeholder for Vapi/Plivo integration
+        return RecordingResult(
+            success = false,
+            method = RecordingMethod.VOIP,
+            message = "VoIP recording not configured. Requires Vapi/Plivo API setup."
+        )
+    }
+    
+    fun stopRecording() {
+        // Placeholder for VoIP stop logic
+    }
+    
+    fun cleanup() {
+        // Cleanup VoIP resources
+    }
+}

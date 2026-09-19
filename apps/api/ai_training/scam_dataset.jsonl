@@ -1,0 +1,500 @@
+{"text": "HELLO THIS IS CALLING FROM RBI. YOUR BANK ACCOUNT HAS BEEN LINKED TO ILLEGAL TRANSACTIONS. PLEASE TRANSFER YOUR MONEY TO OUR SECURE ACCOUNT IMMEDIATELY.", "label": "SCAM", "category": "DIGITAL_ARREST"}
+{"text": "this is police officer sharma from cbi. we have issued a digital arrest warrant against you for money laundering. pay 1 lakh immediately.", "label": "SCAM", "category": "DIGITAL_ARREST"}
+{"text": "AAPKE AGAINST FIR REGISTER HO GAYI HAI. POLICE STATION AA JAO WARNA ARREST HO JAYEGA.", "label": "SCAM", "category": "DIGITAL_ARREST"}
+{"text": "digital arrest notice jari ho gaya hai. court mein peesh jao.", "label": "SCAM", "category": "DIGITAL_ARREST"}
+{"text": "cbi se call aa rahi hai. aapka name money laundering case mein hai.", "label": "SCAM", "category": "DIGITAL_ARREST"}
+{"text": "Police se call aa rahi hai. Aapka account block ho jayega agar account number aur OTP share nahi kiya.", "label": "SCAM", "category": "DIGITAL_ARREST"}
+{"text": "supreme court ne order pass kiya hai. digital arrest warrant hai.", "label": "SCAM", "category": "DIGITAL_ARREST"}
+{"text": "INCOME TAX DEPARTMENT SE NOTICE MILA HAI. TAX CASE MEIN LAGA DIYA HAI.", "label": "SCAM", "category": "DIGITAL_ARREST"}
+{"text": "CYBER CELL SE CALL HAI. AAPKA NAME CASE MEIN HAI. FINE PAY KARO.", "label": "SCAM", "category": "DIGITAL_ARREST"}
+{"text": "COURT NE ORDER DIYA HAI. PROPERTY SEIZE HO JAYEGI AGAR MONEY TRANSFER NAHI KIYA.", "label": "SCAM", "category": "DIGITAL_ARREST"}
+{"text": "MAINE AAPKA VIDEO RECORD KAR LIYA HAI. 50000 NAHI BHEJE TOH SABHI WHATSAPP CONTACTS KO LEAK KAR DUNGA.", "label": "SCAM", "category": "SEXTORTION"}
+{"text": "Aapka compromising video hai. Pay kar nahi toh leak kar dunga.", "label": "SCAM", "category": "SEXTORTION"}
+{"text": "Facebook par aapki photo hai. Sabko send kar dunga.", "label": "SCAM", "category": "SEXTORTION"}
+{"text": "SCREEN RECORDING HAI AAPKI. FAMILY KO BATA DUNGA.", "label": "SCAM", "category": "SEXTORTION"}
+{"text": "WhatsApp video call record hai. Sab contacts mein forward kar dunga.", "label": "SCAM", "category": "SEXTORTION"}
+{"text": "AAPKA INTIMATE VIDEO HAI SOCIAL MEDIA PAR. PAY KARO.", "label": "SCAM", "category": "SEXTORTION"}
+{"text": "NUDE PHOTO HAI AAPKI. INSTAGRAM PAR POST KAR DUNGA.", "label": "SCAM", "category": "SEXTORTION"}
+{"text": "private chat screenshot hai. public kar dunga.", "label": "SCAM", "category": "SEXTORTION"}
+{"text": "WEBCAM RECORDING HAI. VIRAL KAR DUNGA.", "label": "SCAM", "category": "SEXTORTION"}
+{"text": "PERSONAL VIDEO HAI. SHARE KAR DUNGA SOCIAL MEDIA PAR.", "label": "SCAM", "category": "SEXTORTION"}
+{"text": "mera package deliver nahi hua, custom duty pay karni hai 500 rupees warna parcel seized ho jayega.", "label": "SCAM", "category": "COURIER_CUSTOMS"}
+{"text": "customs se notice hai. parcel seized ho gaya hai. duty pay karo.", "label": "SCAM", "category": "COURIER_CUSTOMS"}
+{"text": "FOREIGN PARCEL HAI. ILLEGAL ITEM HAI. FINE PAY KARO.", "label": "SCAM", "category": "COURIER_CUSTOMS"}
+{"text": "Blue dart courier hai. Item prohibited hai. Pay karo release ke liye.", "label": "SCAM", "category": "COURIER_CUSTOMS"}
+{"text": "INTERNATIONAL PARCEL MEIN DRUGS HAI. CASE BAN JAYEGA. PAY KARO.", "label": "SCAM", "category": "COURIER_CUSTOMS"}
+{"text": "CUSTOMS DEPARTMENT SE CALL HAI. GST PAY KARO WARNA CASE.", "label": "SCAM", "category": "COURIER_CUSTOMS"}
+{"text": "Foreign exchange regulation violation hai. Penalty pay karo.", "label": "SCAM", "category": "COURIER_CUSTOMS"}
+{"text": "Customs duty default hai. Court case hoga. Pay karo.", "label": "SCAM", "category": "COURIER_CUSTOMS"}
+{"text": "ILLEGAL IMPORT HAI. SEIZURE HO JAYEGA. FINE PAY KARO.", "label": "SCAM", "category": "COURIER_CUSTOMS"}
+{"text": "CUSTOM CLEARANCE NAHI HOGA. PAY KARO URGENT.", "label": "SCAM", "category": "COURIER_CUSTOMS"}
+{"text": "mera ek dost hai jiska account block ho gaya hai, maine aapke account me 10000 bheje hain, please usko forward kar do.", "label": "SCAM", "category": "MONEY_MULE"}
+{"text": "ACCOUNT MEIN CREDIT HUA HAI. UPI THROUGH FORWARD KAR DO.", "label": "SCAM", "category": "MONEY_MULE"}
+{"text": "FRIEND KA ACCOUNT BLOCKED HAI. TRANSFER KAR DO USKO.", "label": "SCAM", "category": "MONEY_MULE"}
+{"text": "BITCOIN MEIN MONEY RECEIVE HUA HAI. WALLET MEIN TRANSFER KAR DO.", "label": "SCAM", "category": "MONEY_MULE"}
+{"text": "LOAN AMOUNT HAI AAPKE ACCOUNT MEIN. PAYTM SE FORWARD KARO.", "label": "SCAM", "category": "MONEY_MULE"}
+{"text": "FOREIGN CURRENCY HAI ACCOUNT MEIN. CONVERT KARKE SEND KARO.", "label": "SCAM", "category": "MONEY_MULE"}
+{"text": "MERA ACCOUNT FROZEN HAI. AAPKE ACCOUNT MEIN DAAL DO.", "label": "SCAM", "category": "MONEY_MULE"}
+{"text": "Salary hai friend ki. UPI transfer kar do.", "label": "SCAM", "category": "MONEY_MULE"}
+{"text": "Business payment hai. Cash se forward karo.", "label": "SCAM", "category": "MONEY_MULE"}
+{"text": "ONLINE SHOPPING REFUND HAI. OTHER ACCOUNT MEIN SEND KARO.", "label": "SCAM", "category": "MONEY_MULE"}
+{"text": "JOIN OUR VIP WHATSAPP GROUP FOR GUARANTEED 200% RETURNS IN TRADING. MINIMUM INVESTMENT 50000.", "label": "SCAM", "category": "INVESTMENT_FRAUD"}
+{"text": "STOCK MARKET MEIN GUARANTEED RETURNS. DAILY 10% PROFIT.", "label": "SCAM", "category": "INVESTMENT_FRAUD"}
+{"text": "crypto trading mein 100x returns. invest karo 10000.", "label": "SCAM", "category": "INVESTMENT_FRAUD"}
+{"text": "BINARY OPTIONS MEIN MONEY DOUBLE. RISK FREE HAI.", "label": "SCAM", "category": "INVESTMENT_FRAUD"}
+{"text": "forex trading mein expert guidance. monthly 50% returns.", "label": "SCAM", "category": "INVESTMENT_FRAUD"}
+{"text": "ipo investment guaranteed profits. apply now.", "label": "SCAM", "category": "INVESTMENT_FRAUD"}
+{"text": "real estate investment doubling. small amount se big returns.", "label": "SCAM", "category": "INVESTMENT_FRAUD"}
+{"text": "GOLD INVESTMENT SCHEME. 1 LAKH SE 10 LAKH IN 6 MONTHS.", "label": "SCAM", "category": "INVESTMENT_FRAUD"}
+{"text": "Mutual funds guaranteed returns. No risk at all.", "label": "SCAM", "category": "INVESTMENT_FRAUD"}
+{"text": "PONZI SCHEME HAI. NEW INVESTORS SE OLD INVESTORS KO PAY KARTE HAIN.", "label": "SCAM", "category": "INVESTMENT_FRAUD"}
+{"text": "hello, this is calling from bank. your upi account is blocked. please accept this collect request of 5000 rupees to unblock.", "label": "SCAM", "category": "UPI_COLLECT_FRAUD"}
+{"text": "UPI collect request bhejo 2000 rupees ka. Account unblock hoga.", "label": "SCAM", "category": "UPI_COLLECT_FRAUD"}
+{"text": "PIN VERIFY KARNE KE LIYE COLLECT REQUEST ACCEPT KARO.", "label": "SCAM", "category": "UPI_COLLECT_FRAUD"}
+{"text": "UPI LIMIT BADHANE KE LIYE COLLECT REQUEST PAY KARO.", "label": "SCAM", "category": "UPI_COLLECT_FRAUD"}
+{"text": "BANK COLLECT REQUEST HAI. LINK STATUS ACTIVE KARNE KE LIYE PAY KARO.", "label": "SCAM", "category": "UPI_COLLECT_FRAUD"}
+{"text": "GOOGLE PAY COLLECT REQUEST BHEJO. ACCOUNT VERIFY KARNE KE LIYE.", "label": "SCAM", "category": "UPI_COLLECT_FRAUD"}
+{"text": "phonepe collect request. upi pin enter karke pay karo.", "label": "SCAM", "category": "UPI_COLLECT_FRAUD"}
+{"text": "PAYTM COLLECT REQUEST. MONEY RECEIVE KARNE KE LIYE PAY KARO.", "label": "SCAM", "category": "UPI_COLLECT_FRAUD"}
+{"text": "BHIM collect request. Account active karne ke liye transfer karo.", "label": "SCAM", "category": "UPI_COLLECT_FRAUD"}
+{"text": "UPI COLLECT REQUEST ACCEPT KARO. PIN SHARE KARO.", "label": "SCAM", "category": "UPI_COLLECT_FRAUD"}
+{"text": "SIR AAPKA ELECTRICITY BILL PENDING HAI. AAJ RAAT 9 BAJE BIJLI KATEGI. UPDATE KARNE KE LIYE CALL KAREIN.", "label": "SCAM", "category": "ELECTRICITY_THREAT"}
+{"text": "Disconnection notice hai. Electricity cut ho jayegi. Pay karo.", "label": "SCAM", "category": "ELECTRICITY_THREAT"}
+{"text": "METER READING HAI TAMPERED. FINE PAY KARO WARNA CUT.", "label": "SCAM", "category": "ELECTRICITY_THREAT"}
+{"text": "bill payment pending hai. immediate disconnect hoga.", "label": "SCAM", "category": "ELECTRICITY_THREAT"}
+{"text": "Power board se notice hai. Connection terminate hoga.", "label": "SCAM", "category": "ELECTRICITY_THREAT"}
+{"text": "electricity dues hai. court case ban jayega. pay karo.", "label": "SCAM", "category": "ELECTRICITY_THREAT"}
+{"text": "LOAD SHEDDING SCHEDULE MEIN AAPKA NAME HAI. PAY KARO.", "label": "SCAM", "category": "ELECTRICITY_THREAT"}
+{"text": "TRANSFORMER UPGRADE HAI. PAYMENT PENDING HAI. PAY KARO.", "label": "SCAM", "category": "ELECTRICITY_THREAT"}
+{"text": "METER REPLACEMENT CHARGE HAI. PAY KARO WARNA DISCONNECT.", "label": "SCAM", "category": "ELECTRICITY_THREAT"}
+{"text": "Bill update karne ke liye pay karo. Disconnect notice hai.", "label": "SCAM", "category": "ELECTRICITY_THREAT"}
+{"text": "HELLO BETA, THIS IS YOUR UNCLE SPEAKING. I AM IN THE HOSPITAL AND NEED URGENT MONEY FOR SURGERY. PLEASE TRANSFER 50000 RUPEES.", "label": "SCAM", "category": "FAMILY_EMERGENCY"}
+{"text": "MUMMY HOSPITAL MEIN HAI. OPERATION HAI. MONEY TRANSFER KARO.", "label": "SCAM", "category": "FAMILY_EMERGENCY"}
+{"text": "PAPA ACCIDENT HO GAYA. HOSPITAL MEIN HAI. URGENT PAYMENT KARO.", "label": "SCAM", "category": "FAMILY_EMERGENCY"}
+{"text": "sister ka accident hua. medical emergency hai. money send karo.", "label": "SCAM", "category": "FAMILY_EMERGENCY"}
+{"text": "Bhai jail mein hai. Bail karna hai. Money transfer karo.", "label": "SCAM", "category": "FAMILY_EMERGENCY"}
+{"text": "Friend hai wo hospital mein. Help karo. Money bhejo.", "label": "SCAM", "category": "FAMILY_EMERGENCY"}
+{"text": "Relative hai wo critical condition mein hai. Urgent help chahiye.", "label": "SCAM", "category": "FAMILY_EMERGENCY"}
+{"text": "COUSIN KA ACCIDENT HUA ABROAD. TREATMENT MONEY CHAHIYE.", "label": "SCAM", "category": "FAMILY_EMERGENCY"}
+{"text": "neighbor emergency hai. hospital bill pay karo.", "label": "SCAM", "category": "FAMILY_EMERGENCY"}
+{"text": "Child school mein emergency hai. Transfer karo.", "label": "SCAM", "category": "FAMILY_EMERGENCY"}
+{"text": "Aapka KYC incomplete hai. Account freeze ho jayega. Apna aadhar card number aur OTP share karein.", "label": "SCAM", "category": "KYC_SIM_BLOCK"}
+{"text": "SIM BLOCK HO JAYEGA. KYC UPDATE KARO. OTP SHARE KARO.", "label": "SCAM", "category": "KYC_SIM_BLOCK"}
+{"text": "PAN CARD VERIFICATION PENDING. OTP BHEJO.", "label": "SCAM", "category": "KYC_SIM_BLOCK"}
+{"text": "Account active karne ke liye KYC complete karo. PIN share karo.", "label": "SCAM", "category": "KYC_SIM_BLOCK"}
+{"text": "bank account freeze hoga. aadhar otp bhejo.", "label": "SCAM", "category": "KYC_SIM_BLOCK"}
+{"text": "UPI KYC pending. Link karne ke liye OTP share karo.", "label": "SCAM", "category": "KYC_SIM_BLOCK"}
+{"text": "DEMAT ACCOUNT KYC INCOMPLETE. OTP SEND KARO.", "label": "SCAM", "category": "KYC_SIM_BLOCK"}
+{"text": "TRADING ACCOUNT KYC VERIFICATION. OTP SHARE KARO.", "label": "SCAM", "category": "KYC_SIM_BLOCK"}
+{"text": "CREDIT CARD KYC PENDING. UPDATE KARO. OTP BHEJO.", "label": "SCAM", "category": "KYC_SIM_BLOCK"}
+{"text": "wallet kyc incomplete. verification otp share karo.", "label": "SCAM", "category": "KYC_SIM_BLOCK"}
+{"text": "Hello, we are from Microsoft Support. Your computer has a virus. Give us remote access to fix it.", "label": "SCAM", "category": "TECH_SUPPORT"}
+{"text": "Google support hai. Account hacked hai. Password share karo.", "label": "SCAM", "category": "TECH_SUPPORT"}
+{"text": "apple support. iphone hacked hai. apple id share karo.", "label": "SCAM", "category": "TECH_SUPPORT"}
+{"text": "WINDOWS SUPPORT. VIRUS HAI. REMOTE ACCESS DO.", "label": "SCAM", "category": "TECH_SUPPORT"}
+{"text": "antivirus expired hai. payment karo warna virus.", "label": "SCAM", "category": "TECH_SUPPORT"}
+{"text": "COMPUTER HACKED HAI. SUPPORT TEAM CALL KARO. REMOTE ACCESS DO.", "label": "SCAM", "category": "TECH_SUPPORT"}
+{"text": "browser compromised hai. malware hai. payment karo.", "label": "SCAM", "category": "TECH_SUPPORT"}
+{"text": "SYSTEM HACKED HAI. FIREWALL INSTALL KARO. PAY KARO.", "label": "SCAM", "category": "TECH_SUPPORT"}
+{"text": "security breach hai. password reset karo. otp share karo.", "label": "SCAM", "category": "TECH_SUPPORT"}
+{"text": "TECHNICAL SUPPORT HAI. ACCOUNT SUSPENDED HAI. PAYMENT KARO.", "label": "SCAM", "category": "TECH_SUPPORT"}
+{"text": "AAPKI LIC POLICY LAPSE HONE WALI HAI. PENALTY BACHANE KE LIYE IS LINK PE CLICK KARKE 2000 RUPEES PAY KAREIN.", "label": "SCAM", "category": "INSURANCE_FRAUD"}
+{"text": "SIR AAPKE CREDIT CARD PE 15000 REWARD POINTS EXPIRE HO RAHE HAIN. REDEEM KARNE KE LIYE OTP BATAYEIN.", "label": "SCAM", "category": "CREDIT_CARD_FRAUD"}
+{"text": "HELLO I AM FROM CHILD CARE NGO. WE NEED URGENT DONATION FOR ORPHAN KIDS. PLEASE SEND MONEY.", "label": "SCAM", "category": "CHARITY_FRAUD"}
+{"text": "congratulations! aapne 25 lakh ki lottery jeeti hai kbc se. processing fee 10000 rupees jama karayein.", "label": "SCAM", "category": "LOTTERY_FRAUD"}
+{"text": "your package contains illegal items. customs duty pay karo.", "label": "SCAM", "category": "COURIER_CUSTOMS"}
+{"text": "Sir, aapke HDFC account me 5000 rupees credit hue hain salary aayi hai.", "label": "NORMAL", "category": "BANK_TRANSACTION"}
+{"text": "aapka electricity bill pay ho gaya hai. bijli kategi nahi.", "label": "NORMAL", "category": "UTILITY_PAYMENT"}
+{"text": "mera package deliver ho gaya hai courier se.", "label": "NORMAL", "category": "DELIVERY_UPDATE"}
+{"text": "BANK SE CALL AA RAHI HAI KYC UPDATE KE LIYE LEGITIMATE HAI.", "label": "NORMAL", "category": "LEGITIMATE_BANK"}
+{"text": "hello, this is calling from hr regarding your job application.", "label": "NORMAL", "category": "JOB_APPLICATION"}
+{"text": "Aapka loan approved hai bank se. Documents submit karo.", "label": "NORMAL", "category": "LOAN_APPROVAL"}
+{"text": "CREDIT CARD STATEMENT HAI AAPKA. PAYMENT DUE DATE HAI.", "label": "NORMAL", "category": "STATEMENT_UPDATE"}
+{"text": "OTP SHARE KARNE KE LIYE LEGITIMATE REQUEST HAI.", "label": "NORMAL", "category": "LEGITIMATE_OTP"}
+{"text": "UPI collect request hai friend se. Legitimate hai.", "label": "NORMAL", "category": "FRIEND_REQUEST"}
+{"text": "emergency hai lekin family member se call hai verified.", "label": "NORMAL", "category": "FAMILY_CALL"}
+{"text": "GOVERNMENT SCHEME NOTIFICATION HAI. OFFICIAL HAI.", "label": "NORMAL", "category": "GOVT_SCHEME"}
+{"text": "INSURANCE POLICY RENEWAL REMINDER HAI. LEGITIMATE HAI.", "label": "NORMAL", "category": "INSURANCE_RENEWAL"}
+{"text": "tax refund notification hai. legitimate hai.", "label": "NORMAL", "category": "TAX_REFUND"}
+{"text": "delivery boy call kar raha hai. package hai.", "label": "NORMAL", "category": "DELIVERY_CALL"}
+{"text": "BANK ATM SE CALL HAI. CARD BLOCKED HAI LEGITIMATE.", "label": "NORMAL", "category": "ATM_SERVICE"}
+{"text": "Hello this is calling from RBI. Your bank account has been linked to illegal transactions. Please transfer your money to our secure account immediately.", "label": "SCAM", "category": "DIGITAL_ARREST"}
+{"text": "THIS IS POLICE OFFICER SHARMA FROM CBI. WE HAVE ISSUED A DIGITAL ARREST WARRANT AGAINST YOU FOR MONEY LAUNDERING. PAY 1 LAKH IMMEDIATELY.", "label": "SCAM", "category": "DIGITAL_ARREST"}
+{"text": "AAPKE AGAINST FIR REGISTER HO GAYI HAI. POLICE STATION AA JAO WARNA ARREST HO JAYEGA.", "label": "SCAM", "category": "DIGITAL_ARREST"}
+{"text": "Digital arrest notice jari ho gaya hai. Court mein peesh jao.", "label": "SCAM", "category": "DIGITAL_ARREST"}
+{"text": "CBI SE CALL AA RAHI HAI. AAPKA NAME MONEY LAUNDERING CASE MEIN HAI.", "label": "SCAM", "category": "DIGITAL_ARREST"}
+{"text": "police se call aa rahi hai. aapka account block ho jayega agar account number aur otp share nahi kiya.", "label": "SCAM", "category": "DIGITAL_ARREST"}
+{"text": "supreme court ne order pass kiya hai. digital arrest warrant hai.", "label": "SCAM", "category": "DIGITAL_ARREST"}
+{"text": "INCOME TAX DEPARTMENT SE NOTICE MILA HAI. TAX CASE MEIN LAGA DIYA HAI.", "label": "SCAM", "category": "DIGITAL_ARREST"}
+{"text": "CYBER CELL SE CALL HAI. AAPKA NAME CASE MEIN HAI. FINE PAY KARO.", "label": "SCAM", "category": "DIGITAL_ARREST"}
+{"text": "COURT NE ORDER DIYA HAI. PROPERTY SEIZE HO JAYEGI AGAR MONEY TRANSFER NAHI KIYA.", "label": "SCAM", "category": "DIGITAL_ARREST"}
+{"text": "maine aapka video record kar liya hai. 50000 nahi bheje toh sabhi whatsapp contacts ko leak kar dunga.", "label": "SCAM", "category": "SEXTORTION"}
+{"text": "AAPKA COMPROMISING VIDEO HAI. PAY KAR NAHI TOH LEAK KAR DUNGA.", "label": "SCAM", "category": "SEXTORTION"}
+{"text": "FACEBOOK PAR AAPKI PHOTO HAI. SABKO SEND KAR DUNGA.", "label": "SCAM", "category": "SEXTORTION"}
+{"text": "Screen recording hai aapki. Family ko bata dunga.", "label": "SCAM", "category": "SEXTORTION"}
+{"text": "whatsapp video call record hai. sab contacts mein forward kar dunga.", "label": "SCAM", "category": "SEXTORTION"}
+{"text": "aapka intimate video hai social media par. pay karo.", "label": "SCAM", "category": "SEXTORTION"}
+{"text": "nude photo hai aapki. instagram par post kar dunga.", "label": "SCAM", "category": "SEXTORTION"}
+{"text": "PRIVATE CHAT SCREENSHOT HAI. PUBLIC KAR DUNGA.", "label": "SCAM", "category": "SEXTORTION"}
+{"text": "WEBCAM RECORDING HAI. VIRAL KAR DUNGA.", "label": "SCAM", "category": "SEXTORTION"}
+{"text": "personal video hai. share kar dunga social media par.", "label": "SCAM", "category": "SEXTORTION"}
+{"text": "MERA PACKAGE DELIVER NAHI HUA, CUSTOM DUTY PAY KARNI HAI 500 RUPEES WARNA PARCEL SEIZED HO JAYEGA.", "label": "SCAM", "category": "COURIER_CUSTOMS"}
+{"text": "CUSTOMS SE NOTICE HAI. PARCEL SEIZED HO GAYA HAI. DUTY PAY KARO.", "label": "SCAM", "category": "COURIER_CUSTOMS"}
+{"text": "Foreign parcel hai. Illegal item hai. Fine pay karo.", "label": "SCAM", "category": "COURIER_CUSTOMS"}
+{"text": "BLUE DART COURIER HAI. ITEM PROHIBITED HAI. PAY KARO RELEASE KE LIYE.", "label": "SCAM", "category": "COURIER_CUSTOMS"}
+{"text": "INTERNATIONAL PARCEL MEIN DRUGS HAI. CASE BAN JAYEGA. PAY KARO.", "label": "SCAM", "category": "COURIER_CUSTOMS"}
+{"text": "Customs department se call hai. GST pay karo warna case.", "label": "SCAM", "category": "COURIER_CUSTOMS"}
+{"text": "FOREIGN EXCHANGE REGULATION VIOLATION HAI. PENALTY PAY KARO.", "label": "SCAM", "category": "COURIER_CUSTOMS"}
+{"text": "CUSTOMS DUTY DEFAULT HAI. COURT CASE HOGA. PAY KARO.", "label": "SCAM", "category": "COURIER_CUSTOMS"}
+{"text": "Illegal import hai. Seizure ho jayega. Fine pay karo.", "label": "SCAM", "category": "COURIER_CUSTOMS"}
+{"text": "Custom clearance nahi hoga. Pay karo urgent.", "label": "SCAM", "category": "COURIER_CUSTOMS"}
+{"text": "Mera ek dost hai jiska account block ho gaya hai, maine aapke account me 10000 bheje hain, please usko forward kar do.", "label": "SCAM", "category": "MONEY_MULE"}
+{"text": "Account mein credit hua hai. Upi through forward kar do.", "label": "SCAM", "category": "MONEY_MULE"}
+{"text": "FRIEND KA ACCOUNT BLOCKED HAI. TRANSFER KAR DO USKO.", "label": "SCAM", "category": "MONEY_MULE"}
+{"text": "bitcoin mein money receive hua hai. wallet mein transfer kar do.", "label": "SCAM", "category": "MONEY_MULE"}
+{"text": "Loan amount hai aapke account mein. Paytm se forward karo.", "label": "SCAM", "category": "MONEY_MULE"}
+{"text": "Foreign currency hai account mein. Convert karke send karo.", "label": "SCAM", "category": "MONEY_MULE"}
+{"text": "MERA ACCOUNT FROZEN HAI. AAPKE ACCOUNT MEIN DAAL DO.", "label": "SCAM", "category": "MONEY_MULE"}
+{"text": "SALARY HAI FRIEND KI. UPI TRANSFER KAR DO.", "label": "SCAM", "category": "MONEY_MULE"}
+{"text": "BUSINESS PAYMENT HAI. CASH SE FORWARD KARO.", "label": "SCAM", "category": "MONEY_MULE"}
+{"text": "online shopping refund hai. other account mein send karo.", "label": "SCAM", "category": "MONEY_MULE"}
+{"text": "JOIN OUR VIP WHATSAPP GROUP FOR GUARANTEED 200% RETURNS IN TRADING. MINIMUM INVESTMENT 50000.", "label": "SCAM", "category": "INVESTMENT_FRAUD"}
+{"text": "STOCK MARKET MEIN GUARANTEED RETURNS. DAILY 10% PROFIT.", "label": "SCAM", "category": "INVESTMENT_FRAUD"}
+{"text": "CRYPTO TRADING MEIN 100X RETURNS. INVEST KARO 10000.", "label": "SCAM", "category": "INVESTMENT_FRAUD"}
+{"text": "Binary options mein money double. Risk free hai.", "label": "SCAM", "category": "INVESTMENT_FRAUD"}
+{"text": "Forex trading mein expert guidance. Monthly 50% returns.", "label": "SCAM", "category": "INVESTMENT_FRAUD"}
+{"text": "IPO investment guaranteed profits. Apply now.", "label": "SCAM", "category": "INVESTMENT_FRAUD"}
+{"text": "real estate investment doubling. small amount se big returns.", "label": "SCAM", "category": "INVESTMENT_FRAUD"}
+{"text": "GOLD INVESTMENT SCHEME. 1 LAKH SE 10 LAKH IN 6 MONTHS.", "label": "SCAM", "category": "INVESTMENT_FRAUD"}
+{"text": "MUTUAL FUNDS GUARANTEED RETURNS. NO RISK AT ALL.", "label": "SCAM", "category": "INVESTMENT_FRAUD"}
+{"text": "Ponzi scheme hai. New investors se old investors ko pay karte hain.", "label": "SCAM", "category": "INVESTMENT_FRAUD"}
+{"text": "hello, this is calling from bank. your upi account is blocked. please accept this collect request of 5000 rupees to unblock.", "label": "SCAM", "category": "UPI_COLLECT_FRAUD"}
+{"text": "UPI collect request bhejo 2000 rupees ka. Account unblock hoga.", "label": "SCAM", "category": "UPI_COLLECT_FRAUD"}
+{"text": "pin verify karne ke liye collect request accept karo.", "label": "SCAM", "category": "UPI_COLLECT_FRAUD"}
+{"text": "UPI limit badhane ke liye collect request pay karo.", "label": "SCAM", "category": "UPI_COLLECT_FRAUD"}
+{"text": "BANK COLLECT REQUEST HAI. LINK STATUS ACTIVE KARNE KE LIYE PAY KARO.", "label": "SCAM", "category": "UPI_COLLECT_FRAUD"}
+{"text": "Google Pay collect request bhejo. Account verify karne ke liye.", "label": "SCAM", "category": "UPI_COLLECT_FRAUD"}
+{"text": "phonepe collect request. upi pin enter karke pay karo.", "label": "SCAM", "category": "UPI_COLLECT_FRAUD"}
+{"text": "paytm collect request. money receive karne ke liye pay karo.", "label": "SCAM", "category": "UPI_COLLECT_FRAUD"}
+{"text": "bhim collect request. account active karne ke liye transfer karo.", "label": "SCAM", "category": "UPI_COLLECT_FRAUD"}
+{"text": "UPI collect request accept karo. PIN share karo.", "label": "SCAM", "category": "UPI_COLLECT_FRAUD"}
+{"text": "SIR AAPKA ELECTRICITY BILL PENDING HAI. AAJ RAAT 9 BAJE BIJLI KATEGI. UPDATE KARNE KE LIYE CALL KAREIN.", "label": "SCAM", "category": "ELECTRICITY_THREAT"}
+{"text": "DISCONNECTION NOTICE HAI. ELECTRICITY CUT HO JAYEGI. PAY KARO.", "label": "SCAM", "category": "ELECTRICITY_THREAT"}
+{"text": "meter reading hai tampered. fine pay karo warna cut.", "label": "SCAM", "category": "ELECTRICITY_THREAT"}
+{"text": "Bill payment pending hai. Immediate disconnect hoga.", "label": "SCAM", "category": "ELECTRICITY_THREAT"}
+{"text": "Power board se notice hai. Connection terminate hoga.", "label": "SCAM", "category": "ELECTRICITY_THREAT"}
+{"text": "ELECTRICITY DUES HAI. COURT CASE BAN JAYEGA. PAY KARO.", "label": "SCAM", "category": "ELECTRICITY_THREAT"}
+{"text": "LOAD SHEDDING SCHEDULE MEIN AAPKA NAME HAI. PAY KARO.", "label": "SCAM", "category": "ELECTRICITY_THREAT"}
+{"text": "Transformer upgrade hai. Payment pending hai. Pay karo.", "label": "SCAM", "category": "ELECTRICITY_THREAT"}
+{"text": "METER REPLACEMENT CHARGE HAI. PAY KARO WARNA DISCONNECT.", "label": "SCAM", "category": "ELECTRICITY_THREAT"}
+{"text": "BILL UPDATE KARNE KE LIYE PAY KARO. DISCONNECT NOTICE HAI.", "label": "SCAM", "category": "ELECTRICITY_THREAT"}
+{"text": "HELLO BETA, THIS IS YOUR UNCLE SPEAKING. I AM IN THE HOSPITAL AND NEED URGENT MONEY FOR SURGERY. PLEASE TRANSFER 50000 RUPEES.", "label": "SCAM", "category": "FAMILY_EMERGENCY"}
+{"text": "Mummy hospital mein hai. Operation hai. Money transfer karo.", "label": "SCAM", "category": "FAMILY_EMERGENCY"}
+{"text": "PAPA ACCIDENT HO GAYA. HOSPITAL MEIN HAI. URGENT PAYMENT KARO.", "label": "SCAM", "category": "FAMILY_EMERGENCY"}
+{"text": "Sister ka accident hua. Medical emergency hai. Money send karo.", "label": "SCAM", "category": "FAMILY_EMERGENCY"}
+{"text": "bhai jail mein hai. bail karna hai. money transfer karo.", "label": "SCAM", "category": "FAMILY_EMERGENCY"}
+{"text": "FRIEND HAI WO HOSPITAL MEIN. HELP KARO. MONEY BHEJO.", "label": "SCAM", "category": "FAMILY_EMERGENCY"}
+{"text": "RELATIVE HAI WO CRITICAL CONDITION MEIN HAI. URGENT HELP CHAHIYE.", "label": "SCAM", "category": "FAMILY_EMERGENCY"}
+{"text": "COUSIN KA ACCIDENT HUA ABROAD. TREATMENT MONEY CHAHIYE.", "label": "SCAM", "category": "FAMILY_EMERGENCY"}
+{"text": "neighbor emergency hai. hospital bill pay karo.", "label": "SCAM", "category": "FAMILY_EMERGENCY"}
+{"text": "CHILD SCHOOL MEIN EMERGENCY HAI. TRANSFER KARO.", "label": "SCAM", "category": "FAMILY_EMERGENCY"}
+{"text": "AAPKA KYC INCOMPLETE HAI. ACCOUNT FREEZE HO JAYEGA. APNA AADHAR CARD NUMBER AUR OTP SHARE KAREIN.", "label": "SCAM", "category": "KYC_SIM_BLOCK"}
+{"text": "SIM BLOCK HO JAYEGA. KYC UPDATE KARO. OTP SHARE KARO.", "label": "SCAM", "category": "KYC_SIM_BLOCK"}
+{"text": "PAN CARD VERIFICATION PENDING. OTP BHEJO.", "label": "SCAM", "category": "KYC_SIM_BLOCK"}
+{"text": "ACCOUNT ACTIVE KARNE KE LIYE KYC COMPLETE KARO. PIN SHARE KARO.", "label": "SCAM", "category": "KYC_SIM_BLOCK"}
+{"text": "BANK ACCOUNT FREEZE HOGA. AADHAR OTP BHEJO.", "label": "SCAM", "category": "KYC_SIM_BLOCK"}
+{"text": "UPI KYC PENDING. LINK KARNE KE LIYE OTP SHARE KARO.", "label": "SCAM", "category": "KYC_SIM_BLOCK"}
+{"text": "Demat account KYC incomplete. OTP send karo.", "label": "SCAM", "category": "KYC_SIM_BLOCK"}
+{"text": "TRADING ACCOUNT KYC VERIFICATION. OTP SHARE KARO.", "label": "SCAM", "category": "KYC_SIM_BLOCK"}
+{"text": "CREDIT CARD KYC PENDING. UPDATE KARO. OTP BHEJO.", "label": "SCAM", "category": "KYC_SIM_BLOCK"}
+{"text": "WALLET KYC INCOMPLETE. VERIFICATION OTP SHARE KARO.", "label": "SCAM", "category": "KYC_SIM_BLOCK"}
+{"text": "Hello, we are from Microsoft Support. Your computer has a virus. Give us remote access to fix it.", "label": "SCAM", "category": "TECH_SUPPORT"}
+{"text": "GOOGLE SUPPORT HAI. ACCOUNT HACKED HAI. PASSWORD SHARE KARO.", "label": "SCAM", "category": "TECH_SUPPORT"}
+{"text": "APPLE SUPPORT. IPHONE HACKED HAI. APPLE ID SHARE KARO.", "label": "SCAM", "category": "TECH_SUPPORT"}
+{"text": "windows support. virus hai. remote access do.", "label": "SCAM", "category": "TECH_SUPPORT"}
+{"text": "Antivirus expired hai. Payment karo warna virus.", "label": "SCAM", "category": "TECH_SUPPORT"}
+{"text": "COMPUTER HACKED HAI. SUPPORT TEAM CALL KARO. REMOTE ACCESS DO.", "label": "SCAM", "category": "TECH_SUPPORT"}
+{"text": "browser compromised hai. malware hai. payment karo.", "label": "SCAM", "category": "TECH_SUPPORT"}
+{"text": "System hacked hai. Firewall install karo. Pay karo.", "label": "SCAM", "category": "TECH_SUPPORT"}
+{"text": "Security breach hai. Password reset karo. OTP share karo.", "label": "SCAM", "category": "TECH_SUPPORT"}
+{"text": "technical support hai. account suspended hai. payment karo.", "label": "SCAM", "category": "TECH_SUPPORT"}
+{"text": "AAPKI LIC POLICY LAPSE HONE WALI HAI. PENALTY BACHANE KE LIYE IS LINK PE CLICK KARKE 2000 RUPEES PAY KAREIN.", "label": "SCAM", "category": "INSURANCE_FRAUD"}
+{"text": "SIR AAPKE CREDIT CARD PE 15000 REWARD POINTS EXPIRE HO RAHE HAIN. REDEEM KARNE KE LIYE OTP BATAYEIN.", "label": "SCAM", "category": "CREDIT_CARD_FRAUD"}
+{"text": "Hello I am from child care NGO. We need urgent donation for orphan kids. Please send money.", "label": "SCAM", "category": "CHARITY_FRAUD"}
+{"text": "CONGRATULATIONS! AAPNE 25 LAKH KI LOTTERY JEETI HAI KBC SE. PROCESSING FEE 10000 RUPEES JAMA KARAYEIN.", "label": "SCAM", "category": "LOTTERY_FRAUD"}
+{"text": "your package contains illegal items. customs duty pay karo.", "label": "SCAM", "category": "COURIER_CUSTOMS"}
+{"text": "SIR, AAPKE HDFC ACCOUNT ME 5000 RUPEES CREDIT HUE HAIN SALARY AAYI HAI.", "label": "NORMAL", "category": "BANK_TRANSACTION"}
+{"text": "AAPKA ELECTRICITY BILL PAY HO GAYA HAI. BIJLI KATEGI NAHI.", "label": "NORMAL", "category": "UTILITY_PAYMENT"}
+{"text": "mera package deliver ho gaya hai courier se.", "label": "NORMAL", "category": "DELIVERY_UPDATE"}
+{"text": "BANK SE CALL AA RAHI HAI KYC UPDATE KE LIYE LEGITIMATE HAI.", "label": "NORMAL", "category": "LEGITIMATE_BANK"}
+{"text": "HELLO, THIS IS CALLING FROM HR REGARDING YOUR JOB APPLICATION.", "label": "NORMAL", "category": "JOB_APPLICATION"}
+{"text": "AAPKA LOAN APPROVED HAI BANK SE. DOCUMENTS SUBMIT KARO.", "label": "NORMAL", "category": "LOAN_APPROVAL"}
+{"text": "CREDIT CARD STATEMENT HAI AAPKA. PAYMENT DUE DATE HAI.", "label": "NORMAL", "category": "STATEMENT_UPDATE"}
+{"text": "OTP SHARE KARNE KE LIYE LEGITIMATE REQUEST HAI.", "label": "NORMAL", "category": "LEGITIMATE_OTP"}
+{"text": "upi collect request hai friend se. legitimate hai.", "label": "NORMAL", "category": "FRIEND_REQUEST"}
+{"text": "Emergency hai lekin family member se call hai verified.", "label": "NORMAL", "category": "FAMILY_CALL"}
+{"text": "Government scheme notification hai. Official hai.", "label": "NORMAL", "category": "GOVT_SCHEME"}
+{"text": "Insurance policy renewal reminder hai. Legitimate hai.", "label": "NORMAL", "category": "INSURANCE_RENEWAL"}
+{"text": "TAX REFUND NOTIFICATION HAI. LEGITIMATE HAI.", "label": "NORMAL", "category": "TAX_REFUND"}
+{"text": "delivery boy call kar raha hai. package hai.", "label": "NORMAL", "category": "DELIVERY_CALL"}
+{"text": "Bank ATM se call hai. Card blocked hai legitimate.", "label": "NORMAL", "category": "ATM_SERVICE"}
+{"text": "hello this is calling from rbi. your bank account has been linked to illegal transactions. please transfer your money to our secure account immediately.", "label": "SCAM", "category": "DIGITAL_ARREST"}
+{"text": "This is police officer Sharma from CBI. We have issued a digital arrest warrant against you for money laundering. Pay 1 lakh immediately.", "label": "SCAM", "category": "DIGITAL_ARREST"}
+{"text": "AAPKE AGAINST FIR REGISTER HO GAYI HAI. POLICE STATION AA JAO WARNA ARREST HO JAYEGA.", "label": "SCAM", "category": "DIGITAL_ARREST"}
+{"text": "Digital arrest notice jari ho gaya hai. Court mein peesh jao.", "label": "SCAM", "category": "DIGITAL_ARREST"}
+{"text": "CBI SE CALL AA RAHI HAI. AAPKA NAME MONEY LAUNDERING CASE MEIN HAI.", "label": "SCAM", "category": "DIGITAL_ARREST"}
+{"text": "POLICE SE CALL AA RAHI HAI. AAPKA ACCOUNT BLOCK HO JAYEGA AGAR ACCOUNT NUMBER AUR OTP SHARE NAHI KIYA.", "label": "SCAM", "category": "DIGITAL_ARREST"}
+{"text": "SUPREME COURT NE ORDER PASS KIYA HAI. DIGITAL ARREST WARRANT HAI.", "label": "SCAM", "category": "DIGITAL_ARREST"}
+{"text": "INCOME TAX DEPARTMENT SE NOTICE MILA HAI. TAX CASE MEIN LAGA DIYA HAI.", "label": "SCAM", "category": "DIGITAL_ARREST"}
+{"text": "CYBER CELL SE CALL HAI. AAPKA NAME CASE MEIN HAI. FINE PAY KARO.", "label": "SCAM", "category": "DIGITAL_ARREST"}
+{"text": "COURT NE ORDER DIYA HAI. PROPERTY SEIZE HO JAYEGI AGAR MONEY TRANSFER NAHI KIYA.", "label": "SCAM", "category": "DIGITAL_ARREST"}
+{"text": "maine aapka video record kar liya hai. 50000 nahi bheje toh sabhi whatsapp contacts ko leak kar dunga.", "label": "SCAM", "category": "SEXTORTION"}
+{"text": "Aapka compromising video hai. Pay kar nahi toh leak kar dunga.", "label": "SCAM", "category": "SEXTORTION"}
+{"text": "FACEBOOK PAR AAPKI PHOTO HAI. SABKO SEND KAR DUNGA.", "label": "SCAM", "category": "SEXTORTION"}
+{"text": "SCREEN RECORDING HAI AAPKI. FAMILY KO BATA DUNGA.", "label": "SCAM", "category": "SEXTORTION"}
+{"text": "whatsapp video call record hai. sab contacts mein forward kar dunga.", "label": "SCAM", "category": "SEXTORTION"}
+{"text": "Aapka intimate video hai social media par. Pay karo.", "label": "SCAM", "category": "SEXTORTION"}
+{"text": "Nude photo hai aapki. Instagram par post kar dunga.", "label": "SCAM", "category": "SEXTORTION"}
+{"text": "Private chat screenshot hai. Public kar dunga.", "label": "SCAM", "category": "SEXTORTION"}
+{"text": "webcam recording hai. viral kar dunga.", "label": "SCAM", "category": "SEXTORTION"}
+{"text": "personal video hai. share kar dunga social media par.", "label": "SCAM", "category": "SEXTORTION"}
+{"text": "MERA PACKAGE DELIVER NAHI HUA, CUSTOM DUTY PAY KARNI HAI 500 RUPEES WARNA PARCEL SEIZED HO JAYEGA.", "label": "SCAM", "category": "COURIER_CUSTOMS"}
+{"text": "Customs se notice hai. Parcel seized ho gaya hai. Duty pay karo.", "label": "SCAM", "category": "COURIER_CUSTOMS"}
+{"text": "foreign parcel hai. illegal item hai. fine pay karo.", "label": "SCAM", "category": "COURIER_CUSTOMS"}
+{"text": "BLUE DART COURIER HAI. ITEM PROHIBITED HAI. PAY KARO RELEASE KE LIYE.", "label": "SCAM", "category": "COURIER_CUSTOMS"}
+{"text": "international parcel mein drugs hai. case ban jayega. pay karo.", "label": "SCAM", "category": "COURIER_CUSTOMS"}
+{"text": "CUSTOMS DEPARTMENT SE CALL HAI. GST PAY KARO WARNA CASE.", "label": "SCAM", "category": "COURIER_CUSTOMS"}
+{"text": "FOREIGN EXCHANGE REGULATION VIOLATION HAI. PENALTY PAY KARO.", "label": "SCAM", "category": "COURIER_CUSTOMS"}
+{"text": "CUSTOMS DUTY DEFAULT HAI. COURT CASE HOGA. PAY KARO.", "label": "SCAM", "category": "COURIER_CUSTOMS"}
+{"text": "illegal import hai. seizure ho jayega. fine pay karo.", "label": "SCAM", "category": "COURIER_CUSTOMS"}
+{"text": "CUSTOM CLEARANCE NAHI HOGA. PAY KARO URGENT.", "label": "SCAM", "category": "COURIER_CUSTOMS"}
+{"text": "mera ek dost hai jiska account block ho gaya hai, maine aapke account me 10000 bheje hain, please usko forward kar do.", "label": "SCAM", "category": "MONEY_MULE"}
+{"text": "Account mein credit hua hai. Upi through forward kar do.", "label": "SCAM", "category": "MONEY_MULE"}
+{"text": "FRIEND KA ACCOUNT BLOCKED HAI. TRANSFER KAR DO USKO.", "label": "SCAM", "category": "MONEY_MULE"}
+{"text": "Bitcoin mein money receive hua hai. Wallet mein transfer kar do.", "label": "SCAM", "category": "MONEY_MULE"}
+{"text": "loan amount hai aapke account mein. paytm se forward karo.", "label": "SCAM", "category": "MONEY_MULE"}
+{"text": "FOREIGN CURRENCY HAI ACCOUNT MEIN. CONVERT KARKE SEND KARO.", "label": "SCAM", "category": "MONEY_MULE"}
+{"text": "mera account frozen hai. aapke account mein daal do.", "label": "SCAM", "category": "MONEY_MULE"}
+{"text": "SALARY HAI FRIEND KI. UPI TRANSFER KAR DO.", "label": "SCAM", "category": "MONEY_MULE"}
+{"text": "Business payment hai. Cash se forward karo.", "label": "SCAM", "category": "MONEY_MULE"}
+{"text": "ONLINE SHOPPING REFUND HAI. OTHER ACCOUNT MEIN SEND KARO.", "label": "SCAM", "category": "MONEY_MULE"}
+{"text": "JOIN OUR VIP WHATSAPP GROUP FOR GUARANTEED 200% RETURNS IN TRADING. MINIMUM INVESTMENT 50000.", "label": "SCAM", "category": "INVESTMENT_FRAUD"}
+{"text": "STOCK MARKET MEIN GUARANTEED RETURNS. DAILY 10% PROFIT.", "label": "SCAM", "category": "INVESTMENT_FRAUD"}
+{"text": "crypto trading mein 100x returns. invest karo 10000.", "label": "SCAM", "category": "INVESTMENT_FRAUD"}
+{"text": "binary options mein money double. risk free hai.", "label": "SCAM", "category": "INVESTMENT_FRAUD"}
+{"text": "Forex trading mein expert guidance. Monthly 50% returns.", "label": "SCAM", "category": "INVESTMENT_FRAUD"}
+{"text": "IPO investment guaranteed profits. Apply now.", "label": "SCAM", "category": "INVESTMENT_FRAUD"}
+{"text": "REAL ESTATE INVESTMENT DOUBLING. SMALL AMOUNT SE BIG RETURNS.", "label": "SCAM", "category": "INVESTMENT_FRAUD"}
+{"text": "GOLD INVESTMENT SCHEME. 1 LAKH SE 10 LAKH IN 6 MONTHS.", "label": "SCAM", "category": "INVESTMENT_FRAUD"}
+{"text": "mutual funds guaranteed returns. no risk at all.", "label": "SCAM", "category": "INVESTMENT_FRAUD"}
+{"text": "PONZI SCHEME HAI. NEW INVESTORS SE OLD INVESTORS KO PAY KARTE HAIN.", "label": "SCAM", "category": "INVESTMENT_FRAUD"}
+{"text": "hello, this is calling from bank. your upi account is blocked. please accept this collect request of 5000 rupees to unblock.", "label": "SCAM", "category": "UPI_COLLECT_FRAUD"}
+{"text": "UPI COLLECT REQUEST BHEJO 2000 RUPEES KA. ACCOUNT UNBLOCK HOGA.", "label": "SCAM", "category": "UPI_COLLECT_FRAUD"}
+{"text": "PIN VERIFY KARNE KE LIYE COLLECT REQUEST ACCEPT KARO.", "label": "SCAM", "category": "UPI_COLLECT_FRAUD"}
+{"text": "UPI LIMIT BADHANE KE LIYE COLLECT REQUEST PAY KARO.", "label": "SCAM", "category": "UPI_COLLECT_FRAUD"}
+{"text": "Bank collect request hai. Link status active karne ke liye pay karo.", "label": "SCAM", "category": "UPI_COLLECT_FRAUD"}
+{"text": "GOOGLE PAY COLLECT REQUEST BHEJO. ACCOUNT VERIFY KARNE KE LIYE.", "label": "SCAM", "category": "UPI_COLLECT_FRAUD"}
+{"text": "PHONEPE COLLECT REQUEST. UPI PIN ENTER KARKE PAY KARO.", "label": "SCAM", "category": "UPI_COLLECT_FRAUD"}
+{"text": "PAYTM COLLECT REQUEST. MONEY RECEIVE KARNE KE LIYE PAY KARO.", "label": "SCAM", "category": "UPI_COLLECT_FRAUD"}
+{"text": "BHIM collect request. Account active karne ke liye transfer karo.", "label": "SCAM", "category": "UPI_COLLECT_FRAUD"}
+{"text": "upi collect request accept karo. pin share karo.", "label": "SCAM", "category": "UPI_COLLECT_FRAUD"}
+{"text": "Sir aapka electricity bill pending hai. Aaj raat 9 baje bijli kategi. Update karne ke liye call karein.", "label": "SCAM", "category": "ELECTRICITY_THREAT"}
+{"text": "Disconnection notice hai. Electricity cut ho jayegi. Pay karo.", "label": "SCAM", "category": "ELECTRICITY_THREAT"}
+{"text": "METER READING HAI TAMPERED. FINE PAY KARO WARNA CUT.", "label": "SCAM", "category": "ELECTRICITY_THREAT"}
+{"text": "BILL PAYMENT PENDING HAI. IMMEDIATE DISCONNECT HOGA.", "label": "SCAM", "category": "ELECTRICITY_THREAT"}
+{"text": "power board se notice hai. connection terminate hoga.", "label": "SCAM", "category": "ELECTRICITY_THREAT"}
+{"text": "ELECTRICITY DUES HAI. COURT CASE BAN JAYEGA. PAY KARO.", "label": "SCAM", "category": "ELECTRICITY_THREAT"}
+{"text": "LOAD SHEDDING SCHEDULE MEIN AAPKA NAME HAI. PAY KARO.", "label": "SCAM", "category": "ELECTRICITY_THREAT"}
+{"text": "TRANSFORMER UPGRADE HAI. PAYMENT PENDING HAI. PAY KARO.", "label": "SCAM", "category": "ELECTRICITY_THREAT"}
+{"text": "meter replacement charge hai. pay karo warna disconnect.", "label": "SCAM", "category": "ELECTRICITY_THREAT"}
+{"text": "Bill update karne ke liye pay karo. Disconnect notice hai.", "label": "SCAM", "category": "ELECTRICITY_THREAT"}
+{"text": "Hello beta, this is your uncle speaking. I am in the hospital and need urgent money for surgery. Please transfer 50000 rupees.", "label": "SCAM", "category": "FAMILY_EMERGENCY"}
+{"text": "MUMMY HOSPITAL MEIN HAI. OPERATION HAI. MONEY TRANSFER KARO.", "label": "SCAM", "category": "FAMILY_EMERGENCY"}
+{"text": "Papa accident ho gaya. Hospital mein hai. Urgent payment karo.", "label": "SCAM", "category": "FAMILY_EMERGENCY"}
+{"text": "Sister ka accident hua. Medical emergency hai. Money send karo.", "label": "SCAM", "category": "FAMILY_EMERGENCY"}
+{"text": "BHAI JAIL MEIN HAI. BAIL KARNA HAI. MONEY TRANSFER KARO.", "label": "SCAM", "category": "FAMILY_EMERGENCY"}
+{"text": "friend hai wo hospital mein. help karo. money bhejo.", "label": "SCAM", "category": "FAMILY_EMERGENCY"}
+{"text": "RELATIVE HAI WO CRITICAL CONDITION MEIN HAI. URGENT HELP CHAHIYE.", "label": "SCAM", "category": "FAMILY_EMERGENCY"}
+{"text": "COUSIN KA ACCIDENT HUA ABROAD. TREATMENT MONEY CHAHIYE.", "label": "SCAM", "category": "FAMILY_EMERGENCY"}
+{"text": "Neighbor emergency hai. Hospital bill pay karo.", "label": "SCAM", "category": "FAMILY_EMERGENCY"}
+{"text": "CHILD SCHOOL MEIN EMERGENCY HAI. TRANSFER KARO.", "label": "SCAM", "category": "FAMILY_EMERGENCY"}
+{"text": "Aapka KYC incomplete hai. Account freeze ho jayega. Apna aadhar card number aur OTP share karein.", "label": "SCAM", "category": "KYC_SIM_BLOCK"}
+{"text": "SIM block ho jayega. KYC update karo. OTP share karo.", "label": "SCAM", "category": "KYC_SIM_BLOCK"}
+{"text": "PAN card verification pending. OTP bhejo.", "label": "SCAM", "category": "KYC_SIM_BLOCK"}
+{"text": "Account active karne ke liye KYC complete karo. PIN share karo.", "label": "SCAM", "category": "KYC_SIM_BLOCK"}
+{"text": "BANK ACCOUNT FREEZE HOGA. AADHAR OTP BHEJO.", "label": "SCAM", "category": "KYC_SIM_BLOCK"}
+{"text": "UPI KYC pending. Link karne ke liye OTP share karo.", "label": "SCAM", "category": "KYC_SIM_BLOCK"}
+{"text": "DEMAT ACCOUNT KYC INCOMPLETE. OTP SEND KARO.", "label": "SCAM", "category": "KYC_SIM_BLOCK"}
+{"text": "TRADING ACCOUNT KYC VERIFICATION. OTP SHARE KARO.", "label": "SCAM", "category": "KYC_SIM_BLOCK"}
+{"text": "CREDIT CARD KYC PENDING. UPDATE KARO. OTP BHEJO.", "label": "SCAM", "category": "KYC_SIM_BLOCK"}
+{"text": "WALLET KYC INCOMPLETE. VERIFICATION OTP SHARE KARO.", "label": "SCAM", "category": "KYC_SIM_BLOCK"}
+{"text": "HELLO, WE ARE FROM MICROSOFT SUPPORT. YOUR COMPUTER HAS A VIRUS. GIVE US REMOTE ACCESS TO FIX IT.", "label": "SCAM", "category": "TECH_SUPPORT"}
+{"text": "google support hai. account hacked hai. password share karo.", "label": "SCAM", "category": "TECH_SUPPORT"}
+{"text": "APPLE SUPPORT. IPHONE HACKED HAI. APPLE ID SHARE KARO.", "label": "SCAM", "category": "TECH_SUPPORT"}
+{"text": "WINDOWS SUPPORT. VIRUS HAI. REMOTE ACCESS DO.", "label": "SCAM", "category": "TECH_SUPPORT"}
+{"text": "Antivirus expired hai. Payment karo warna virus.", "label": "SCAM", "category": "TECH_SUPPORT"}
+{"text": "computer hacked hai. support team call karo. remote access do.", "label": "SCAM", "category": "TECH_SUPPORT"}
+{"text": "Browser compromised hai. Malware hai. Payment karo.", "label": "SCAM", "category": "TECH_SUPPORT"}
+{"text": "system hacked hai. firewall install karo. pay karo.", "label": "SCAM", "category": "TECH_SUPPORT"}
+{"text": "SECURITY BREACH HAI. PASSWORD RESET KARO. OTP SHARE KARO.", "label": "SCAM", "category": "TECH_SUPPORT"}
+{"text": "TECHNICAL SUPPORT HAI. ACCOUNT SUSPENDED HAI. PAYMENT KARO.", "label": "SCAM", "category": "TECH_SUPPORT"}
+{"text": "AAPKI LIC POLICY LAPSE HONE WALI HAI. PENALTY BACHANE KE LIYE IS LINK PE CLICK KARKE 2000 RUPEES PAY KAREIN.", "label": "SCAM", "category": "INSURANCE_FRAUD"}
+{"text": "Sir aapke credit card pe 15000 reward points expire ho rahe hain. Redeem karne ke liye OTP batayein.", "label": "SCAM", "category": "CREDIT_CARD_FRAUD"}
+{"text": "hello i am from child care ngo. we need urgent donation for orphan kids. please send money.", "label": "SCAM", "category": "CHARITY_FRAUD"}
+{"text": "congratulations! aapne 25 lakh ki lottery jeeti hai kbc se. processing fee 10000 rupees jama karayein.", "label": "SCAM", "category": "LOTTERY_FRAUD"}
+{"text": "YOUR PACKAGE CONTAINS ILLEGAL ITEMS. CUSTOMS DUTY PAY KARO.", "label": "SCAM", "category": "COURIER_CUSTOMS"}
+{"text": "SIR, AAPKE HDFC ACCOUNT ME 5000 RUPEES CREDIT HUE HAIN SALARY AAYI HAI.", "label": "NORMAL", "category": "BANK_TRANSACTION"}
+{"text": "AAPKA ELECTRICITY BILL PAY HO GAYA HAI. BIJLI KATEGI NAHI.", "label": "NORMAL", "category": "UTILITY_PAYMENT"}
+{"text": "Mera package deliver ho gaya hai courier se.", "label": "NORMAL", "category": "DELIVERY_UPDATE"}
+{"text": "BANK SE CALL AA RAHI HAI KYC UPDATE KE LIYE LEGITIMATE HAI.", "label": "NORMAL", "category": "LEGITIMATE_BANK"}
+{"text": "HELLO, THIS IS CALLING FROM HR REGARDING YOUR JOB APPLICATION.", "label": "NORMAL", "category": "JOB_APPLICATION"}
+{"text": "Aapka loan approved hai bank se. Documents submit karo.", "label": "NORMAL", "category": "LOAN_APPROVAL"}
+{"text": "Credit card statement hai aapka. Payment due date hai.", "label": "NORMAL", "category": "STATEMENT_UPDATE"}
+{"text": "otp share karne ke liye legitimate request hai.", "label": "NORMAL", "category": "LEGITIMATE_OTP"}
+{"text": "UPI collect request hai friend se. Legitimate hai.", "label": "NORMAL", "category": "FRIEND_REQUEST"}
+{"text": "EMERGENCY HAI LEKIN FAMILY MEMBER SE CALL HAI VERIFIED.", "label": "NORMAL", "category": "FAMILY_CALL"}
+{"text": "GOVERNMENT SCHEME NOTIFICATION HAI. OFFICIAL HAI.", "label": "NORMAL", "category": "GOVT_SCHEME"}
+{"text": "insurance policy renewal reminder hai. legitimate hai.", "label": "NORMAL", "category": "INSURANCE_RENEWAL"}
+{"text": "TAX REFUND NOTIFICATION HAI. LEGITIMATE HAI.", "label": "NORMAL", "category": "TAX_REFUND"}
+{"text": "DELIVERY BOY CALL KAR RAHA HAI. PACKAGE HAI.", "label": "NORMAL", "category": "DELIVERY_CALL"}
+{"text": "BANK ATM SE CALL HAI. CARD BLOCKED HAI LEGITIMATE.", "label": "NORMAL", "category": "ATM_SERVICE"}
+{"text": "HELLO THIS IS CALLING FROM RBI. YOUR BANK ACCOUNT HAS BEEN LINKED TO ILLEGAL TRANSACTIONS. PLEASE TRANSFER YOUR MONEY TO OUR SECURE ACCOUNT IMMEDIATELY.", "label": "SCAM", "category": "DIGITAL_ARREST"}
+{"text": "THIS IS POLICE OFFICER SHARMA FROM CBI. WE HAVE ISSUED A DIGITAL ARREST WARRANT AGAINST YOU FOR MONEY LAUNDERING. PAY 1 LAKH IMMEDIATELY.", "label": "SCAM", "category": "DIGITAL_ARREST"}
+{"text": "aapke against fir register ho gayi hai. police station aa jao warna arrest ho jayega.", "label": "SCAM", "category": "DIGITAL_ARREST"}
+{"text": "DIGITAL ARREST NOTICE JARI HO GAYA HAI. COURT MEIN PEESH JAO.", "label": "SCAM", "category": "DIGITAL_ARREST"}
+{"text": "CBI se call aa rahi hai. Aapka name money laundering case mein hai.", "label": "SCAM", "category": "DIGITAL_ARREST"}
+{"text": "POLICE SE CALL AA RAHI HAI. AAPKA ACCOUNT BLOCK HO JAYEGA AGAR ACCOUNT NUMBER AUR OTP SHARE NAHI KIYA.", "label": "SCAM", "category": "DIGITAL_ARREST"}
+{"text": "Supreme court ne order pass kiya hai. Digital arrest warrant hai.", "label": "SCAM", "category": "DIGITAL_ARREST"}
+{"text": "INCOME TAX DEPARTMENT SE NOTICE MILA HAI. TAX CASE MEIN LAGA DIYA HAI.", "label": "SCAM", "category": "DIGITAL_ARREST"}
+{"text": "Cyber cell se call hai. Aapka name case mein hai. Fine pay karo.", "label": "SCAM", "category": "DIGITAL_ARREST"}
+{"text": "Court ne order diya hai. Property seize ho jayegi agar money transfer nahi kiya.", "label": "SCAM", "category": "DIGITAL_ARREST"}
+{"text": "maine aapka video record kar liya hai. 50000 nahi bheje toh sabhi whatsapp contacts ko leak kar dunga.", "label": "SCAM", "category": "SEXTORTION"}
+{"text": "AAPKA COMPROMISING VIDEO HAI. PAY KAR NAHI TOH LEAK KAR DUNGA.", "label": "SCAM", "category": "SEXTORTION"}
+{"text": "FACEBOOK PAR AAPKI PHOTO HAI. SABKO SEND KAR DUNGA.", "label": "SCAM", "category": "SEXTORTION"}
+{"text": "SCREEN RECORDING HAI AAPKI. FAMILY KO BATA DUNGA.", "label": "SCAM", "category": "SEXTORTION"}
+{"text": "WHATSAPP VIDEO CALL RECORD HAI. SAB CONTACTS MEIN FORWARD KAR DUNGA.", "label": "SCAM", "category": "SEXTORTION"}
+{"text": "aapka intimate video hai social media par. pay karo.", "label": "SCAM", "category": "SEXTORTION"}
+{"text": "nude photo hai aapki. instagram par post kar dunga.", "label": "SCAM", "category": "SEXTORTION"}
+{"text": "Private chat screenshot hai. Public kar dunga.", "label": "SCAM", "category": "SEXTORTION"}
+{"text": "Webcam recording hai. Viral kar dunga.", "label": "SCAM", "category": "SEXTORTION"}
+{"text": "PERSONAL VIDEO HAI. SHARE KAR DUNGA SOCIAL MEDIA PAR.", "label": "SCAM", "category": "SEXTORTION"}
+{"text": "Mera package deliver nahi hua, custom duty pay karni hai 500 rupees warna parcel seized ho jayega.", "label": "SCAM", "category": "COURIER_CUSTOMS"}
+{"text": "Customs se notice hai. Parcel seized ho gaya hai. Duty pay karo.", "label": "SCAM", "category": "COURIER_CUSTOMS"}
+{"text": "foreign parcel hai. illegal item hai. fine pay karo.", "label": "SCAM", "category": "COURIER_CUSTOMS"}
+{"text": "blue dart courier hai. item prohibited hai. pay karo release ke liye.", "label": "SCAM", "category": "COURIER_CUSTOMS"}
+{"text": "INTERNATIONAL PARCEL MEIN DRUGS HAI. CASE BAN JAYEGA. PAY KARO.", "label": "SCAM", "category": "COURIER_CUSTOMS"}
+{"text": "customs department se call hai. gst pay karo warna case.", "label": "SCAM", "category": "COURIER_CUSTOMS"}
+{"text": "FOREIGN EXCHANGE REGULATION VIOLATION HAI. PENALTY PAY KARO.", "label": "SCAM", "category": "COURIER_CUSTOMS"}
+{"text": "CUSTOMS DUTY DEFAULT HAI. COURT CASE HOGA. PAY KARO.", "label": "SCAM", "category": "COURIER_CUSTOMS"}
+{"text": "Illegal import hai. Seizure ho jayega. Fine pay karo.", "label": "SCAM", "category": "COURIER_CUSTOMS"}
+{"text": "Custom clearance nahi hoga. Pay karo urgent.", "label": "SCAM", "category": "COURIER_CUSTOMS"}
+{"text": "MERA EK DOST HAI JISKA ACCOUNT BLOCK HO GAYA HAI, MAINE AAPKE ACCOUNT ME 10000 BHEJE HAIN, PLEASE USKO FORWARD KAR DO.", "label": "SCAM", "category": "MONEY_MULE"}
+{"text": "Account mein credit hua hai. Upi through forward kar do.", "label": "SCAM", "category": "MONEY_MULE"}
+{"text": "FRIEND KA ACCOUNT BLOCKED HAI. TRANSFER KAR DO USKO.", "label": "SCAM", "category": "MONEY_MULE"}
+{"text": "BITCOIN MEIN MONEY RECEIVE HUA HAI. WALLET MEIN TRANSFER KAR DO.", "label": "SCAM", "category": "MONEY_MULE"}
+{"text": "loan amount hai aapke account mein. paytm se forward karo.", "label": "SCAM", "category": "MONEY_MULE"}
+{"text": "FOREIGN CURRENCY HAI ACCOUNT MEIN. CONVERT KARKE SEND KARO.", "label": "SCAM", "category": "MONEY_MULE"}
+{"text": "Mera account frozen hai. Aapke account mein daal do.", "label": "SCAM", "category": "MONEY_MULE"}
+{"text": "SALARY HAI FRIEND KI. UPI TRANSFER KAR DO.", "label": "SCAM", "category": "MONEY_MULE"}
+{"text": "business payment hai. cash se forward karo.", "label": "SCAM", "category": "MONEY_MULE"}
+{"text": "ONLINE SHOPPING REFUND HAI. OTHER ACCOUNT MEIN SEND KARO.", "label": "SCAM", "category": "MONEY_MULE"}
+{"text": "JOIN OUR VIP WHATSAPP GROUP FOR GUARANTEED 200% RETURNS IN TRADING. MINIMUM INVESTMENT 50000.", "label": "SCAM", "category": "INVESTMENT_FRAUD"}
+{"text": "STOCK MARKET MEIN GUARANTEED RETURNS. DAILY 10% PROFIT.", "label": "SCAM", "category": "INVESTMENT_FRAUD"}
+{"text": "crypto trading mein 100x returns. invest karo 10000.", "label": "SCAM", "category": "INVESTMENT_FRAUD"}
+{"text": "binary options mein money double. risk free hai.", "label": "SCAM", "category": "INVESTMENT_FRAUD"}
+{"text": "FOREX TRADING MEIN EXPERT GUIDANCE. MONTHLY 50% RETURNS.", "label": "SCAM", "category": "INVESTMENT_FRAUD"}
+{"text": "ipo investment guaranteed profits. apply now.", "label": "SCAM", "category": "INVESTMENT_FRAUD"}
+{"text": "Real estate investment doubling. Small amount se big returns.", "label": "SCAM", "category": "INVESTMENT_FRAUD"}
+{"text": "GOLD INVESTMENT SCHEME. 1 LAKH SE 10 LAKH IN 6 MONTHS.", "label": "SCAM", "category": "INVESTMENT_FRAUD"}
+{"text": "mutual funds guaranteed returns. no risk at all.", "label": "SCAM", "category": "INVESTMENT_FRAUD"}
+{"text": "ponzi scheme hai. new investors se old investors ko pay karte hain.", "label": "SCAM", "category": "INVESTMENT_FRAUD"}
+{"text": "HELLO, THIS IS CALLING FROM BANK. YOUR UPI ACCOUNT IS BLOCKED. PLEASE ACCEPT THIS COLLECT REQUEST OF 5000 RUPEES TO UNBLOCK.", "label": "SCAM", "category": "UPI_COLLECT_FRAUD"}
+{"text": "UPI collect request bhejo 2000 rupees ka. Account unblock hoga.", "label": "SCAM", "category": "UPI_COLLECT_FRAUD"}
+{"text": "PIN VERIFY KARNE KE LIYE COLLECT REQUEST ACCEPT KARO.", "label": "SCAM", "category": "UPI_COLLECT_FRAUD"}
+{"text": "UPI LIMIT BADHANE KE LIYE COLLECT REQUEST PAY KARO.", "label": "SCAM", "category": "UPI_COLLECT_FRAUD"}
+{"text": "BANK COLLECT REQUEST HAI. LINK STATUS ACTIVE KARNE KE LIYE PAY KARO.", "label": "SCAM", "category": "UPI_COLLECT_FRAUD"}
+{"text": "Google Pay collect request bhejo. Account verify karne ke liye.", "label": "SCAM", "category": "UPI_COLLECT_FRAUD"}
+{"text": "PhonePe collect request. UPI PIN enter karke pay karo.", "label": "SCAM", "category": "UPI_COLLECT_FRAUD"}
+{"text": "PAYTM COLLECT REQUEST. MONEY RECEIVE KARNE KE LIYE PAY KARO.", "label": "SCAM", "category": "UPI_COLLECT_FRAUD"}
+{"text": "BHIM COLLECT REQUEST. ACCOUNT ACTIVE KARNE KE LIYE TRANSFER KARO.", "label": "SCAM", "category": "UPI_COLLECT_FRAUD"}
+{"text": "UPI COLLECT REQUEST ACCEPT KARO. PIN SHARE KARO.", "label": "SCAM", "category": "UPI_COLLECT_FRAUD"}
+{"text": "SIR AAPKA ELECTRICITY BILL PENDING HAI. AAJ RAAT 9 BAJE BIJLI KATEGI. UPDATE KARNE KE LIYE CALL KAREIN.", "label": "SCAM", "category": "ELECTRICITY_THREAT"}
+{"text": "Disconnection notice hai. Electricity cut ho jayegi. Pay karo.", "label": "SCAM", "category": "ELECTRICITY_THREAT"}
+{"text": "METER READING HAI TAMPERED. FINE PAY KARO WARNA CUT.", "label": "SCAM", "category": "ELECTRICITY_THREAT"}
+{"text": "BILL PAYMENT PENDING HAI. IMMEDIATE DISCONNECT HOGA.", "label": "SCAM", "category": "ELECTRICITY_THREAT"}
+{"text": "POWER BOARD SE NOTICE HAI. CONNECTION TERMINATE HOGA.", "label": "SCAM", "category": "ELECTRICITY_THREAT"}
+{"text": "Electricity dues hai. Court case ban jayega. Pay karo.", "label": "SCAM", "category": "ELECTRICITY_THREAT"}
+{"text": "LOAD SHEDDING SCHEDULE MEIN AAPKA NAME HAI. PAY KARO.", "label": "SCAM", "category": "ELECTRICITY_THREAT"}
+{"text": "Transformer upgrade hai. Payment pending hai. Pay karo.", "label": "SCAM", "category": "ELECTRICITY_THREAT"}
+{"text": "Meter replacement charge hai. Pay karo warna disconnect.", "label": "SCAM", "category": "ELECTRICITY_THREAT"}
+{"text": "BILL UPDATE KARNE KE LIYE PAY KARO. DISCONNECT NOTICE HAI.", "label": "SCAM", "category": "ELECTRICITY_THREAT"}
+{"text": "HELLO BETA, THIS IS YOUR UNCLE SPEAKING. I AM IN THE HOSPITAL AND NEED URGENT MONEY FOR SURGERY. PLEASE TRANSFER 50000 RUPEES.", "label": "SCAM", "category": "FAMILY_EMERGENCY"}
+{"text": "MUMMY HOSPITAL MEIN HAI. OPERATION HAI. MONEY TRANSFER KARO.", "label": "SCAM", "category": "FAMILY_EMERGENCY"}
+{"text": "papa accident ho gaya. hospital mein hai. urgent payment karo.", "label": "SCAM", "category": "FAMILY_EMERGENCY"}
+{"text": "Sister ka accident hua. Medical emergency hai. Money send karo.", "label": "SCAM", "category": "FAMILY_EMERGENCY"}
+{"text": "BHAI JAIL MEIN HAI. BAIL KARNA HAI. MONEY TRANSFER KARO.", "label": "SCAM", "category": "FAMILY_EMERGENCY"}
+{"text": "Friend hai wo hospital mein. Help karo. Money bhejo.", "label": "SCAM", "category": "FAMILY_EMERGENCY"}
+{"text": "RELATIVE HAI WO CRITICAL CONDITION MEIN HAI. URGENT HELP CHAHIYE.", "label": "SCAM", "category": "FAMILY_EMERGENCY"}
+{"text": "Cousin ka accident hua abroad. Treatment money chahiye.", "label": "SCAM", "category": "FAMILY_EMERGENCY"}
+{"text": "neighbor emergency hai. hospital bill pay karo.", "label": "SCAM", "category": "FAMILY_EMERGENCY"}
+{"text": "CHILD SCHOOL MEIN EMERGENCY HAI. TRANSFER KARO.", "label": "SCAM", "category": "FAMILY_EMERGENCY"}
+{"text": "AAPKA KYC INCOMPLETE HAI. ACCOUNT FREEZE HO JAYEGA. APNA AADHAR CARD NUMBER AUR OTP SHARE KAREIN.", "label": "SCAM", "category": "KYC_SIM_BLOCK"}
+{"text": "SIM BLOCK HO JAYEGA. KYC UPDATE KARO. OTP SHARE KARO.", "label": "SCAM", "category": "KYC_SIM_BLOCK"}
+{"text": "PAN CARD VERIFICATION PENDING. OTP BHEJO.", "label": "SCAM", "category": "KYC_SIM_BLOCK"}
+{"text": "Account active karne ke liye KYC complete karo. PIN share karo.", "label": "SCAM", "category": "KYC_SIM_BLOCK"}
+{"text": "BANK ACCOUNT FREEZE HOGA. AADHAR OTP BHEJO.", "label": "SCAM", "category": "KYC_SIM_BLOCK"}
+{"text": "UPI KYC PENDING. LINK KARNE KE LIYE OTP SHARE KARO.", "label": "SCAM", "category": "KYC_SIM_BLOCK"}
+{"text": "demat account kyc incomplete. otp send karo.", "label": "SCAM", "category": "KYC_SIM_BLOCK"}
+{"text": "trading account kyc verification. otp share karo.", "label": "SCAM", "category": "KYC_SIM_BLOCK"}
+{"text": "credit card kyc pending. update karo. otp bhejo.", "label": "SCAM", "category": "KYC_SIM_BLOCK"}
+{"text": "wallet kyc incomplete. verification otp share karo.", "label": "SCAM", "category": "KYC_SIM_BLOCK"}
+{"text": "Hello, we are from Microsoft Support. Your computer has a virus. Give us remote access to fix it.", "label": "SCAM", "category": "TECH_SUPPORT"}
+{"text": "GOOGLE SUPPORT HAI. ACCOUNT HACKED HAI. PASSWORD SHARE KARO.", "label": "SCAM", "category": "TECH_SUPPORT"}
+{"text": "apple support. iphone hacked hai. apple id share karo.", "label": "SCAM", "category": "TECH_SUPPORT"}
+{"text": "Windows support. Virus hai. Remote access do.", "label": "SCAM", "category": "TECH_SUPPORT"}
+{"text": "ANTIVIRUS EXPIRED HAI. PAYMENT KARO WARNA VIRUS.", "label": "SCAM", "category": "TECH_SUPPORT"}
+{"text": "computer hacked hai. support team call karo. remote access do.", "label": "SCAM", "category": "TECH_SUPPORT"}
+{"text": "BROWSER COMPROMISED HAI. MALWARE HAI. PAYMENT KARO.", "label": "SCAM", "category": "TECH_SUPPORT"}
+{"text": "System hacked hai. Firewall install karo. Pay karo.", "label": "SCAM", "category": "TECH_SUPPORT"}
+{"text": "SECURITY BREACH HAI. PASSWORD RESET KARO. OTP SHARE KARO.", "label": "SCAM", "category": "TECH_SUPPORT"}
+{"text": "Technical support hai. Account suspended hai. Payment karo.", "label": "SCAM", "category": "TECH_SUPPORT"}
+{"text": "aapki lic policy lapse hone wali hai. penalty bachane ke liye is link pe click karke 2000 rupees pay karein.", "label": "SCAM", "category": "INSURANCE_FRAUD"}
+{"text": "Sir aapke credit card pe 15000 reward points expire ho rahe hain. Redeem karne ke liye OTP batayein.", "label": "SCAM", "category": "CREDIT_CARD_FRAUD"}
+{"text": "HELLO I AM FROM CHILD CARE NGO. WE NEED URGENT DONATION FOR ORPHAN KIDS. PLEASE SEND MONEY.", "label": "SCAM", "category": "CHARITY_FRAUD"}
+{"text": "CONGRATULATIONS! AAPNE 25 LAKH KI LOTTERY JEETI HAI KBC SE. PROCESSING FEE 10000 RUPEES JAMA KARAYEIN.", "label": "SCAM", "category": "LOTTERY_FRAUD"}
+{"text": "Your package contains illegal items. Customs duty pay karo.", "label": "SCAM", "category": "COURIER_CUSTOMS"}
+{"text": "Sir, aapke HDFC account me 5000 rupees credit hue hain salary aayi hai.", "label": "NORMAL", "category": "BANK_TRANSACTION"}
+{"text": "aapka electricity bill pay ho gaya hai. bijli kategi nahi.", "label": "NORMAL", "category": "UTILITY_PAYMENT"}
+{"text": "Mera package deliver ho gaya hai courier se.", "label": "NORMAL", "category": "DELIVERY_UPDATE"}
+{"text": "BANK SE CALL AA RAHI HAI KYC UPDATE KE LIYE LEGITIMATE HAI.", "label": "NORMAL", "category": "LEGITIMATE_BANK"}
+{"text": "Hello, this is calling from HR regarding your job application.", "label": "NORMAL", "category": "JOB_APPLICATION"}
+{"text": "Aapka loan approved hai bank se. Documents submit karo.", "label": "NORMAL", "category": "LOAN_APPROVAL"}
+{"text": "credit card statement hai aapka. payment due date hai.", "label": "NORMAL", "category": "STATEMENT_UPDATE"}
+{"text": "OTP share karne ke liye legitimate request hai.", "label": "NORMAL", "category": "LEGITIMATE_OTP"}
+{"text": "UPI collect request hai friend se. Legitimate hai.", "label": "NORMAL", "category": "FRIEND_REQUEST"}
+{"text": "Emergency hai lekin family member se call hai verified.", "label": "NORMAL", "category": "FAMILY_CALL"}
+{"text": "government scheme notification hai. official hai.", "label": "NORMAL", "category": "GOVT_SCHEME"}
+{"text": "Insurance policy renewal reminder hai. Legitimate hai.", "label": "NORMAL", "category": "INSURANCE_RENEWAL"}
+{"text": "tax refund notification hai. legitimate hai.", "label": "NORMAL", "category": "TAX_REFUND"}
+{"text": "DELIVERY BOY CALL KAR RAHA HAI. PACKAGE HAI.", "label": "NORMAL", "category": "DELIVERY_CALL"}
+{"text": "Bank ATM se call hai. Card blocked hai legitimate.", "label": "NORMAL", "category": "ATM_SERVICE"}
+{"text": "hello this is calling from rbi. your bank account has been linked to illegal transactions. please transfer your money to our secure account immediately.", "label": "SCAM", "category": "DIGITAL_ARREST"}
+{"text": "this is police officer sharma from cbi. we have issued a digital arrest warrant against you for money laundering. pay 1 lakh immediately.", "label": "SCAM", "category": "DIGITAL_ARREST"}
+{"text": "AAPKE AGAINST FIR REGISTER HO GAYI HAI. POLICE STATION AA JAO WARNA ARREST HO JAYEGA.", "label": "SCAM", "category": "DIGITAL_ARREST"}
+{"text": "Digital arrest notice jari ho gaya hai. Court mein peesh jao.", "label": "SCAM", "category": "DIGITAL_ARREST"}
+{"text": "CBI SE CALL AA RAHI HAI. AAPKA NAME MONEY LAUNDERING CASE MEIN HAI.", "label": "SCAM", "category": "DIGITAL_ARREST"}
+{"text": "POLICE SE CALL AA RAHI HAI. AAPKA ACCOUNT BLOCK HO JAYEGA AGAR ACCOUNT NUMBER AUR OTP SHARE NAHI KIYA.", "label": "SCAM", "category": "DIGITAL_ARREST"}
+{"text": "SUPREME COURT NE ORDER PASS KIYA HAI. DIGITAL ARREST WARRANT HAI.", "label": "SCAM", "category": "DIGITAL_ARREST"}
+{"text": "INCOME TAX DEPARTMENT SE NOTICE MILA HAI. TAX CASE MEIN LAGA DIYA HAI.", "label": "SCAM", "category": "DIGITAL_ARREST"}
+{"text": "CYBER CELL SE CALL HAI. AAPKA NAME CASE MEIN HAI. FINE PAY KARO.", "label": "SCAM", "category": "DIGITAL_ARREST"}
+{"text": "court ne order diya hai. property seize ho jayegi agar money transfer nahi kiya.", "label": "SCAM", "category": "DIGITAL_ARREST"}
+{"text": "MAINE AAPKA VIDEO RECORD KAR LIYA HAI. 50000 NAHI BHEJE TOH SABHI WHATSAPP CONTACTS KO LEAK KAR DUNGA.", "label": "SCAM", "category": "SEXTORTION"}
+{"text": "aapka compromising video hai. pay kar nahi toh leak kar dunga.", "label": "SCAM", "category": "SEXTORTION"}
+{"text": "facebook par aapki photo hai. sabko send kar dunga.", "label": "SCAM", "category": "SEXTORTION"}
+{"text": "Screen recording hai aapki. Family ko bata dunga.", "label": "SCAM", "category": "SEXTORTION"}
+{"text": "WHATSAPP VIDEO CALL RECORD HAI. SAB CONTACTS MEIN FORWARD KAR DUNGA.", "label": "SCAM", "category": "SEXTORTION"}
+{"text": "AAPKA INTIMATE VIDEO HAI SOCIAL MEDIA PAR. PAY KARO.", "label": "SCAM", "category": "SEXTORTION"}
+{"text": "Nude photo hai aapki. Instagram par post kar dunga.", "label": "SCAM", "category": "SEXTORTION"}
+{"text": "Private chat screenshot hai. Public kar dunga.", "label": "SCAM", "category": "SEXTORTION"}
+{"text": "webcam recording hai. viral kar dunga.", "label": "SCAM", "category": "SEXTORTION"}
+{"text": "personal video hai. share kar dunga social media par.", "label": "SCAM", "category": "SEXTORTION"}

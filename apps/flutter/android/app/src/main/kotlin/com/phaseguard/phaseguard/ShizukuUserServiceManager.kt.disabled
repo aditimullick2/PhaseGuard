@@ -1,0 +1,332 @@
+package com.phaseguard.phaseguard
+
+import android.content.Context
+import android.os.ParcelFileDescriptor
+import android.util.Log
+import rikka.shizuku.Shizuku
+import java.io.File
+
+/**
+ * Manages the Shizuku UserService for privileged audio recording.
+ * 
+ * This class handles:
+ * 1. Binding to the Shizuku UserService process
+ * 2. Starting the RecorderService in the shell-UID process
+ * 3. Managing dual-track audio recording with fallback ladder
+ * 4. Providing health diagnostics
+ */
+class ShizukuUserServiceManager(private val context: Context) {
+    private val TAG = "ShizukuUserServiceManager"
+    
+    // Recorder service binding
+    private var recorderService: IRecorderService? = null
+    private var userServiceToken: Any? = null
+    
+    // Audio source fallback ladder
+    private val audioSourceLadder = listOf(
+        RecorderService.AUDIO_SOURCE_VOICE_UPLINK,      // Step 1: Remote caller
+        RecorderService.AUDIO_SOURCE_VOICE_DOWNLINK,    // Step 2: Local mic
+        RecorderService.AUDIO_SOURCE_VOICE_CALL,       // Step 3: Both
+        RecorderService.AUDIO_SOURCE_MEDIA,            // Step 4: Fallback
+        RecorderService.AUDIO_SOURCE_MIC               // Step 5: Last resort
+    )
+    
+    // State tracking
+    private var currentStep = 0
+    private var isDualRecording = false
+    private var lastError: String? = null
+    
+    /**
+     * Initialize the Shizuku UserService
+     */
+    fun initialize(): Boolean {
+        if (!Shizuku.pingBinder()) {
+            Log.e(TAG, "Shizuku not available")
+            return false
+        }
+        
+        if (Shizuku.checkSelfPermission() != android.content.pm.PackageManager.PERMISSION_GRANTED) {
+            Log.e(TAG, "Shizuku permission not granted")
+            return false
+        }
+        
+        try {
+            // Request Shizuku to run our UserService
+            val arguments = Shizuku.UserServiceArgs.Builder()
+                .daemon(false)  // Don't run as daemon for testing
+                .processNameSuffix("recorder")
+                .version(serviceVersion)
+                .build()
+            
+            userServiceToken = Shizuku.bindUserService(arguments, object : Shizuku.OnBinderReceivedListener {
+                override fun onBinderReceived(binder: android.os.IBinder) {
+                    Log.i(TAG, "UserService binder received")
+                    recorderService = IRecorderService.Stub.asInterface(binder)
+                    checkServiceHealth()
+                }
+                
+                override fun onBinderLost() {
+                    Log.w(TAG, "UserService binder lost")
+                    recorderService = null
+                }
+            })
+            
+            Log.i(TAG, "UserService initialization requested")
+            return true
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to initialize UserService: ${e.message}", e)
+            return false
+        }
+    }
+    
+    /**
+     * Start dual-track audio recording with fallback ladder
+     */
+    fun startDualRecording(sampleRate: Int = 16000): RecordingResult {
+        val service = recorderService ?: run {
+            return RecordingResult(
+                success = false,
+                message = "RecorderService not bound",
+                health = BypassHealth.Failed
+            )
+        }
+        
+        // Try dual recording first
+        val uplinkPipes = android.os.ParcelFileDescriptor.createPipe()
+        val downlinkPipes = android.os.ParcelFileDescriptor.createPipe()
+        
+        try {
+            val result = service.startDualRecord(
+                audioSourceLadder[0],  // VOICE_UPLINK
+                audioSourceLadder[1],  // VOICE_DOWNLINK
+                sampleRate,
+                uplinkPipes[1],  // Write end
+                downlinkPipes[1] // Write end
+            )
+            
+            when (result) {
+                0b11 -> {
+                    // Both streams successful
+                    isDualRecording = true
+                    currentStep = 0
+                    return RecordingResult(
+                        success = true,
+                        message = "Dual recording started successfully",
+                        health = getBypassHealth(),
+                        uplinkFd = uplinkPipes[0],  // Read end
+                        downlinkFd = downlinkPipes[0]  // Read end
+                    )
+                }
+                0b01 -> {
+                    // Only uplink successful
+                    uplinkPipes[1].close()
+                    downlinkPipes[0].close()
+                    downlinkPipes[1].close()
+                    return RecordingResult(
+                        success = true,
+                        message = "Uplink recording started (downlink failed)",
+                        health = getBypassHealth(),
+                        uplinkFd = uplinkPipes[0],
+                        fallbackNeeded = true
+                    )
+                }
+                0b10 -> {
+                    // Only downlink successful
+                    uplinkPipes[0].close()
+                    uplinkPipes[1].close()
+                    downlinkPipes[1].close()
+                    return RecordingResult(
+                        success = true,
+                        message = "Downlink recording started (uplink failed)",
+                        health = getBypassHealth(),
+                        downlinkFd = downlinkPipes[0],
+                        fallbackNeeded = true
+                    )
+                }
+                else -> {
+                    // Both failed, try fallback
+                    uplinkPipes[0].close()
+                    uplinkPipes[1].close()
+                    downlinkPipes[0].close()
+                    downlinkPipes[1].close()
+                    return tryFallbackRecording(sampleRate)
+                }
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Dual recording failed: ${e.message}", e)
+            uplinkPipes[0].close()
+            uplinkPipes[1].close()
+            downlinkPipes[0].close()
+            downlinkPipes[1].close()
+            return tryFallbackRecording(sampleRate)
+        }
+    }
+    
+    /**
+     * Try fallback recording with single stream
+     */
+    private fun tryFallbackRecording(sampleRate: Int): RecordingResult {
+        val service = recorderService ?: return RecordingResult(
+            success = false,
+            message = "RecorderService not bound",
+            health = BypassHealth.Failed
+        )
+        
+        // Try each audio source in the fallback ladder
+        for ((index, source) in audioSourceLadder.withIndex()) {
+            if (index < 2) continue  // Skip VOICE_UPLINK and VOICE_DOWNLINK (already tried)
+            
+            val pipes = android.os.ParcelFileDescriptor.createPipe()
+            try {
+                val result = service.startSingleRecord(
+                    source,
+                    sampleRate,
+                    android.media.AudioFormat.CHANNEL_IN_MONO,
+                    pipes[1]  // Write end
+                )
+                
+                if (result == 1) {
+                    currentStep = index
+                    isDualRecording = false
+                    return RecordingResult(
+                        success = true,
+                        message = "Fallback recording started with source $source (step ${index + 1})",
+                        health = getBypassHealth(),
+                        singleFd = pipes[0],  // Read end
+                        fallbackStep = index + 1
+                    )
+                }
+                
+                pipes[0].close()
+                pipes[1].close()
+            } catch (e: Exception) {
+                Log.w(TAG, "Fallback step ${index + 1} failed: ${e.message}")
+                pipes[0].close()
+                pipes[1].close()
+            }
+        }
+        
+        // All fallbacks failed
+        lastError = service.lastError
+        return RecordingResult(
+            success = false,
+            message = "All fallback steps failed. Last error: ${lastError}",
+            health = getBypassHealth()
+        )
+    }
+    
+    /**
+     * Stop recording
+     */
+    fun stopRecording() {
+        try {
+            recorderService?.stop()
+            isDualRecording = false
+            currentStep = 0
+            Log.i(TAG, "Recording stopped")
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to stop recording: ${e.message}", e)
+        }
+    }
+    
+    /**
+     * Get bypass health status
+     */
+    fun getBypassHealth(): BypassHealth {
+        return try {
+            when (recorderService?.bypassHealth ?: 0) {
+                2 -> BypassHealth.Full
+                1 -> BypassHealth.Degraded
+                else -> BypassHealth.Failed
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to get bypass health: ${e.message}")
+            BypassHealth.Failed
+        }
+    }
+    
+    /**
+     * Check service health and version
+     */
+    private fun checkServiceHealth() {
+        try {
+            val version = recorderService?.getVersion() ?: 0
+            val health = getBypassHealth()
+            Log.i(TAG, "Service version: $version, Bypass health: $health")
+            
+            if (version != serviceVersion) {
+                Log.w(TAG, "Service version mismatch: expected $serviceVersion, got $version")
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to check service health: ${e.message}", e)
+        }
+    }
+    
+    /**
+     * Cleanup resources
+     */
+    fun cleanup() {
+        try {
+            stopRecording()
+            if (userServiceToken != null) {
+                Shizuku.unbindUserService(userServiceToken)
+                userServiceToken = null
+            }
+            recorderService = null
+            Log.i(TAG, "UserServiceManager cleaned up")
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to cleanup: ${e.message}", e)
+        }
+    }
+    
+    /**
+     * Get current recording state
+     */
+    fun getRecordingState(): Map<String, Any> {
+        return try {
+            mapOf(
+                "state" to when (recorderService?.state ?: 0) {
+                    0 -> "idle"
+                    1 -> "starting"
+                    2 -> "dual"
+                    3 -> "single"
+                    9 -> "error"
+                    else -> "unknown"
+                },
+                "isDualRecording" to isDualRecording,
+                "currentStep" to currentStep,
+                "bypassHealth" to getBypassHealth().name,
+                "lastError" to (lastError ?: recorderService?.lastError)
+            )
+        } catch (e: Exception) {
+            mapOf("error" to e.message)
+        }
+    }
+    
+    companion object {
+        private const val serviceVersion = 1
+    }
+}
+
+/**
+ * Recording result data class
+ */
+data class RecordingResult(
+    val success: Boolean,
+    val message: String,
+    val health: BypassHealth,
+    val uplinkFd: ParcelFileDescriptor? = null,
+    val downlinkFd: ParcelFileDescriptor? = null,
+    val singleFd: ParcelFileDescriptor? = null,
+    val fallbackNeeded: Boolean = false,
+    val fallbackStep: Int = 0
+)
+
+/**
+ * Bypass health enum (mirrors WrappedShellContext.BypassHealth)
+ */
+enum class BypassHealth {
+    Full,
+    Degraded,
+    Failed
+}

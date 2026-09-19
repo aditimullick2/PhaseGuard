@@ -1,0 +1,63 @@
+{
+  "rankings": [
+    [
+      "SpecRNet",
+      0.2998813167808918
+    ],
+    [
+      "AASIST-L",
+      0.15882541748359896
+    ]
+  ],
+  "detailed_results": {
+    "AASIST-L": {
+      "accuracy": 0.3333333333333333,
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0,
+      "roc_auc": 0.3888888888888889,
+      "eer": 0.6666666666666666,
+      "eer_threshold": 0.024187849834561348,
+      "far": 0.3333333333333333,
+      "frr": 1.0,
+      "synthetic_recall": 0.0,
+      "false_negative_rate": 1.0,
+      "cold_latency_ms": 96.95267677307129,
+      "warm_avg_latency_ms": 85.08415222167969,
+      "warm_p50_latency_ms": 84.96546745300293,
+      "warm_p95_latency_ms": 90.79610109329224,
+      "memory_mb": 0.00026041666666666666
+    },
+    "SpecRNet": {
+      "accuracy": 0.5,
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0,
+      "roc_auc": 0.5,
+      "eer": 0.0,
+      "eer_threshold": Infinity,
+      "far": 0.0,
+      "frr": 1.0,
+      "synthetic_recall": 0.0,
+      "false_negative_rate": 1.0,
+      "cold_latency_ms": 0.9979009628295898,
+      "warm_avg_latency_ms": 1.1882424354553223,
+      "warm_p50_latency_ms": 0.0,
+      "warm_p95_latency_ms": 8.355748653411863,
+      "memory_mb": 0.00013020833333333333
+    }
+  },
+  "methodology": {
+    "preprocessing": "16kHz mono float32",
+    "test_files": 12,
+    "human_files": 6,
+    "synthetic_files": 6,
+    "ranking_criteria": [
+      "synthetic_recall",
+      "false_negative_rate",
+      "eer",
+      "latency",
+      "memory"
+    ]
+  }
+}

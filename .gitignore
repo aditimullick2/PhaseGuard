@@ -1,0 +1,88 @@
+# Environments
+.env
+.env.local
+.venv
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+/lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# IDEs
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Tests and Binaries
+test_venv/
+output.log
+dossier_*.pdf
+test_*.py
+run_test*.py
+smoke_test_*.py
+cloudflared*.exe
+fake_entity_output.txt
+reputation_store.json
+
+# Audio and Datasets
+*.wav
+*.mp3
+*.raw
+*.flac
+apps/api/dataset_v2/
+apps/api/dataset_v3_holdout/
+apps/api/holdout_dataset/
+apps/api/samples/synthetic/
+*.gguf
+*.bin
+finetuned_scam_model/
+tinyllama_scam_full_model/
+llama.cpp/
+*.safetensors
+*.pcm
+apps/api/ai_training/merged_smallm2/
+
+# Allow voice module and database
+!apps/api/voice/
+!apps/api/database.py
+
+# Large ML models (>50MB) — too big for GitHub, use LFS or external storage
+*.gguf
+*.onnx
+*.tflite
+*.bz2
+*.tar
+*.tar.bz2
+*.tar.gz
+apps/flutter/model*.tar*
+apps/flutter/assets/models/sherpa/
+apps/flutter/assets/models/tinyllama_scam.gguf
+apps/flutter/assets/models/scam_detector.gguf
+
+# Flutter build outputs
+apps/flutter/build/
+apps/flutter/.dart_tool/

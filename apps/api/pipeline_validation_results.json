@@ -1,0 +1,91 @@
+{
+  "audio_validation": {
+    "total_files": 4,
+    "valid_files": 4,
+    "failed_files": 0,
+    "files": {
+      "samples/user_voices/WhatsApp Ptt 2026-09-17 at 23.39.57.ogg": {
+        "category": "human",
+        "label": 0,
+        "file": "samples/user_voices/WhatsApp Ptt 2026-09-17 at 23.39.57.ogg",
+        "valid": true,
+        "error": null,
+        "format": "OGG",
+        "sample_rate": 48000,
+        "channels": 1,
+        "duration": 7.0735,
+        "samples": 339528
+      },
+      "samples/user_voices/freesound_community-shortfilm-voice-56795.mp3": {
+        "category": "human",
+        "label": 0,
+        "file": "samples/user_voices/freesound_community-shortfilm-voice-56795.mp3",
+        "valid": true,
+        "error": null,
+        "format": "MP3",
+        "sample_rate": 24000,
+        "channels": 2,
+        "duration": 96.192,
+        "samples": 2308608
+      },
+      "samples/synthetic/hindi_ai_voice.mp3": {
+        "category": "synthetic",
+        "label": 1,
+        "file": "samples/synthetic/hindi_ai_voice.mp3",
+        "valid": true,
+        "error": null,
+        "format": "MP3",
+        "sample_rate": 24000,
+        "channels": 1,
+        "duration": 12.36,
+        "samples": 296640
+      },
+      "samples/deepfake_test/elevenlabs_sample.mp3": {
+        "category": "synthetic",
+        "label": 1,
+        "file": "samples/deepfake_test/elevenlabs_sample.mp3",
+        "valid": true,
+        "error": null,
+        "format": "MP3",
+        "sample_rate": 44100,
+        "channels": 2,
+        "duration": 373.2768027210884,
+        "samples": 16461507
+      }
+    },
+    "benchmark_status": "VALID"
+  },
+  "lifecycle_tests": {
+    "aasist_l": {
+      "valid": true,
+      "initial_load_count": 1,
+      "final_load_count": 1,
+      "requests_made": 10,
+      "status": "PASS"
+    },
+    "specrnet": {
+      "valid": true,
+      "initial_load_count": 1,
+      "final_load_count": 1,
+      "requests_made": 10,
+      "status": "PASS"
+    }
+  },
+  "inference_tests": {
+    "aasist_l": {
+      "valid": true,
+      "direct_score": 0.8934703469276428,
+      "api_score": 0.8934703469276428,
+      "difference": 0.0,
+      "status": "PASS"
+    },
+    "specrnet": {
+      "valid": true,
+      "direct_score": 0.5153408646583557,
+      "api_score": 0.5153408646583557,
+      "difference": 0.0,
+      "status": "PASS"
+    }
+  },
+  "overall_status": "VALID"
+}

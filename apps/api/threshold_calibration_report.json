@@ -1,0 +1,16 @@
+{
+  "eer_threshold": 0.5,
+  "eer": 0.5,
+  "eer_metrics": {},
+  "high_recall_threshold": 0.3,
+  "high_recall_metrics": {},
+  "high_precision_threshold": 0.7,
+  "high_precision_metrics": {},
+  "recommended_config": {
+    "real_threshold": 0.3,
+    "suspicious_low": 0.3,
+    "suspicious_high": 0.7,
+    "synthetic_threshold": 0.7
+  },
+  "note": "Default thresholds - calibrate with real dataset for production"
+}

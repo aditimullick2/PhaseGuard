@@ -1,0 +1,291 @@
+{
+  "version": "2.0",
+  "name": "PhaseGuard Detection Dataset",
+  "description": "Speaker-disjoint dataset for deepfake detection evaluation",
+  "created": "2026-09-19",
+  "updated": "2026-09-19",
+  "total_samples": 12,
+  "real_samples": 6,
+  "synthetic_samples": 6,
+  "unique_speakers": 12,
+  "languages": [
+    "hi",
+    "en"
+  ],
+  "conditions": [
+    "clean",
+    "telephone"
+  ],
+  "generation_methods": [
+    "elevenlabs",
+    "google_tts",
+    "myvoice",
+    "unknown_tts"
+  ],
+  "dataset_status": "LEGACY_BASELINE",
+  "not_for_final_performance_claims": true,
+  "intended_use": [
+    "regression_testing",
+    "pipeline_validation",
+    "smoke_tests",
+    "detecting_accidental_changes"
+  ],
+  "random_seed": 42,
+  "splits": {
+    "train": {
+      "speaker_ids": [
+        "speaker_102",
+        "speaker_104",
+        "speaker_101",
+        "speaker_003",
+        "speaker_106",
+        "speaker_103",
+        "speaker_006"
+      ],
+      "sample_count": 7,
+      "percentage": 58.333333333333336
+    },
+    "calibration": {
+      "speaker_ids": [
+        "speaker_005",
+        "speaker_004"
+      ],
+      "sample_count": 2,
+      "percentage": 16.666666666666664
+    },
+    "test": {
+      "speaker_ids": [
+        "speaker_105",
+        "speaker_001",
+        "speaker_002"
+      ],
+      "sample_count": 3,
+      "percentage": 25.0
+    }
+  },
+  "samples": [
+    {
+      "id": "sample_001",
+      "path": "samples/user_voices/WhatsApp Ptt 2026-09-17 at 23.39.57.ogg",
+      "label": "real",
+      "speaker_id": "speaker_001",
+      "language": "hi",
+      "source": "human",
+      "generation_method": null,
+      "condition": "telephone",
+      "sample_rate": 48000,
+      "channels": 1,
+      "duration_seconds": 7.07,
+      "codec": "OGG",
+      "split": "test",
+      "notes": "WhatsApp recording, telephone quality"
+    },
+    {
+      "id": "sample_002",
+      "path": "samples/user_voices/freesound_community-shortfilm-voice-56795.mp3",
+      "label": "real",
+      "speaker_id": "speaker_002",
+      "language": "en",
+      "source": "human",
+      "generation_method": null,
+      "condition": "clean",
+      "sample_rate": 24000,
+      "channels": 1,
+      "duration_seconds": 96.19,
+      "codec": "MP3",
+      "split": "test",
+      "notes": "Long recording, clean studio quality"
+    },
+    {
+      "id": "sample_003",
+      "path": "samples/user_voices/universfield-female-voice-good-morning-242169.mp3",
+      "label": "real",
+      "speaker_id": "speaker_003",
+      "language": "en",
+      "source": "human",
+      "generation_method": null,
+      "condition": "clean",
+      "sample_rate": 24000,
+      "channels": 1,
+      "duration_seconds": 1.5,
+      "codec": "MP3",
+      "split": "train",
+      "notes": "Short female voice"
+    },
+    {
+      "id": "sample_004",
+      "path": "samples/user_voices/universfield-are-you-home-voice-clip-323554.mp3",
+      "label": "real",
+      "speaker_id": "speaker_004",
+      "language": "en",
+      "source": "human",
+      "generation_method": null,
+      "condition": "clean",
+      "sample_rate": 24000,
+      "channels": 1,
+      "duration_seconds": 2.0,
+      "codec": "MP3",
+      "split": "calibration",
+      "notes": "Question phrase"
+    },
+    {
+      "id": "sample_005",
+      "path": "samples/user_voices/originalvo-medieval-gamer-voice-darkness-hunts-us-what-youx27ve-learned-stay-226596.mp3",
+      "label": "real",
+      "speaker_id": "speaker_005",
+      "language": "en",
+      "source": "human",
+      "generation_method": null,
+      "condition": "clean",
+      "sample_rate": 24000,
+      "channels": 1,
+      "duration_seconds": 1.8,
+      "codec": "MP3",
+      "split": "calibration",
+      "notes": "Gaming voice content"
+    },
+    {
+      "id": "sample_006",
+      "path": "samples/user_voices/sdking79-man-talking-unintelligibly-1-546038.mp3",
+      "label": "real",
+      "speaker_id": "speaker_006",
+      "language": "en",
+      "source": "human",
+      "generation_method": null,
+      "condition": "clean",
+      "sample_rate": 24000,
+      "channels": 1,
+      "duration_seconds": 1.2,
+      "codec": "MP3",
+      "split": "train",
+      "notes": "Male voice, unclear speech"
+    },
+    {
+      "id": "sample_101",
+      "path": "samples/synthetic/ElevenLabs_2026-09-01T15_58_06_Kanika - Warm, Expressive and Natural_pvc_sp100_s50_sb75_se0_m2.mp3",
+      "label": "synthetic",
+      "speaker_id": "speaker_101",
+      "language": "en",
+      "source": "tts",
+      "generation_method": "elevenlabs",
+      "condition": "clean",
+      "sample_rate": 24000,
+      "channels": 1,
+      "duration_seconds": 15.2,
+      "codec": "MP3",
+      "split": "train",
+      "notes": "ElevenLabs TTS, warm expressive voice"
+    },
+    {
+      "id": "sample_102",
+      "path": "samples/synthetic/hindi_ai_voice.mp3",
+      "label": "synthetic",
+      "speaker_id": "speaker_102",
+      "language": "hi",
+      "source": "tts",
+      "generation_method": "unknown_tts",
+      "condition": "clean",
+      "sample_rate": 24000,
+      "channels": 1,
+      "duration_seconds": 12.36,
+      "codec": "MP3",
+      "split": "train",
+      "notes": "Hindi TTS, unknown generator"
+    },
+    {
+      "id": "sample_103",
+      "path": "samples/synthetic/myvoice.mp3.ogg",
+      "label": "synthetic",
+      "speaker_id": "speaker_103",
+      "language": "en",
+      "source": "tts",
+      "generation_method": "myvoice",
+      "condition": "clean",
+      "sample_rate": 48000,
+      "channels": 1,
+      "duration_seconds": 3.5,
+      "codec": "OGG",
+      "split": "train",
+      "notes": "MyVoice.com TTS generator"
+    },
+    {
+      "id": "sample_104",
+      "path": "samples/synthetic/new_ai_voice.mp3",
+      "label": "synthetic",
+      "speaker_id": "speaker_104",
+      "language": "hi",
+      "source": "tts",
+      "generation_method": "unknown_tts",
+      "condition": "clean",
+      "sample_rate": 24000,
+      "channels": 1,
+      "duration_seconds": 8.2,
+      "codec": "MP3",
+      "split": "train",
+      "notes": "Hindi TTS, unknown generator"
+    },
+    {
+      "id": "sample_105",
+      "path": "samples/deepfake_test/elevenlabs_sample.mp3",
+      "label": "synthetic",
+      "speaker_id": "speaker_105",
+      "language": "en",
+      "source": "tts",
+      "generation_method": "elevenlabs",
+      "condition": "clean",
+      "sample_rate": 44100,
+      "channels": 1,
+      "duration_seconds": 373.28,
+      "codec": "MP3",
+      "split": "test",
+      "notes": "Long ElevenLabs sample"
+    },
+    {
+      "id": "sample_106",
+      "path": "samples/deepfake_test/gtts_sample.mp3",
+      "label": "synthetic",
+      "speaker_id": "speaker_106",
+      "language": "en",
+      "source": "tts",
+      "generation_method": "google_tts",
+      "condition": "clean",
+      "sample_rate": 44100,
+      "channels": 1,
+      "duration_seconds": 15.5,
+      "codec": "MP3",
+      "split": "train",
+      "notes": "Google TTS sample"
+    }
+  ],
+  "evaluation_categories": [
+    "CLEAN_16K",
+    "TELEPHONE_8K",
+    "NOISY_TELEPHONE",
+    "COMPRESSED_AUDIO",
+    "REVERBERANT",
+    "LOW_VOLUME",
+    "BACKGROUND_SPEECH",
+    "BACKGROUND_MUSIC",
+    "CLIPPED_AUDIO",
+    "CODEC_DEGRADED"
+  ],
+  "limitations": [
+    "Current dataset is too small for meaningful model selection",
+    "No speaker-disjoint splits implemented yet",
+    "All samples currently in 'test' split",
+    "Need to expand to 50+ real + 50+ synthetic samples",
+    "Need to add telephone condition simulation",
+    "Need to implement cross-generator testing",
+    "Not suitable for final performance claims",
+    "Use only for regression testing and pipeline validation"
+  ],
+  "reproducibility": {
+    "random_seed": 42,
+    "split_algorithm": "speaker_disjoint",
+    "split_distribution": {
+      "train": 0.6,
+      "calibration": 0.2,
+      "test": 0.2
+    }
+  }
+}

@@ -1,0 +1,72 @@
+{
+  "detailed_results": {
+    "SPECRNET": {
+      "accuracy": 0.5,
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0,
+      "roc_auc": 0.4722222222222222,
+      "eer": 0.5,
+      "eer_threshold": 0.4959838092327118,
+      "far": 0.0,
+      "frr": 1.0,
+      "synthetic_recall": 0.0,
+      "false_negative_rate": 1.0,
+      "confusion_matrix": {
+        "tp": 0,
+        "tn": 30,
+        "fp": 0,
+        "fn": 30
+      },
+      "cold_latency_ms": 2730.718731880188,
+      "warm_avg_latency_ms": 2095.582608381907,
+      "warm_p50_latency_ms": 2055.6938648223877,
+      "warm_p95_latency_ms": 2515.000569820404,
+      "memory_mb": -0.0013020833333333333,
+      "total_files": 12,
+      "total_inferences": 60,
+      "successful_inferences": 60,
+      "failed_inferences": 0,
+      "failure_rate": 0.0,
+      "failed_inference_details": [],
+      "benchmark_status": "VALID"
+    },
+    "AASIST_L": {
+      "accuracy": 0.5833333333333334,
+      "precision": 0.5714285714285714,
+      "recall": 0.6666666666666666,
+      "f1": 0.6153846153846154,
+      "roc_auc": 0.6388888888888888,
+      "eer": 0.5,
+      "eer_threshold": 0.9988486766815186,
+      "far": 0.5,
+      "frr": 0.3333333333333333,
+      "synthetic_recall": 0.6666666666666666,
+      "false_negative_rate": 0.3333333333333333,
+      "confusion_matrix": {
+        "tp": 20,
+        "tn": 15,
+        "fp": 15,
+        "fn": 10
+      },
+      "cold_latency_ms": 2160.437226295471,
+      "warm_avg_latency_ms": 2185.961413383484,
+      "warm_p50_latency_ms": 2146.317958831787,
+      "warm_p95_latency_ms": 2603.5711526870728,
+      "memory_mb": -0.0142578125,
+      "total_files": 12,
+      "total_inferences": 60,
+      "successful_inferences": 60,
+      "failed_inferences": 0,
+      "failure_rate": 0.0,
+      "failed_inference_details": [],
+      "benchmark_status": "VALID"
+    }
+  },
+  "methodology": {
+    "preprocessing": "16kHz mono float32",
+    "validation": "Strict - failed samples excluded from metrics",
+    "scoring": "Only successful inferences scored",
+    "api_version": "validated"
+  }
+}

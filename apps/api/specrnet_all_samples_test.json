@@ -1,0 +1,310 @@
+{
+  "SpecRNet": {
+    "correct": 24,
+    "total": 30,
+    "latency": [
+      1266.359806060791,
+      73.80247116088867,
+      7.034778594970703,
+      8.489131927490234,
+      11.632442474365234,
+      27.106523513793945,
+      34.51704978942871,
+      47.77383804321289,
+      23.442983627319336,
+      34.46650505065918,
+      34.34300422668457,
+      38.350582122802734,
+      33.85782241821289,
+      37.35804557800293,
+      31.590700149536133,
+      30.981779098510742,
+      31.56566619873047,
+      35.405874252319336,
+      31.38566017150879,
+      33.64992141723633,
+      36.01646423339844,
+      30.902862548828125,
+      30.156612396240234,
+      37.3995304107666,
+      10.541915893554688,
+      10.050535202026367,
+      30.93123435974121,
+      8.304834365844727,
+      465.2900695800781,
+      5.875110626220703
+    ],
+    "results": [
+      {
+        "file": "WhatsApp Ptt 2026-09-17 at 23.39.57.ogg",
+        "expected": "human",
+        "decision": "SUSPICIOUS",
+        "spoof_score": 0.49395298957824707,
+        "bonafide_score": 0.5060470104217529,
+        "latency_ms": 1266.359806060791,
+        "correct": true
+      },
+      {
+        "file": "freesound_community-shortfilm-voice-56795.mp3",
+        "expected": "human",
+        "decision": "SUSPICIOUS",
+        "spoof_score": 0.508751630783081,
+        "bonafide_score": 0.49124836921691895,
+        "latency_ms": 73.80247116088867,
+        "correct": true
+      },
+      {
+        "file": "universfield-female-voice-good-morning-242169.mp3",
+        "expected": "human",
+        "decision": "SUSPICIOUS",
+        "spoof_score": 0.5031096935272217,
+        "bonafide_score": 0.4968903064727783,
+        "latency_ms": 7.034778594970703,
+        "correct": true
+      },
+      {
+        "file": "universfield-are-you-home-voice-clip-323554.mp3",
+        "expected": "human",
+        "decision": "SUSPICIOUS",
+        "spoof_score": 0.48446163535118103,
+        "bonafide_score": 0.515538364648819,
+        "latency_ms": 8.489131927490234,
+        "correct": true
+      },
+      {
+        "file": "originalvo-medieval-gamer-voice-darkness-hunts-us-what-youx27ve-learned-stay-226596.mp3",
+        "expected": "human",
+        "decision": "SUSPICIOUS",
+        "spoof_score": 0.5050583481788635,
+        "bonafide_score": 0.4949416518211365,
+        "latency_ms": 11.632442474365234,
+        "correct": true
+      },
+      {
+        "file": "sdking79-man-talking-unintelligibly-1-546038.mp3",
+        "expected": "human",
+        "decision": "SUSPICIOUS",
+        "spoof_score": 0.5286431312561035,
+        "bonafide_score": 0.4713568687438965,
+        "latency_ms": 27.106523513793945,
+        "correct": true
+      },
+      {
+        "file": "voice_041a7f6a-4c4c-4880-8bf5-5427b03b9c3c.mp3",
+        "expected": "human",
+        "decision": "SUSPICIOUS",
+        "spoof_score": 0.529452919960022,
+        "bonafide_score": 0.470547080039978,
+        "latency_ms": 34.51704978942871,
+        "correct": true
+      },
+      {
+        "file": "voice_0a04263b-9b18-4f8b-8582-f5f8ecec7a37.mp3",
+        "expected": "human",
+        "decision": "SUSPICIOUS",
+        "spoof_score": 0.5014899969100952,
+        "bonafide_score": 0.4985100030899048,
+        "latency_ms": 47.77383804321289,
+        "correct": true
+      },
+      {
+        "file": "voice_12b1a43c-8672-4e05-b880-710434a2c917.mp3",
+        "expected": "human",
+        "decision": "SUSPICIOUS",
+        "spoof_score": 0.5219470262527466,
+        "bonafide_score": 0.4780529737472534,
+        "latency_ms": 23.442983627319336,
+        "correct": true
+      },
+      {
+        "file": "voice_15221889-a7ed-4d45-8225-6c35bda45d3a.mp3",
+        "expected": "human",
+        "decision": "SUSPICIOUS",
+        "spoof_score": 0.4693155586719513,
+        "bonafide_score": 0.5306844413280487,
+        "latency_ms": 34.46650505065918,
+        "correct": true
+      },
+      {
+        "file": "voice_18f1996d-c719-4a9e-9f43-9ec1597943f6.mp3",
+        "expected": "human",
+        "decision": "SUSPICIOUS",
+        "spoof_score": 0.49978509545326233,
+        "bonafide_score": 0.5002149045467377,
+        "latency_ms": 34.34300422668457,
+        "correct": true
+      },
+      {
+        "file": "voice_43a9a2ca-5b0b-45b6-88a1-fd90903f7dd7.mp3",
+        "expected": "human",
+        "decision": "SUSPICIOUS",
+        "spoof_score": 0.510524332523346,
+        "bonafide_score": 0.48947566747665405,
+        "latency_ms": 38.350582122802734,
+        "correct": true
+      },
+      {
+        "file": "voice_71eaaf69-6a6a-4127-bf63-9ec2b6136fc7.mp3",
+        "expected": "human",
+        "decision": "SUSPICIOUS",
+        "spoof_score": 0.5058138966560364,
+        "bonafide_score": 0.4941861033439636,
+        "latency_ms": 33.85782241821289,
+        "correct": true
+      },
+      {
+        "file": "voice_76152cc9-d620-40b6-8c3a-0c5e0ad5cb79.mp3",
+        "expected": "human",
+        "decision": "SUSPICIOUS",
+        "spoof_score": 0.47250255942344666,
+        "bonafide_score": 0.5274974405765533,
+        "latency_ms": 37.35804557800293,
+        "correct": true
+      },
+      {
+        "file": "voice_79bc7e3f-84e6-4ae8-87bb-ff0c0e24cb3a.mp3",
+        "expected": "human",
+        "decision": "SUSPICIOUS",
+        "spoof_score": 0.49400779604911804,
+        "bonafide_score": 0.505992203950882,
+        "latency_ms": 31.590700149536133,
+        "correct": true
+      },
+      {
+        "file": "voice_7d808610-30b3-4ad6-8eae-44542cc9702f.mp3",
+        "expected": "human",
+        "decision": "SUSPICIOUS",
+        "spoof_score": 0.4969600439071655,
+        "bonafide_score": 0.5030399560928345,
+        "latency_ms": 30.981779098510742,
+        "correct": true
+      },
+      {
+        "file": "voice_8b2486d4-6f48-44d6-8ab0-445bdc55acc2.mp3",
+        "expected": "human",
+        "decision": "SUSPICIOUS",
+        "spoof_score": 0.5026382803916931,
+        "bonafide_score": 0.4973617196083069,
+        "latency_ms": 31.56566619873047,
+        "correct": true
+      },
+      {
+        "file": "voice_9b916f43-4450-472e-9a49-ce48436a0aac.mp3",
+        "expected": "human",
+        "decision": "SUSPICIOUS",
+        "spoof_score": 0.48639705777168274,
+        "bonafide_score": 0.5136029422283173,
+        "latency_ms": 35.405874252319336,
+        "correct": true
+      },
+      {
+        "file": "voice_9c7fefd6-5fcf-487d-9ca0-52190cb1ec0c.mp3",
+        "expected": "human",
+        "decision": "SUSPICIOUS",
+        "spoof_score": 0.47619783878326416,
+        "bonafide_score": 0.5238021612167358,
+        "latency_ms": 31.38566017150879,
+        "correct": true
+      },
+      {
+        "file": "voice_a8f7f92a-59ba-46f9-8b73-c5d5961cee2d.mp3",
+        "expected": "human",
+        "decision": "SUSPICIOUS",
+        "spoof_score": 0.4770549535751343,
+        "bonafide_score": 0.5229450464248657,
+        "latency_ms": 33.64992141723633,
+        "correct": true
+      },
+      {
+        "file": "voice_cbc78f73-9908-455f-b1f3-084834388b3c.mp3",
+        "expected": "human",
+        "decision": "SUSPICIOUS",
+        "spoof_score": 0.4914746880531311,
+        "bonafide_score": 0.5085253119468689,
+        "latency_ms": 36.01646423339844,
+        "correct": true
+      },
+      {
+        "file": "voice_d63da048-a04b-401b-9cfe-0b400f6bab8d.mp3",
+        "expected": "human",
+        "decision": "SUSPICIOUS",
+        "spoof_score": 0.48455291986465454,
+        "bonafide_score": 0.5154470801353455,
+        "latency_ms": 30.902862548828125,
+        "correct": true
+      },
+      {
+        "file": "voice_e5160721-90f7-4abb-942b-7f453c6173dd.mp3",
+        "expected": "human",
+        "decision": "SUSPICIOUS",
+        "spoof_score": 0.4820098280906677,
+        "bonafide_score": 0.5179901719093323,
+        "latency_ms": 30.156612396240234,
+        "correct": true
+      },
+      {
+        "file": "voice_efe76236-26ba-4ac1-aebd-2750eea57081.mp3",
+        "expected": "human",
+        "decision": "SUSPICIOUS",
+        "spoof_score": 0.5163136720657349,
+        "bonafide_score": 0.48368632793426514,
+        "latency_ms": 37.3995304107666,
+        "correct": true
+      },
+      {
+        "file": "ElevenLabs_2026-09-01T15_58_06_Kanika - Warm, Expressive and Natural_pvc_sp100_s50_sb75_se0_m2.mp3",
+        "expected": "synthetic",
+        "decision": "SUSPICIOUS",
+        "spoof_score": 0.49930378794670105,
+        "bonafide_score": 0.500696212053299,
+        "latency_ms": 10.541915893554688,
+        "correct": false
+      },
+      {
+        "file": "hindi_ai_voice.mp3",
+        "expected": "synthetic",
+        "decision": "SUSPICIOUS",
+        "spoof_score": 0.488871306180954,
+        "bonafide_score": 0.511128693819046,
+        "latency_ms": 10.050535202026367,
+        "correct": false
+      },
+      {
+        "file": "myvoice.mp3.ogg",
+        "expected": "synthetic",
+        "decision": "SUSPICIOUS",
+        "spoof_score": 0.5046447515487671,
+        "bonafide_score": 0.4953552484512329,
+        "latency_ms": 30.93123435974121,
+        "correct": false
+      },
+      {
+        "file": "new_ai_voice.mp3",
+        "expected": "synthetic",
+        "decision": "SUSPICIOUS",
+        "spoof_score": 0.501349687576294,
+        "bonafide_score": 0.49865031242370605,
+        "latency_ms": 8.304834365844727,
+        "correct": false
+      },
+      {
+        "file": "elevenlabs_sample.mp3",
+        "expected": "synthetic",
+        "decision": "SUSPICIOUS",
+        "spoof_score": 0.49206870794296265,
+        "bonafide_score": 0.5079312920570374,
+        "latency_ms": 465.2900695800781,
+        "correct": false
+      },
+      {
+        "file": "gtts_sample.mp3",
+        "expected": "synthetic",
+        "decision": "SUSPICIOUS",
+        "spoof_score": 0.5085427761077881,
+        "bonafide_score": 0.4914572238922119,
+        "latency_ms": 5.875110626220703,
+        "correct": false
+      }
+    ]
+  }
+}

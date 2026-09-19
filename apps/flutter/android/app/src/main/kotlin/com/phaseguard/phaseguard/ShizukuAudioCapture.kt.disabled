@@ -1,0 +1,527 @@
+package com.phaseguard.phaseguard
+
+import android.content.Context
+import android.media.AudioFormat
+import android.media.projection.MediaProjectionManager
+import android.os.Build
+import android.os.Handler
+import android.os.Looper
+import android.os.ParcelFileDescriptor
+import android.util.Log
+import io.flutter.plugin.common.MethodChannel
+import rikka.shizuku.Shizuku
+import java.io.FileInputStream
+
+/**
+ * Shizuku Audio Capture - Cally-like Implementation
+ *
+ * This uses the Cally approach to capture voice call audio via Shizuku's UserService:
+ * 1. Shizuku spawns a RecorderService in app_process (UID 2000 = shell)
+ * 2. WrappedShellContext patches ActivityThread to pretend to be com.android.shell
+ * 3. AudioRecord with VOICE_* sources works because AudioFlinger sees shell identity
+ * 4. 5-step fallback ladder: VOICE_UPLINK → VOICE_DOWNLINK → VOICE_CALL → MEDIA → MIC
+ *
+ * This is the most promising approach for single-device call audio capture without root.
+ */
+class ShizukuAudioCapture {
+    private val TAG = "ShizukuAudioCapture"
+    private val CHANNEL = "phaseguard/shizuku_audio"
+    
+    // UI State Machine
+    enum class ShizukuState {
+        NOT_INSTALLED,
+        NOT_RUNNING,
+        PERMISSION_NEEDED,
+        GRANTED,
+        ACTIVE,
+        CAPTURE_FAILING
+    }
+    
+    private var currentState = ShizukuState.NOT_INSTALLED
+    private var context: Context? = null
+    private var methodChannel: MethodChannel? = null
+    private val handler = Handler(Looper.getMainLooper())
+    
+    // Cally-like components
+    private var userServiceManager: ShizukuUserServiceManager? = null
+    private var isCapturing = false
+    private var sampleRate = 16000
+    
+    // Audio reading threads
+    private var uplinkReaderThread: Thread? = null
+    private var downlinkReaderThread: Thread? = null
+    private var singleReaderThread: Thread? = null
+    
+    // Audio buffer stats for real test verification
+    private var totalBytesRead = 0L
+    private var nonZeroBytes = 0L
+    private var lastStatsLogTime = 0L
+    
+    // Shizuku state
+    private var shizukuInstalled = false
+    private var shizukuRunning = false
+    private var shizukuPermissionGranted = false
+    
+    fun initialize(messenger: io.flutter.plugin.common.BinaryMessenger, appContext: Context) {
+        context = appContext
+        methodChannel = MethodChannel(messenger, CHANNEL)
+        userServiceManager = ShizukuUserServiceManager(appContext)
+        checkShizukuState()
+        Log.i(TAG, "Shizuku audio capture initialized. Current state: $currentState")
+    }
+    
+    fun setMethodCallHandler(handler: MethodChannel.MethodCallHandler) {
+        methodChannel?.setMethodCallHandler(handler)
+    }
+    
+    /**
+     * Check Shizuku state and update UI state machine
+     */
+    private fun checkShizukuState() {
+        try {
+            shizukuInstalled = Shizuku.pingBinder()
+            if (!shizukuInstalled) {
+                currentState = ShizukuState.NOT_INSTALLED
+                Log.i(TAG, "Shizuku not installed")
+                return
+            }
+            
+            shizukuRunning = !Shizuku.isPreV11()
+            if (!shizukuRunning) {
+                currentState = ShizukuState.NOT_RUNNING
+                Log.i(TAG, "Shizuku installed but not running (pre-v11)")
+                return
+            }
+            
+            shizukuPermissionGranted = Shizuku.checkSelfPermission() == android.content.pm.PackageManager.PERMISSION_GRANTED
+            if (!shizukuPermissionGranted) {
+                currentState = ShizukuState.PERMISSION_NEEDED
+                Log.i(TAG, "Shizuku running but permission not granted")
+                return
+            }
+            
+            currentState = ShizukuState.GRANTED
+            Log.i(TAG, "Shizuku fully available and permission granted")
+            
+        } catch (e: Exception) {
+            Log.e(TAG, "Error checking Shizuku state: ${e.message}")
+            currentState = ShizukuState.NOT_INSTALLED
+        }
+    }
+    
+    /**
+     * Get current Shizuku state for UI
+     */
+    fun getShizukuState(result: MethodChannel.Result) {
+        checkShizukuState()
+        val stateInfo = mapOf(
+            "state" to currentState.name,
+            "installed" to shizukuInstalled,
+            "running" to shizukuRunning,
+            "permissionGranted" to shizukuPermissionGranted,
+            "manufacturer" to Build.MANUFACTURER,
+            "model" to Build.MODEL,
+            "androidVersion" to Build.VERSION.RELEASE,
+            "sdkVersion" to Build.VERSION.SDK_INT
+        )
+        result.success(stateInfo)
+    }
+    
+    /**
+     * Request Shizuku permission
+     * This opens the Shizuku permission dialog for the user
+     */
+    fun requestShizukuPermission(result: MethodChannel.Result) {
+        checkShizukuState()
+        
+        if (!shizukuInstalled) {
+            result.success(mapOf(
+                "granted" to false,
+                "state" to ShizukuState.NOT_INSTALLED.name,
+                "message" to "Shizuku is not installed on this device. Please install Shizuku from F-Droid or GitHub."
+            ))
+            return
+        }
+        
+        if (!shizukuRunning) {
+            result.success(mapOf(
+                "granted" to false,
+                "state" to ShizukuState.NOT_RUNNING.name,
+                "message" to "Shizuku is installed but not running. Please start the Shizuku app."
+            ))
+            return
+        }
+        
+        if (shizukuPermissionGranted) {
+            currentState = ShizukuState.GRANTED
+            result.success(mapOf(
+                "granted" to true,
+                "state" to ShizukuState.GRANTED.name
+            ))
+            return
+        }
+        
+        val listener = object : Shizuku.OnRequestPermissionResultListener {
+            override fun onRequestPermissionResult(requestCode: Int, grantResult: Int) {
+                if (requestCode == 100) {
+                    val granted = grantResult == android.content.pm.PackageManager.PERMISSION_GRANTED
+                    shizukuPermissionGranted = granted
+                    currentState = if (granted) ShizukuState.GRANTED else ShizukuState.PERMISSION_NEEDED
+                    Shizuku.removeRequestPermissionResultListener(this)
+                    result.success(mapOf(
+                        "granted" to granted,
+                        "state" to currentState.name
+                    ))
+                }
+            }
+        }
+        
+        Shizuku.addRequestPermissionResultListener(listener)
+        try {
+            Shizuku.requestPermission(100)
+        } catch (e: Exception) {
+            Shizuku.removeRequestPermissionResultListener(listener)
+            result.success(mapOf(
+                "granted" to false,
+                "state" to ShizukuState.PERMISSION_NEEDED.name,
+                "message" to "Failed to request permission: ${e.message}"
+            ))
+        }
+    }
+    
+    /**
+     * Start elevated audio capture using Cally-like approach
+     * 
+     * This uses Shizuku's UserService to run a RecorderService in shell-UID process,
+     * which then uses WrappedShellContext to bypass AudioFlinger restrictions.
+     * 
+     * Note: MediaProjectionManager parameters are kept for compatibility but not used
+     * in the Cally-like implementation.
+     */
+    fun startElevatedCapture(
+        mediaProjectionManager: MediaProjectionManager?,
+        resultCode: Int,
+        resultData: android.content.Intent?,
+        sampleRate: Int,
+        result: MethodChannel.Result
+    ) {
+        Log.i(TAG, "Starting Cally-like elevated capture")
+        
+        if (!shizukuPermissionGranted) {
+            result.success(mapOf(
+                "success" to false,
+                "message" to "Shizuku permission not granted",
+                "state" to currentState.name
+            ))
+            return
+        }
+        
+        // Initialize UserService
+        val manager = userServiceManager ?: run {
+            result.success(mapOf(
+                "success" to false,
+                "message" to "UserServiceManager not initialized"
+            ))
+            return
+        }
+        
+        if (!manager.initialize()) {
+            result.success(mapOf(
+                "success" to false,
+                "message" to "Failed to initialize Shizuku UserService"
+            ))
+            return
+        }
+        
+        // Start dual recording with fallback ladder
+        this.sampleRate = sampleRate
+        val recordingResult = manager.startDualRecording(sampleRate)
+        
+        if (recordingResult.success) {
+            isCapturing = true
+            currentState = ShizukuState.ACTIVE
+            
+            // Start reading from the pipes
+            recordingResult.uplinkFd?.let { startUplinkReader(it) }
+            recordingResult.downlinkFd?.let { startDownlinkReader(it) }
+            recordingResult.singleFd?.let { startSingleReader(it) }
+            
+            result.success(mapOf(
+                "success" to true,
+                "message" to recordingResult.message,
+                "health" to recordingResult.health.name,
+                "fallbackStep" to recordingResult.fallbackStep,
+                "isDual" to (recordingResult.uplinkFd != null && recordingResult.downlinkFd != null)
+            ))
+        } else {
+            currentState = ShizukuState.CAPTURE_FAILING
+            result.success(mapOf(
+                "success" to false,
+                "message" to recordingResult.message,
+                "health" to recordingResult.health.name
+            ))
+        }
+    }
+    
+    /**
+     * Start reading from uplink pipe
+     */
+    private fun startUplinkReader(fd: ParcelFileDescriptor) {
+        uplinkReaderThread = Thread {
+            val inputStream = FileInputStream(fd.fileDescriptor)
+            val buffer = ByteArray(8192)
+            
+            while (isCapturing) {
+                try {
+                    val bytesRead = inputStream.read(buffer)
+                    if (bytesRead > 0) {
+                        totalBytesRead += bytesRead
+                        
+                        // Count non-zero bytes
+                        for (i in 0 until bytesRead) {
+                            if (buffer[i].toInt() != 0) {
+                                nonZeroBytes++
+                            }
+                        }
+                        
+                        val audioData = buffer.copyOfRange(0, bytesRead)
+                        notifyFlutter("onShizukuAudioData", mapOf(
+                            "data" to audioData.toList(),
+                            "stream" to "uplink"
+                        ))
+                        
+                        logStats()
+                    } else {
+                        break
+                    }
+                } catch (e: Exception) {
+                    Log.e(TAG, "Uplink reader error: ${e.message}")
+                    break
+                }
+            }
+            
+            inputStream.close()
+            fd.close()
+        }.apply {
+            isDaemon = true
+            start()
+        }
+    }
+    
+    /**
+     * Start reading from downlink pipe
+     */
+    private fun startDownlinkReader(fd: ParcelFileDescriptor) {
+        downlinkReaderThread = Thread {
+            val inputStream = FileInputStream(fd.fileDescriptor)
+            val buffer = ByteArray(8192)
+            
+            while (isCapturing) {
+                try {
+                    val bytesRead = inputStream.read(buffer)
+                    if (bytesRead > 0) {
+                        totalBytesRead += bytesRead
+                        
+                        // Count non-zero bytes
+                        for (i in 0 until bytesRead) {
+                            if (buffer[i].toInt() != 0) {
+                                nonZeroBytes++
+                            }
+                        }
+                        
+                        val audioData = buffer.copyOfRange(0, bytesRead)
+                        notifyFlutter("onShizukuAudioData", mapOf(
+                            "data" to audioData.toList(),
+                            "stream" to "downlink"
+                        ))
+                        
+                        logStats()
+                    } else {
+                        break
+                    }
+                } catch (e: Exception) {
+                    Log.e(TAG, "Downlink reader error: ${e.message}")
+                    break
+                }
+            }
+            
+            inputStream.close()
+            fd.close()
+        }.apply {
+            isDaemon = true
+            start()
+        }
+    }
+    
+    /**
+     * Start reading from single stream pipe
+     */
+    private fun startSingleReader(fd: ParcelFileDescriptor) {
+        singleReaderThread = Thread {
+            val inputStream = FileInputStream(fd.fileDescriptor)
+            val buffer = ByteArray(8192)
+            
+            while (isCapturing) {
+                try {
+                    val bytesRead = inputStream.read(buffer)
+                    if (bytesRead > 0) {
+                        totalBytesRead += bytesRead
+                        
+                        // Count non-zero bytes
+                        for (i in 0 until bytesRead) {
+                            if (buffer[i].toInt() != 0) {
+                                nonZeroBytes++
+                            }
+                        }
+                        
+                        val audioData = buffer.copyOfRange(0, bytesRead)
+                        notifyFlutter("onShizukuAudioData", mapOf(
+                            "data" to audioData.toList(),
+                            "stream" to "single"
+                        ))
+                        
+                        logStats()
+                    } else {
+                        break
+                    }
+                } catch (e: Exception) {
+                    Log.e(TAG, "Single reader error: ${e.message}")
+                    break
+                }
+            }
+            
+            inputStream.close()
+            fd.close()
+        }.apply {
+            isDaemon = true
+            start()
+        }
+    }
+    
+    /**
+     * Log audio statistics
+     */
+    private fun logStats() {
+        val now = System.currentTimeMillis()
+        if (now - lastStatsLogTime >= 1000) {
+            val nonZeroPercentage = if (totalBytesRead > 0) {
+                (nonZeroBytes * 100.0 / totalBytesRead)
+            } else 0.0
+            
+            Log.i(TAG, "Audio stats: Total=$totalBytesRead, NonZero=$nonZeroBytes, NonZero%=$nonZeroPercentage")
+            
+            if (nonZeroPercentage < 1.0) {
+                Log.w(TAG, "CRITICAL: Audio buffer is mostly silent ( <$nonZeroPercentage% non-zero)")
+                Log.w(TAG, "This indicates ROM is blocking voice communication capture")
+                currentState = ShizukuState.CAPTURE_FAILING
+            }
+            
+            lastStatsLogTime = now
+        }
+    }
+    
+    /**
+     * Stop audio capture
+     */
+    fun stopElevatedCapture(result: MethodChannel.Result) {
+        isCapturing = false
+        
+        // Stop reader threads
+        uplinkReaderThread?.interrupt()
+        downlinkReaderThread?.interrupt()
+        singleReaderThread?.interrupt()
+        
+        uplinkReaderThread = null
+        downlinkReaderThread = null
+        singleReaderThread = null
+        
+        // Stop recording via UserService
+        userServiceManager?.stopRecording()
+        
+        currentState = ShizukuState.GRANTED
+        
+        result.success(mapOf(
+            "success" to true,
+            "totalBytes" to totalBytesRead,
+            "nonZeroBytes" to nonZeroBytes,
+            "nonZeroPercentage" to if (totalBytesRead > 0) {
+                (nonZeroBytes * 100.0 / totalBytesRead)
+            } else 0.0
+        ))
+    }
+    
+    /**
+     * Run self-test to classify device capability
+     */
+    fun runSelfTest(result: MethodChannel.Result) {
+        if (!shizukuPermissionGranted) {
+            result.success(mapOf(
+                "classification" to "SHIZUKU_PERMISSION_NEEDED",
+                "message" to "Shizuku permission not granted",
+                "health" to BypassHealth.Failed.name
+            ))
+            return
+        }
+        
+        // Try to initialize UserService to check bypass health
+        val manager = userServiceManager
+        if (manager == null) {
+            result.success(mapOf(
+                "classification" to "USER_SERVICE_UNAVAILABLE",
+                "message" to "UserServiceManager not initialized",
+                "health" to BypassHealth.Failed.name
+            ))
+            return
+        }
+        
+        if (!manager.initialize()) {
+            result.success(mapOf(
+                "classification" to "USER_SERVICE_INIT_FAILED",
+                "message" to "Failed to initialize Shizuku UserService",
+                "health" to BypassHealth.Failed.name
+            ))
+            return
+        }
+        
+        val health = manager.getBypassHealth()
+        val classification = when (health) {
+            BypassHealth.Full -> "CALLY_FULL"
+            BypassHealth.Degraded -> "CALLY_DEGRADED"
+            BypassHealth.Failed -> "CALLY_FAILED"
+        }
+        
+        result.success(mapOf(
+            "classification" to classification,
+            "message" to "Cally-like bypass health: $health",
+            "health" to health.name,
+            "manufacturer" to Build.MANUFACTURER,
+            "model" to Build.MODEL,
+            "androidVersion" to Build.VERSION.RELEASE,
+            "sdkVersion" to Build.VERSION.SDK_INT
+        ))
+    }
+    
+    private fun notifyFlutter(method: String, data: Map<String, Any?>?) {
+        handler.post {
+            methodChannel?.invokeMethod(method, data)
+        }
+    }
+    
+    fun cleanup() {
+        stopElevatedCapture(object : MethodChannel.Result {
+            override fun success(result: Any?) {}
+            override fun error(errorCode: String, errorMessage: String?, errorDetails: Any?) {}
+            override fun notImplemented() {}
+        })
+        userServiceManager?.cleanup()
+    }
+}
+
+/**
+ * Bypass health enum (mirrors WrappedShellContext.BypassHealth)
+ */
+enum class BypassHealth {
+    Full,
+    Degraded,
+    Failed
+}

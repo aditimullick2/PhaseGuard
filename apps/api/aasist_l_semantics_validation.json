@@ -1,0 +1,118 @@
+{
+  "real_samples": [
+    {
+      "path": "samples/user_voices/WhatsApp Ptt 2026-09-17 at 23.39.57.ogg",
+      "result": {
+        "input_shape": [
+          1,
+          64600
+        ],
+        "input_stats": {
+          "min": -0.8752926588058472,
+          "max": 1.0032832622528076,
+          "mean": -2.877586302929558e-05,
+          "std": 0.12993252277374268
+        },
+        "raw_logits": [
+          [
+            -1.2515356540679932,
+            1.5177806615829468
+          ]
+        ],
+        "softmax_probs": [
+          [
+            0.05900496616959572,
+            0.9409949779510498
+          ]
+        ],
+        "predicted_class": 1
+      }
+    },
+    {
+      "path": "samples/user_voices/freesound_community-shortfilm-voice-56795.mp3",
+      "result": {
+        "input_shape": [
+          1,
+          64600
+        ],
+        "input_stats": {
+          "min": -0.81327223777771,
+          "max": 0.8142693042755127,
+          "mean": 5.27195879840292e-06,
+          "std": 0.14931152760982513
+        },
+        "raw_logits": [
+          [
+            1.7987836599349976,
+            -1.5867254734039307
+          ]
+        ],
+        "softmax_probs": [
+          [
+            0.9672485589981079,
+            0.0327514223754406
+          ]
+        ],
+        "predicted_class": 0
+      }
+    }
+  ],
+  "synthetic_samples": [
+    {
+      "path": "samples/synthetic/ElevenLabs_2026-09-01T15_58_06_Kanika - Warm, Expressive and Natural_pvc_sp100_s50_sb75_se0_m2.mp3",
+      "result": {
+        "input_shape": [
+          1,
+          64600
+        ],
+        "input_stats": {
+          "min": -0.8335241079330444,
+          "max": 0.8171298503875732,
+          "mean": 3.1939558539306745e-05,
+          "std": 0.1167413592338562
+        },
+        "raw_logits": [
+          [
+            2.133800983428955,
+            -1.685154676437378
+          ]
+        ],
+        "softmax_probs": [
+          [
+            0.9785207509994507,
+            0.021479228511452675
+          ]
+        ],
+        "predicted_class": 0
+      }
+    },
+    {
+      "path": "samples/synthetic/hindi_ai_voice.mp3",
+      "result": {
+        "input_shape": [
+          1,
+          64600
+        ],
+        "input_stats": {
+          "min": -0.4836956858634949,
+          "max": 0.5113112330436707,
+          "mean": -1.324605136687751e-06,
+          "std": 0.07037074118852615
+        },
+        "raw_logits": [
+          [
+            2.284738540649414,
+            -2.085583448410034
+          ]
+        ],
+        "softmax_probs": [
+          [
+            0.9875108003616333,
+            0.01248921174556017
+          ]
+        ],
+        "predicted_class": 0
+      }
+    }
+  ]
+}

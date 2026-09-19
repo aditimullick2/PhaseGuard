@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">PhaseGuard</string>
+    <string name="accessibility_service_description">
+        PhaseGuard Accessibility Service detects phone calls and attempts to capture audio for scam detection.
+        This service monitors call state changes and may capture system audio depending on device capabilities.
+        No personal data is collected or transmitted without your consent.
+    </string>
+</resources>

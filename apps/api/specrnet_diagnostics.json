@@ -1,0 +1,363 @@
+{
+  "dataset_status": "LEGACY_BASELINE",
+  "dataset_warning": "NOT suitable for performance claims",
+  "sample_results": [
+    {
+      "sample_id": "real_001",
+      "label": "real",
+      "file_path": "samples/user_voices/WhatsApp Ptt 2026-09-17 at 23.39.57.ogg",
+      "preprocessing": {
+        "original_duration": 7.0735,
+        "original_samples": 113176,
+        "original_sr": 16000,
+        "audio_min": -0.87530517578125,
+        "audio_max": 0.999969482421875,
+        "audio_mean": -5.6929780839709565e-05,
+        "audio_std": 0.12375586479902267,
+        "target_duration": 3.0,
+        "target_samples": 48000,
+        "padded": false,
+        "truncated": false,
+        "mel_shape": [
+          80,
+          94
+        ],
+        "mel_min": 6.560731402593944e-10,
+        "mel_max": 277.50921630859375,
+        "mel_mean": 1.1005836725234985,
+        "mel_std": 9.24297046661377,
+        "mel_db_min": -80.0,
+        "mel_db_max": 0.0,
+        "mel_db_mean": -59.14470291137695,
+        "mel_db_std": 18.001174926757812,
+        "normalized_min": -1.1585520505905151,
+        "normalized_max": 3.285602331161499,
+        "normalized_mean": 4.8698261423396616e-08,
+        "normalized_std": 1.0,
+        "final_shape": [
+          1,
+          1,
+          80,
+          94
+        ]
+      },
+      "model_output": {
+        "raw_logits": [
+          [
+            -0.044384680688381195
+          ]
+        ],
+        "logit_shape": [
+          1,
+          1
+        ],
+        "probability": 0.488905668258667,
+        "input_shape": [
+          1,
+          1,
+          80,
+          94
+        ],
+        "input_min": -1.1585520505905151,
+        "input_max": 3.285602331161499,
+        "input_mean": 6.848193123687452e-08,
+        "input_std": 1.0000665187835693
+      },
+      "detection": {
+        "is_synthetic": false,
+        "confidence": 0.488905668258667,
+        "inference_time_ms": 4.28,
+        "model": "SpecRNet",
+        "device": "cpu",
+        "method": "Fast CPU inference"
+      }
+    },
+    {
+      "sample_id": "real_002",
+      "label": "real",
+      "file_path": "samples/user_voices/freesound_community-shortfilm-voice-56795.mp3",
+      "preprocessing": {
+        "original_duration": 96.192,
+        "original_samples": 1539072,
+        "original_sr": 16000,
+        "audio_min": -0.8203125,
+        "audio_max": 0.845550537109375,
+        "audio_mean": -1.5975412679836154e-05,
+        "audio_std": 0.0924174040555954,
+        "target_duration": 3.0,
+        "target_samples": 48000,
+        "padded": false,
+        "truncated": false,
+        "mel_shape": [
+          80,
+          94
+        ],
+        "mel_min": 7.139366181574403e-11,
+        "mel_max": 378.74920654296875,
+        "mel_mean": 1.4914531707763672,
+        "mel_std": 11.485404968261719,
+        "mel_db_min": -80.0,
+        "mel_db_max": 0.0,
+        "mel_db_mean": -66.44348907470703,
+        "mel_db_std": 18.652877807617188,
+        "normalized_min": -0.726778507232666,
+        "normalized_max": 3.5621039867401123,
+        "normalized_mean": 8.116376903899436e-08,
+        "normalized_std": 0.9999999403953552,
+        "final_shape": [
+          1,
+          1,
+          80,
+          94
+        ]
+      },
+      "model_output": {
+        "raw_logits": [
+          [
+            -0.04423166811466217
+          ]
+        ],
+        "logit_shape": [
+          1,
+          1
+        ],
+        "probability": 0.4889439046382904,
+        "input_shape": [
+          1,
+          1,
+          80,
+          94
+        ],
+        "input_min": -0.726778507232666,
+        "input_max": 3.5621039867401123,
+        "input_mean": 8.230513515172788e-08,
+        "input_std": 1.0000665187835693
+      },
+      "detection": {
+        "is_synthetic": false,
+        "confidence": 0.4889439046382904,
+        "inference_time_ms": 9.85,
+        "model": "SpecRNet",
+        "device": "cpu",
+        "method": "Fast CPU inference"
+      }
+    },
+    {
+      "sample_id": "synthetic_001",
+      "label": "synthetic",
+      "file_path": "samples/synthetic/ElevenLabs_2026-09-01T15_58_06_Kanika - Warm, Expressive and Natural_pvc_sp100_s50_sb75_se0_m2.mp3",
+      "preprocessing": {
+        "original_duration": 6.635125,
+        "original_samples": 106162,
+        "original_sr": 16000,
+        "audio_min": -0.833526611328125,
+        "audio_max": 0.817108154296875,
+        "audio_mean": 1.040010010910919e-05,
+        "audio_std": 0.10706065595149994,
+        "target_duration": 3.0,
+        "target_samples": 48000,
+        "padded": false,
+        "truncated": false,
+        "mel_shape": [
+          80,
+          94
+        ],
+        "mel_min": 4.42856695759275e-10,
+        "mel_max": 175.30714416503906,
+        "mel_mean": 0.8422815799713135,
+        "mel_std": 5.715760231018066,
+        "mel_db_min": -80.0,
+        "mel_db_max": 0.0,
+        "mel_db_mean": -52.287540435791016,
+        "mel_db_std": 19.782690048217773,
+        "normalized_min": -1.400843858718872,
+        "normalized_max": 2.6430954933166504,
+        "normalized_mean": -1.460947913756172e-07,
+        "normalized_std": 1.0,
+        "final_shape": [
+          1,
+          1,
+          80,
+          94
+        ]
+      },
+      "model_output": {
+        "raw_logits": [
+          [
+            -0.045881565660238266
+          ]
+        ],
+        "logit_shape": [
+          1,
+          1
+        ],
+        "probability": 0.4885316491127014,
+        "input_shape": [
+          1,
+          1,
+          80,
+          94
+        ],
+        "input_min": -1.400843858718872,
+        "input_max": 2.6430954933166504,
+        "input_mean": -1.450802358249348e-07,
+        "input_std": 1.0000665187835693
+      },
+      "detection": {
+        "is_synthetic": false,
+        "confidence": 0.4885316491127014,
+        "inference_time_ms": 3.75,
+        "model": "SpecRNet",
+        "device": "cpu",
+        "method": "Fast CPU inference"
+      }
+    },
+    {
+      "sample_id": "synthetic_002",
+      "label": "synthetic",
+      "file_path": "samples/synthetic/hindi_ai_voice.mp3",
+      "preprocessing": {
+        "original_duration": 12.36,
+        "original_samples": 197760,
+        "original_sr": 16000,
+        "audio_min": -0.570404052734375,
+        "audio_max": 0.554901123046875,
+        "audio_mean": -1.6424803106929176e-05,
+        "audio_std": 0.0764622688293457,
+        "target_duration": 3.0,
+        "target_samples": 48000,
+        "padded": false,
+        "truncated": false,
+        "mel_shape": [
+          80,
+          94
+        ],
+        "mel_min": 0.0,
+        "mel_max": 74.67560577392578,
+        "mel_mean": 0.38422638177871704,
+        "mel_std": 2.4956514835357666,
+        "mel_db_min": -80.0,
+        "mel_db_max": 0.0,
+        "mel_db_mean": -54.18024444580078,
+        "mel_db_std": 21.04863739013672,
+        "normalized_min": -1.2266710996627808,
+        "normalized_max": 2.574049949645996,
+        "normalized_mean": -1.460947913756172e-07,
+        "normalized_std": 1.0,
+        "final_shape": [
+          1,
+          1,
+          80,
+          94
+        ]
+      },
+      "model_output": {
+        "raw_logits": [
+          [
+            -0.04484984651207924
+          ]
+        ],
+        "logit_shape": [
+          1,
+          1
+        ],
+        "probability": 0.4887894093990326,
+        "input_shape": [
+          1,
+          1,
+          80,
+          94
+        ],
+        "input_min": -1.2266710996627808,
+        "input_max": 2.574049949645996,
+        "input_mean": -1.5376730289062834e-07,
+        "input_std": 1.0000665187835693
+      },
+      "detection": {
+        "is_synthetic": false,
+        "confidence": 0.4887894093990326,
+        "inference_time_ms": 5.55,
+        "model": "SpecRNet",
+        "device": "cpu",
+        "method": "Fast CPU inference"
+      }
+    }
+  ],
+  "distribution_analysis": {
+    "real_scores": [
+      0.488905668258667,
+      0.4889439046382904
+    ],
+    "synthetic_scores": [
+      0.4885316491127014,
+      0.4887894093990326
+    ],
+    "real_stats": {
+      "count": 2,
+      "min": 0.488905668258667,
+      "max": 0.4889439046382904,
+      "mean": 0.4889247864484787,
+      "median": 0.4889247864484787,
+      "std": 1.9118189811706543e-05,
+      "p01": 0.48890605062246323,
+      "p05": 0.4889075800776482,
+      "p25": 0.48891522735357285,
+      "p50": 0.4889247864484787,
+      "p75": 0.48893434554338455,
+      "p95": 0.4889419928193092,
+      "p99": 0.48894352227449417
+    },
+    "synthetic_stats": {
+      "count": 2,
+      "min": 0.4885316491127014,
+      "max": 0.4887894093990326,
+      "mean": 0.488660529255867,
+      "median": 0.488660529255867,
+      "std": 0.00012888014316558838,
+      "p01": 0.48853422671556473,
+      "p05": 0.48854453712701795,
+      "p25": 0.4885960891842842,
+      "p50": 0.488660529255867,
+      "p75": 0.4887249693274498,
+      "p95": 0.48877652138471606,
+      "p99": 0.4887868317961693
+    },
+    "between_class": {
+      "mean_difference": -0.00026425719261169434,
+      "real_std": 1.9118189811706543e-05,
+      "synthetic_std": 0.00012888014316558838,
+      "within_class_variance": 7.399916648864746e-05
+    }
+  },
+  "determinism": {
+    "num_runs": 10,
+    "min": 0.488905668258667,
+    "max": 0.488905668258667,
+    "mean": 0.488905668258667,
+    "std": 0.0,
+    "range": 0.0,
+    "is_deterministic": true
+  },
+  "length_handling": {
+    "2.0": {
+      "confidence": 0.4892365336418152,
+      "inference_time_ms": 3.57
+    },
+    "3.0": {
+      "confidence": 0.4875284731388092,
+      "inference_time_ms": 3.74
+    },
+    "4.0": {
+      "confidence": 0.48776182532310486,
+      "inference_time_ms": 4.54
+    },
+    "5.0": {
+      "confidence": 0.4878539741039276,
+      "inference_time_ms": 4.1
+    },
+    "6.0": {
+      "confidence": 0.48762431740760803,
+      "inference_time_ms": 3.03
+    }
+  }
+}

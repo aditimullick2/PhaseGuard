@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1060611267670",
+    "project_id": "phaseguard-a5bfd",
+    "storage_bucket": "phaseguard-a5bfd.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1060611267670:android:8e05625c29b33f1b30eff7",
+        "android_client_info": {
+          "package_name": "com.phaseguard.phaseguard"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB-nmhHQBdIYUoENBtzGPGwHMarUgsBZqw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
