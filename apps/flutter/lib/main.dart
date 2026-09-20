@@ -1,5 +1,4 @@
 import 'dart:io';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -18,14 +17,9 @@ import 'config/app_config.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Load environment variables from .env file
-  try {
-    await dotenv.load(fileName: ".env");
-    debugPrint('[PhaseGuard] Environment variables loaded successfully');
-    AppConfig.printConfig();
-  } catch (e) {
-    debugPrint('[PhaseGuard] Note: .env file not found or could not be loaded: $e');
-  }
+  // Load environment variables from .env file FIRST
+  await AppConfig.load();
+  AppConfig.printConfig();
 
   // Initialize Firebase (graceful if google-services.json is pending)
   try {
