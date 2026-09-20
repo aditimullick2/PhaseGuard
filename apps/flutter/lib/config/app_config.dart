@@ -1,4 +1,5 @@
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:flutter/foundation.dart' show debugPrint;
 
 /// App Configuration from Environment Variables
 class AppConfig {
@@ -55,12 +56,12 @@ class AppConfig {
   }
 
   static void printConfig() {
-    print('=== PhaseGuard Configuration ===');
-    print('Agora App ID: ${agoraAppId.isNotEmpty ? "SET" : "NOT SET"}');
-    print('Backend URL: $backendUrl');
-    print('Firebase Project ID: ${firebaseProjectId.isNotEmpty ? firebaseProjectId : "NOT SET"}');
-    print('Firebase Auth Domain: ${firebaseAuthDomain.isNotEmpty ? firebaseAuthDomain : "NOT SET"}');
-    print('Firebase Storage Bucket: ${firebaseStorageBucket.isNotEmpty ? firebaseStorageBucket : "NOT SET"}');
-    print('===================================');
+    debugPrint('=== PhaseGuard Configuration ===');
+    debugPrint('Agora App ID: ${agoraAppId.isNotEmpty ? "SET" : "NOT SET"}');
+    debugPrint('Backend URL: $backendUrl');
+    debugPrint('Firebase Project ID: ${firebaseProjectId.isNotEmpty ? firebaseProjectId : "NOT SET"}');
+    debugPrint('Firebase Auth Domain: ${firebaseAuthDomain.isNotEmpty ? firebaseAuthDomain : "NOT SET"}');
+    debugPrint('Firebase Storage Bucket: ${firebaseStorageBucket.isNotEmpty ? firebaseStorageBucket : "NOT SET"}');
+    debugPrint('===================================');
   }
 }

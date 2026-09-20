@@ -13,6 +13,7 @@ import 'services/in_app_calling_service.dart';
 import 'services/phone_call_monitor.dart';
 import 'state/session_controller.dart';
 import 'theme/app_theme.dart';
+import 'config/app_config.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();

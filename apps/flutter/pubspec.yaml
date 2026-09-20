@@ -91,7 +91,7 @@ flutter:
   # Assets — only essential ML models for main detection services
   assets:
     - assets/
-    - assets/background.gif
+    - assets/logo.png
     - assets/models/scam_detector.tflite
     - assets/models/tflite_metadata.json
     - assets/models/deepfake_detector.tflite
