@@ -25,10 +25,6 @@ android {
         targetSdk = 36  // Required for Firebase and other plugin compatibility
         versionCode = flutter.versionCode
         versionName = flutter.versionName
-        // arm64-v8a = real Android phones, x86_64 = emulator
-        ndk {
-            abiFilters += listOf("arm64-v8a", "x86_64")
-        }
     }
 
     buildTypes {

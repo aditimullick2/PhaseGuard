@@ -64,10 +64,18 @@ class BluetoothScoCapture {
         audioManager = context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
         bluetoothAdapter = BluetoothAdapter.getDefaultAdapter()
         methodChannel = MethodChannel(messenger, CHANNEL)
-        
-        // Register headset profile listener
-        bluetoothAdapter?.getProfileProxy(context, headsetProfileListener, BluetoothProfile.HEADSET)
-        
+
+        // Register headset profile listener (with permission check)
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                bluetoothAdapter?.getProfileProxy(context, headsetProfileListener, BluetoothProfile.HEADSET)
+            } else {
+                bluetoothAdapter?.getProfileProxy(context, headsetProfileListener, BluetoothProfile.HEADSET)
+            }
+        } catch (e: SecurityException) {
+            Log.e(TAG, "Bluetooth permission not granted during initialization: ${e.message}")
+        }
+
         Log.i(TAG, "Bluetooth SCO capture initialized")
     }
     
@@ -76,18 +84,28 @@ class BluetoothScoCapture {
     }
     
     private fun checkScoConnection() {
-        val connected = bluetoothHeadset?.connectedDevices?.isNotEmpty() == true
-        isScoConnected = connected
-        
-        if (connected) {
-            notifyFlutter("headsetConnected", mapOf(
-                "deviceName" to bluetoothHeadset?.connectedDevices?.firstOrNull()?.name
-            ))
+        try {
+            val connected = bluetoothHeadset?.connectedDevices?.isNotEmpty() == true
+            isScoConnected = connected
+
+            if (connected) {
+                notifyFlutter("headsetConnected", mapOf(
+                    "deviceName" to bluetoothHeadset?.connectedDevices?.firstOrNull()?.name
+                ))
+            }
+        } catch (e: SecurityException) {
+            Log.e(TAG, "Bluetooth permission not granted: ${e.message}")
+            isScoConnected = false
         }
     }
     
     fun isHeadsetConnected(): Boolean {
-        return bluetoothHeadset?.connectedDevices?.isNotEmpty() == true
+        return try {
+            bluetoothHeadset?.connectedDevices?.isNotEmpty() == true
+        } catch (e: SecurityException) {
+            Log.e(TAG, "Bluetooth permission not granted: ${e.message}")
+            false
+        }
     }
     
     fun isScoAvailable(): Boolean {

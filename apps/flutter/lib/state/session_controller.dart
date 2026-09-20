@@ -1079,6 +1079,13 @@ class SessionController extends ChangeNotifier {
         return;
       }
 
+      // If research/reach triggers detected, escalate to web
+      if (_hasReachTriggers(transcript)) {
+        debugPrint('🔍 Research/reach triggers detected → Going to LEVEL 3 (Web) for comprehensive analysis');
+        _escalateToWebTextAnalysis(transcript);
+        return;
+      }
+
       if (result.isScam) {
         pdiScore = result.confidence.clamp(0.5, 0.9);
 
@@ -1119,8 +1126,13 @@ class SessionController extends ChangeNotifier {
       }
 
       // UNCERTAIN → Go to LEVEL 3 (Web) for fact-checking
-      debugPrint('🔍 LEVEL 1 (Scam Text - LOCAL): UNCERTAIN (${(result.confidence * 100).toStringAsFixed(1)}%) → Going to LEVEL 3 (Web) for fact-checking');
-      _escalateToWebTextAnalysis(transcript);
+      // Check if service explicitly requests web escalation
+      if (result.needsWebEscalation) {
+        debugPrint('🔍 LEVEL 1 (Scam Text - LOCAL): UNCERTAIN (${(result.confidence * 100).toStringAsFixed(1)}%) → Web escalation requested');
+        _escalateToWebTextAnalysis(transcript);
+      } else {
+        debugPrint('🔍 LEVEL 1 (Scam Text - LOCAL): UNCERTAIN (${(result.confidence * 100).toStringAsFixed(1)}%) - No web escalation needed');
+      }
 
     } catch (e) {
       debugPrint('⚠️ LEVEL 1 (Scam Text) error: $e');
@@ -1132,12 +1144,33 @@ class SessionController extends ChangeNotifier {
   bool _hasFactCheckTriggers(String text) {
     final lowerText = text.toLowerCase();
     const factCheckKeywords = [
-      'company', 'scheme', 'pradhan mantri', 'pm', 'modi', 'lic', 'sbi',
-      'bank', 'insurance', 'mutual fund', 'sip', 'fd', 'rd', 'rbi', 'sebi',
-      'government', 'police', 'court', 'income tax', 'pan card', 'aadhar'
+      // Company names
+      'company', 'sbi', 'lic', 'hdfc', 'icici', 'axis bank', 'amazon', 'flipkart', 'paytm',
+      // Government references
+      'pradhan mantri', 'pm', 'modi', 'government', 'police', 'court',
+      'income tax', 'pan card', 'aadhar', 'rbi', 'sebi',
+      // Schemes
+      'scheme', 'yojana', 'mutual fund', 'sip', 'fd', 'rd', 'insurance',
+      // Other triggers
+      'department', 'official', 'registered', 'verify', 'verification'
     ];
 
     return factCheckKeywords.any((keyword) => lowerText.contains(keyword));
+  }
+
+  /// Check for research/reach triggers that need web verification
+  /// When local uncertain but needs more comprehensive analysis
+  bool _hasReachTriggers(String text) {
+    final lowerText = text.toLowerCase();
+    const reachKeywords = [
+      // Complex/technical terms that need web verification
+      'blockchain', 'crypto', 'bitcoin', 'trading', 'investment',
+      'policy', 'claim', 'policy number', 'scheme details',
+      'offer', 'promotion', 'discount', 'cashback', 'reward',
+      'urgent', 'immediate', 'action required', 'verification needed'
+    ];
+
+    return reachKeywords.any((keyword) => lowerText.contains(keyword));
   }
 
   /// Escalate to LEVEL 3 (Web) for text analysis (fact-checking)

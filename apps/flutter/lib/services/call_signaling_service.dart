@@ -8,14 +8,17 @@ class CallSignalingService extends ChangeNotifier {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   Stream<InAppCall?> listenForIncomingCalls(String currentUserId) {
+    debugPrint('[CallSignaling] Listening for incoming calls for user: $currentUserId');
     return _firestore
         .collection('calls')
         .where('calleeId', isEqualTo: currentUserId)
         .where('status', isEqualTo: 'calling')
         .snapshots()
         .map((snapshot) {
+      debugPrint('[CallSignaling] Call snapshot size: ${snapshot.docs.length}');
       if (snapshot.docs.isEmpty) return null;
       final doc = snapshot.docs.first;
+      debugPrint('[CallSignaling] Incoming call detected: ${doc.id}');
       return InAppCall.fromMap(doc.data(), doc.id);
     });
   }
@@ -49,7 +52,9 @@ class CallSignalingService extends ChangeNotifier {
       startTime: DateTime.now(),
     );
 
+    debugPrint('[CallSignaling] Initiating call: caller=${caller.uid}, callee=${callee.uid}, type=$type, callId=$callId');
     await docRef.set(call.toMap());
+    debugPrint('[CallSignaling] Call document created successfully');
     return call;
   }
 

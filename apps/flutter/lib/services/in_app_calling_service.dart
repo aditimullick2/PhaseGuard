@@ -5,12 +5,13 @@ import 'package:agora_rtc_engine/agora_rtc_engine.dart';
 import 'package:flutter/foundation.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:path_provider/path_provider.dart';
+import '../config/app_config.dart';
 
 /// InAppCallingService manages Agora RTC Engine in Testing Mode (App ID only)
 /// and hooks into MediaEngine to capture raw 16kHz 16-bit mono PCM remote audio,
 /// batching it into 100ms chunks (3200 bytes) for PhaseGuard's scam detection pipeline.
 class InAppCallingService extends ChangeNotifier {
-  static const String configuredAppId = String.fromEnvironment('AGORA_APP_ID', defaultValue: '');
+  static String get configuredAppId => AppConfig.agoraAppId;
 
   RtcEngine? _engine;
   bool _isInitialized = false;
@@ -45,7 +46,8 @@ class InAppCallingService extends ChangeNotifier {
 
     final targetId = appId ?? configuredAppId;
     if (targetId.isEmpty) {
-      debugPrint('[InAppCallingService] Warning: AGORA_APP_ID is empty. Pass via --dart-define=AGORA_APP_ID=...');
+      debugPrint('[InAppCallingService] Warning: AGORA_APP_ID is empty. Check .env file or --dart-define');
+      AppConfig.printConfig();
     }
 
     _engine = createAgoraRtcEngine();

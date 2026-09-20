@@ -29,18 +29,17 @@ import java.nio.ByteBuffer
 class MainActivity : FlutterActivity() {
     private val TAG = "ScreenAudioCapture"
     private val CHANNEL = "phaseguard/screen_audio"
-    private val BLUETOOTH_CHANNEL = "phaseguard/bluetooth_sco"
     private val DIALER_CHANNEL = "phaseguard/dialer"
     private val INCALL_CHANNEL = "phaseguard/incall_service"
     private val PHONE_STATE_CHANNEL = "phaseguard/phone_state"
     private val PHONE_CONTROL_CHANNEL = "phaseguard/phone_control"
     private val CALL_AUDIO_CHANNEL = "com.phaseguard/call_audio"
     private val AUDIO_CONTROL_CHANNEL = "com.phaseguard/audio"
+    private val BLUETOOTH_CHANNEL = "phaseguard/bluetooth_sco"
 
     private var mediaProjectionManager: MediaProjectionManager? = null
     private var sampleRate = 16000
     private var methodChannel: MethodChannel? = null
-    private var bluetoothMethodChannel: MethodChannel? = null
     private var dialerMethodChannel: MethodChannel? = null
     private var inCallMethodChannel: MethodChannel? = null
     private var phoneControlMethodChannel: MethodChannel? = null
@@ -48,7 +47,6 @@ class MainActivity : FlutterActivity() {
 
     private var isCapturing = false
 
-    private var bluetoothScoCapture: BluetoothScoCapture? = null
     private var audioCaptureModule: AudioCaptureModule? = null
 
     // Phone call monitoring for remote audio capture
@@ -190,9 +188,10 @@ class MainActivity : FlutterActivity() {
             }
         }
         
-        // Initialize Bluetooth SCO capture
-        bluetoothScoCapture = BluetoothScoCapture()
-        bluetoothScoCapture?.initialize(this, flutterEngine.dartExecutor.binaryMessenger!!)
+        // Initialize Bluetooth SCO capture (disabled - not required for Agora audio capture)
+        // Bluetooth SCO capture is optional and requires runtime permissions
+        // bluetoothScoCapture = BluetoothScoCapture()
+        // bluetoothScoCapture?.initialize(this, flutterEngine.dartExecutor.binaryMessenger!!)
 
         // Shizuku audio capture disabled - not in scope for current implementation
         // shizukuAudioCapture = ShizukuAudioCapture()
@@ -342,8 +341,11 @@ class MainActivity : FlutterActivity() {
             }
         }
         
-        // Bluetooth SCO method channel
-        bluetoothMethodChannel = MethodChannel(flutterEngine.dartExecutor.binaryMessenger, BLUETOOTH_CHANNEL)
+        // Bluetooth SCO method channel (disabled - not required for Agora audio capture)
+        // Bluetooth SCO capture is optional and requires runtime permissions
+        // Not needed for Agora AudioFrameObserver audio capture
+        /*
+        val bluetoothMethodChannel = MethodChannel(flutterEngine.dartExecutor.binaryMessenger, BLUETOOTH_CHANNEL)
         bluetoothMethodChannel?.setMethodCallHandler { call, result ->
             when (call.method) {
                 "startScoCapture" -> {
@@ -361,6 +363,7 @@ class MainActivity : FlutterActivity() {
                 }
             }
         }
+        */
 
         // Shizuku method channel disabled - not in scope for current implementation
         /*
@@ -571,7 +574,6 @@ class MainActivity : FlutterActivity() {
             override fun error(errorCode: String, errorMessage: String?, errorDetails: Any?) {}
             override fun notImplemented() {}
         })
-        bluetoothScoCapture?.cleanup()
         audioCaptureModule?.cleanup()
 
         // Cleanup phone monitoring

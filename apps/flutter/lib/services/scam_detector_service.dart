@@ -75,6 +75,7 @@ class ScamDetectorService {
         category: keywordResult.category,
         reasoning: keywordResult.reasoning,
         keywordScore: keywordResult.keywordScore,
+        needsWebEscalation: false, // Confident result, no web needed
       );
     }
 
@@ -87,6 +88,7 @@ class ScamDetectorService {
         category: 'SAFE',
         reasoning: 'No scam keywords detected. Legitimate indicators present.',
         keywordScore: 0,
+        needsWebEscalation: false, // Confident result, no web needed
       );
     }
 
@@ -104,6 +106,7 @@ class ScamDetectorService {
         category: 'SCAM_DETECTED',
         reasoning: 'TFLite neural network flagged this as a scam (${(mlResult * 100).toStringAsFixed(1)}% confidence)',
         keywordScore: keywordResult.keywordScore,
+        needsWebEscalation: false, // Confident result, no web needed
       );
     }
 
@@ -116,17 +119,19 @@ class ScamDetectorService {
         category: 'SAFE',
         reasoning: 'TFLite model: Clean conversation (${((1 - mlResult) * 100).toStringAsFixed(1)}% safe confidence)',
         keywordScore: keywordResult.keywordScore,
+        needsWebEscalation: false, // Confident result, no web needed
       );
     }
 
-    // Uncertain → return with honest uncertainty
+    // Uncertain → return with honest uncertainty and flag for web escalation
     return ScamAnalysisResult(
       isScam: mlResult >= 0.50,
       confidence: mlResult,
       layer: 'tflite',
       category: mlResult >= 0.50 ? 'POSSIBLE_SCAM' : 'LIKELY_SAFE',
-      reasoning: 'Uncertain: TFLite score=${mlResult.toStringAsFixed(2)}. Keyword hits=${keywordResult.keywordScore}.',
+      reasoning: 'Uncertain: TFLite score=${mlResult.toStringAsFixed(2)}. Keyword hits=${keywordResult.keywordScore}. Web escalation recommended.',
       keywordScore: keywordResult.keywordScore,
+      needsWebEscalation: true, // Flag for web escalation
     );
   }
 
@@ -232,6 +237,7 @@ class ScamAnalysisResult {
   final String category;
   final String reasoning;
   final int keywordScore;
+  final bool needsWebEscalation; // Flag for web escalation when uncertain
 
   ScamAnalysisResult({
     required this.isScam,
@@ -240,6 +246,7 @@ class ScamAnalysisResult {
     required this.category,
     required this.reasoning,
     required this.keywordScore,
+    this.needsWebEscalation = false,
   });
 
   Map<String, dynamic> toJson() => {
@@ -249,6 +256,7 @@ class ScamAnalysisResult {
     'category': category,
     'reasoning': reasoning,
     'keyword_score': keywordScore,
+    'needs_web_escalation': needsWebEscalation,
   };
 
   @override

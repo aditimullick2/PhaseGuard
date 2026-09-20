@@ -42,9 +42,10 @@ dependencies:
   permission_handler: ^11.3.1
   path_provider: ^2.1.2
   record: ^7.1.1
-  # flutter_llama: ^1.1.2  # Disabled — llama_cpp_dart is more stable
-  llama_cpp_dart: ^0.2.2  # Re-enabled — real on-device LLM inference (NDK 27 fixed)
-  google_mlkit_face_detection: ^0.13.0
+  flutter_dotenv: ^5.1.0  # Load environment variables from .env file
+  # llama_cpp_dart: ^0.2.2  # Disabled - only used in test screens, main service uses TFLite
+  google_mlkit_face_detection: ^0.13.0  # Face detection for video deepfake analysis
+  # sherpa_onnx: ^1.13.8  # Disabled - only used in test screens
   fftea: ^1.0.0
   tflite_flutter: ^0.12.1
   crypto: ^3.0.0  # SHA-256 for video deepfake evidence hashing
@@ -61,7 +62,7 @@ dependencies:
   firebase_core: ^4.15.0
   firebase_auth: ^6.7.0
   cloud_firestore: ^6.10.0
-  sherpa_onnx: ^1.13.8
+  # sherpa_onnx: ^1.13.8  # Disabled — too large, use web backend for STT
 
   # Firebase for In-App Calling Signaling & Anonymous Auth
 
@@ -87,15 +88,10 @@ flutter:
   # the material Icons class.
   uses-material-design: true
 
-  # Assets — all ML models bundled in app
+  # Assets — only essential ML models for main detection services
   assets:
     - assets/
     - assets/background.gif
-    - assets/Loop Render GIF by xponentialdesign.gif
-    - assets/models/sherpa/
-    - assets/models/scam_detector.gguf
     - assets/models/scam_detector.tflite
     - assets/models/tflite_metadata.json
     - assets/models/deepfake_detector.tflite
-    - assets/models/deepfake/voiceshield_ast_v1.tflite
-    - assets/models/whisper_tiny_quant.tflite  # Whisper for local STT (to be added)

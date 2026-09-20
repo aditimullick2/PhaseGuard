@@ -270,6 +270,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "4.5.2"
+  flutter_dotenv:
+    dependency: "direct main"
+    description:
+      name: flutter_dotenv
+      sha256: b7c7be5cd9f6ef7a78429cabd2774d3c4af50e79cb2b7593e3d5d763ef95c61b
+      url: "https://pub.dev"
+    source: hosted
+    version: "5.2.1"
   flutter_lints:
     dependency: "direct dev"
     description:
@@ -432,14 +440,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "6.1.0"
-  llama_cpp_dart:
-    dependency: "direct main"
-    description:
-      name: llama_cpp_dart
-      sha256: "8bfc902fb6ef80ec0a2d06d5cdb499364271f9a6c6f11623ca9d7b4488fa7a98"
-      url: "https://pub.dev"
-    source: hosted
-    version: "0.2.2"
   logging:
     dependency: transitive
     description:
@@ -864,86 +864,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.4.1"
-  sherpa_onnx:
-    dependency: "direct main"
-    description:
-      name: sherpa_onnx
-      sha256: b7e65d5956f8c9213fd339c68ea058cdec7ad24bd35f9bfc5c18178d3d73b2f9
-      url: "https://pub.dev"
-    source: hosted
-    version: "1.13.8"
-  sherpa_onnx_android_arm64:
-    dependency: transitive
-    description:
-      name: sherpa_onnx_android_arm64
-      sha256: "29db5572735afb1bc29f0f95ab160f7fb38b4b3f926f48e9113457fd740264f4"
-      url: "https://pub.dev"
-    source: hosted
-    version: "1.13.8"
-  sherpa_onnx_android_armeabi:
-    dependency: transitive
-    description:
-      name: sherpa_onnx_android_armeabi
-      sha256: fe81837bd12f67d136a456c6d2b39876caaba09edd77761cb527cb170dac2d2a
-      url: "https://pub.dev"
-    source: hosted
-    version: "1.13.8"
-  sherpa_onnx_android_x86:
-    dependency: transitive
-    description:
-      name: sherpa_onnx_android_x86
-      sha256: "8ddbd35982d4bb15648fc818253f2711be18448db50a2edb05c56a6c745fcea7"
-      url: "https://pub.dev"
-    source: hosted
-    version: "1.13.8"
-  sherpa_onnx_android_x86_64:
-    dependency: transitive
-    description:
-      name: sherpa_onnx_android_x86_64
-      sha256: d20c06c0edc92286609f256d04c295cad510bbb270068c0c79877f4a10f00581
-      url: "https://pub.dev"
-    source: hosted
-    version: "1.13.8"
-  sherpa_onnx_ios:
-    dependency: transitive
-    description:
-      name: sherpa_onnx_ios
-      sha256: "044e3a614d1847c0ff9b6475201c6e5d023cd6ca6cd17f14c16332081c01e1d2"
-      url: "https://pub.dev"
-    source: hosted
-    version: "1.13.8"
-  sherpa_onnx_linux:
-    dependency: transitive
-    description:
-      name: sherpa_onnx_linux
-      sha256: "22fb91a1c50b7bc24d93d0b67c87cf2a3a38f7564d7f14343d704a1201848960"
-      url: "https://pub.dev"
-    source: hosted
-    version: "1.13.8"
-  sherpa_onnx_macos:
-    dependency: transitive
-    description:
-      name: sherpa_onnx_macos
-      sha256: bdedc34ac0acccee7ae73a5599f66e0081137c00467c565a92f72b67428837bb
-      url: "https://pub.dev"
-    source: hosted
-    version: "1.13.8"
-  sherpa_onnx_web:
-    dependency: transitive
-    description:
-      name: sherpa_onnx_web
-      sha256: e25a3813eb080636280b23dd4b0098252902675158b66dceda1efba061adf5d7
-      url: "https://pub.dev"
-    source: hosted
-    version: "1.13.8"
-  sherpa_onnx_windows:
-    dependency: transitive
-    description:
-      name: sherpa_onnx_windows
-      sha256: d91fb9c4baac2594cf1ae6955f5e9f51113d354de8c75543ea8481d431040a71
-      url: "https://pub.dev"
-    source: hosted
-    version: "1.13.8"
   sky_engine:
     dependency: transitive
     description: flutter
@@ -1013,14 +933,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.4.0"
-  typed_isolate:
-    dependency: transitive
-    description:
-      name: typed_isolate
-      sha256: e245b87368104f9da13a75268e0bce16a2a8d4c9a4194a5eb50bb569be680c65
-      url: "https://pub.dev"
-    source: hosted
-    version: "6.0.0"
   url_launcher:
     dependency: "direct main"
     description:

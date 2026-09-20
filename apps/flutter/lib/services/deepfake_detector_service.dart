@@ -5,6 +5,7 @@ import 'package:fftea/fftea.dart';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:tflite_flutter/tflite_flutter.dart';
+import '../config/app_config.dart';
 
 /// PhaseGuard 2-Level Deepfake Audio Detector
 ///
@@ -23,8 +24,8 @@ class DeepfakeDetectorService {
 
   DeepfakeDetectorService({
     this.sampleRate = 16000,
-    this.serverBaseUrl = 'http://10.0.2.2:8000',
-  });
+    String? serverBaseUrl,
+  }) : serverBaseUrl = serverBaseUrl ?? AppConfig.backendUrl;
 
   Future<void> init() async {
     if (_isInitialized) return;

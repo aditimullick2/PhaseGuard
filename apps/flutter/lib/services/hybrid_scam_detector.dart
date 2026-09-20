@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'scam_detector.dart';
 import 'scam_detector_service.dart';
+import '../config/app_config.dart';
 
 /// PhaseGuard 3-Layer Scam Detection Engine
 ///
@@ -22,7 +23,7 @@ import 'scam_detector_service.dart';
 /// Fallback guarantee: If ANY layer fails, the next layer takes over.
 /// If ALL layers fail, returns the best available local result.
 class HybridScamDetector {
-  static const String _baseUrl = 'http://10.0.2.2:8000';
+  static String get _baseUrl => AppConfig.backendUrl;
   static const Duration _webTimeout = Duration(seconds: 6);
 
   // Singleton TFLite service — shared, pre-warmed
