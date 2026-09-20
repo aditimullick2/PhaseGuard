@@ -107,5 +107,5 @@ class CallModel {
   }
 
   bool get isActive => status == 'connected' || status == 'calling' || status == 'ringing';
-  bool get isEnded => status == 'ended' || status == 'rejected' || status == 'missed' || status == 'busy' || status == 'failed';
+  bool get isEnded => status == 'ended' || status == 'rejected' || status == 'missed' || status == 'busy' || status == 'failed' || status == 'disconnected';
 }

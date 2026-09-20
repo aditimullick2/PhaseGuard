@@ -1,8 +1,10 @@
 import 'dart:async';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:record/record.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:path_provider/path_provider.dart';
 import '../providers/providers.dart';
 import 'home_screen.dart';
 import '../components/app_theme.dart';
@@ -33,41 +35,69 @@ class _VoiceIdSetupScreenState extends ConsumerState<VoiceIdSetupScreen> {
 
   Future<void> _startRecording() async {
     try {
-      if (await _audioRecorder.hasPermission()) {
-        final prefs = await SharedPreferences.getInstance();
-        final path = '${prefs.getString('cache_dir') ?? ''}/voice_id.m4a';
-        
-        await _audioRecorder.start(
-          const RecordConfig(encoder: AudioEncoder.aacLc, bitRate: 128000),
-          path: path,
-        );
+      debugPrint('[VoiceSetup] Starting recording...');
+      
+      // Check permission
+      if (!await _audioRecorder.hasPermission()) {
+        debugPrint('[VoiceSetup] Microphone permission not granted');
+        final permissionGranted = await _audioRecorder.hasPermission();
+        if (!permissionGranted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Microphone permission is required')),
+          );
+          return;
+        }
+      }
 
+      // Get proper temp directory using path_provider
+      final directory = await getTemporaryDirectory();
+      final path = '${directory.path}/voice_id_${DateTime.now().millisecondsSinceEpoch}.m4a';
+      debugPrint('[VoiceSetup] Recording path: $path');
+
+      // Check if directory exists
+      final dir = Directory(directory.path);
+      if (!await dir.exists()) {
+        await dir.create(recursive: true);
+        debugPrint('[VoiceSetup] Created directory: ${directory.path}');
+      }
+
+      await _audioRecorder.start(
+        const RecordConfig(encoder: AudioEncoder.aacLc, bitRate: 128000),
+        path: path,
+      );
+      debugPrint('[VoiceSetup] Recording started');
+
+      setState(() {
+        _isRecording = true;
+        _secondsLeft = 15;
+        _isSetupComplete = false;
+      });
+
+      _timer = Timer.periodic(const Duration(seconds: 1), (timer) async {
         setState(() {
-          _isRecording = true;
-          _secondsLeft = 15;
-          _isSetupComplete = false;
-        });
-
-        _timer = Timer.periodic(const Duration(seconds: 1), (timer) async {
-          setState(() {
-            if (_secondsLeft > 0) {
-              _secondsLeft--;
-            }
-          });
-
-          if (_secondsLeft == 0) {
-            timer.cancel();
-            await _stopRecording();
+          if (_secondsLeft > 0) {
+            _secondsLeft--;
           }
         });
-      }
+
+        if (_secondsLeft == 0) {
+          timer.cancel();
+          await _stopRecording();
+        }
+      });
     } catch (e) {
-      debugPrint('Error starting record: $e');
+      debugPrint('[VoiceSetup] Error starting record: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error starting recording: $e')),
+      );
     }
   }
 
   Future<void> _stopRecording() async {
+    debugPrint('[VoiceSetup] Stopping recording...');
     final path = await _audioRecorder.stop();
+    debugPrint('[VoiceSetup] Recording stopped. Path: $path');
+    
     setState(() {
       _isRecording = false;
       _voiceIdPath = path;
@@ -75,14 +105,20 @@ class _VoiceIdSetupScreenState extends ConsumerState<VoiceIdSetupScreen> {
     });
 
     if (path != null) {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setString('user_voice_id_path', path);
-      
-      final authService = ref.read(authServiceProvider);
-      final currentUser = authService.currentUser;
-      if (currentUser != null) {
-        final userService = ref.read(userServiceProvider);
-        await userService.updateVoiceProfileStatus(currentUser.uid, 'v1');
+      try {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('user_voice_id_path', path);
+        debugPrint('[VoiceSetup] Voice ID path saved to SharedPreferences');
+        
+        final authService = ref.read(authServiceProvider);
+        final currentUser = authService.currentUser;
+        if (currentUser != null) {
+          final userService = ref.read(userServiceProvider);
+          await userService.updateVoiceProfileStatus(currentUser.uid, 'v1');
+          debugPrint('[VoiceSetup] Voice profile status updated in Firestore');
+        }
+      } catch (e) {
+        debugPrint('[VoiceSetup] Error saving voice ID: $e');
       }
     }
   }
@@ -159,7 +195,7 @@ class _VoiceIdSetupScreenState extends ConsumerState<VoiceIdSetupScreen> {
                       const Icon(Icons.check_circle_rounded, size: 64, color: AppColors.success),
                       const SizedBox(height: 32),
                       AppButton(
-                        content: 'Continue to ConnectCall',
+                        content: 'Continue to PhaseGuard',
                         fullWidth: true,
                         onTap: _finishSetup,
                       ),

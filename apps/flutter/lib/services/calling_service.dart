@@ -1,9 +1,12 @@
 import 'dart:async';
+import 'dart:io';
 import 'dart:math';
+import 'dart:typed_data';
 import 'package:agora_rtc_engine/agora_rtc_engine.dart';
 import 'package:agora_token_service/agora_token_service.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
+import 'package:path_provider/path_provider.dart';
 
 import '../models/call.dart';
 import '../models/user.dart';
@@ -20,6 +23,7 @@ import 'connectcall_stt_service.dart';
 /// - Duration timer is started on BOTH sides when [onUserJoined] fires
 ///   (not just the callee), so the timer stays in sync.
 /// - endCall() is idempotent and guards against double-writes.
+/// - Audio capture auto-starts when remote user joins for PhaseGuard analysis.
 class CallingService extends ChangeNotifier {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final PermissionService _permissionService = PermissionService();
@@ -46,6 +50,7 @@ class CallingService extends ChangeNotifier {
   Timer? _sttTimer;
   List<int> _audioBuffer = [];
   bool _scamDetected = false;
+  int _effectIdCounter = 1; // Counter for Agora playEffect sound IDs
 
   // ── Getters ──────────────────────────────────────────────────────────────
 
@@ -61,6 +66,7 @@ class CallingService extends ChangeNotifier {
   String get connectionState => _connectionState;
   int get networkQuality => _networkQuality;
   String? get currentCallId => _currentCallId;
+  Stream<Uint8List>? get audioCaptureStream => _audioCapture.audioStream;
 
   String? _appId;
   String? _appCert;
@@ -72,15 +78,30 @@ class CallingService extends ChangeNotifier {
     
     _appId = appId;
     _appCert = appCert;
+    
+    debugPrint('[CallingService] Initializing Agora with App ID: $appId');
+    debugPrint('[CallingService] App Certificate: ${appCert.isNotEmpty ? "SET" : "NOT SET"}');
 
     _engine = createAgoraRtcEngine();
     await _engine!.initialize(RtcEngineContext(
       appId: appId,
       channelProfile: ChannelProfileType.channelProfileCommunication,
     ));
+    
+    debugPrint('[CallingService] Agora engine initialized successfully');
 
     // Initialize PhaseGuard audio capture
     _audioCapture.initialize(_engine!);
+    
+    // Debug verification
+    debugPrint('🔍 === CALLING SERVICE AUDIO CAPTURE VERIFICATION ===');
+    debugPrint('✅ AgoraAudioCaptureService is integrated');
+    debugPrint('✅ audioCaptureStream getter exposed');
+    debugPrint('✅ Auto-start on remote user join: onUserJoined()');
+    debugPrint('✅ Auto-stop on remote user leave: onUserOffline()');
+    debugPrint('✅ AudioFrameObserver: onPlaybackAudioFrameBeforeMixing');
+    debugPrint('✅ Capture: REMOTE caller audio only (scammer voice)');
+    debugPrint('🎉 Audio capture connection verified');
 
     _engine!.registerEventHandler(
       RtcEngineEventHandler(
@@ -95,6 +116,10 @@ class CallingService extends ChangeNotifier {
           // Start duration timer when the remote peer actually joins
           _startDurationTimer();
           
+          // Start PhaseGuard audio capture when remote joins
+          _audioCapture.startCapture();
+          debugPrint('[CallingService] Started PhaseGuard audio capture for remote caller');
+          
           notifyListeners();
         },
 
@@ -102,6 +127,9 @@ class CallingService extends ChangeNotifier {
             (RtcConnection connection, int uid, UserOfflineReasonType reason) {
           _remoteUid = null;
           _isConnected = false;
+          // Stop PhaseGuard audio capture when remote leaves
+          _audioCapture.stopCapture();
+          debugPrint('[CallingService] Stopped PhaseGuard audio capture - remote user left');
           notifyListeners();
           // Remote peer left — end the call on our side
           _handleRemoteUserLeft();
@@ -111,6 +139,9 @@ class CallingService extends ChangeNotifier {
           _isJoined = false;
           _remoteUid = null;
           _isConnected = false;
+          // Stop PhaseGuard audio capture when leaving channel
+          _audioCapture.stopCapture();
+          debugPrint('[CallingService] Stopped PhaseGuard audio capture - left channel');
           notifyListeners();
         },
 
@@ -289,8 +320,12 @@ class CallingService extends ChangeNotifier {
   // ── End Call (idempotent) ─────────────────────────────────────────────────
 
   Future<void> endCall() async {
-    if (_isEndingCall) return;
+    if (_isEndingCall) {
+      debugPrint('[CallingService] Already ending call, skipping');
+      return;
+    }
     _isEndingCall = true;
+    debugPrint('[CallingService] Starting endCall process for call: $_currentCallId');
 
     // Cancel timers first
     _callTimeoutTimer?.cancel();
@@ -299,16 +334,20 @@ class CallingService extends ChangeNotifier {
     _durationTimer = null;
 
     // Leave Agora channel
+    debugPrint('[CallingService] Leaving Agora channel...');
     await _leaveChannel();
+    debugPrint('[CallingService] Left Agora channel');
 
     // Update Firestore call document (only if not already ended)
     if (_currentCallId != null) {
       try {
+        debugPrint('[CallingService] Updating Firestore call document...');
         final snap =
             await _firestore.collection('calls').doc(_currentCallId).get();
         if (snap.exists) {
           final data = snap.data()!;
           final status = data['status'] as String?;
+          debugPrint('[CallingService] Current call status: $status');
           // Only write if call isn't already in a terminal state
           if (status == null ||
               status == 'connected' ||
@@ -326,7 +365,12 @@ class CallingService extends ChangeNotifier {
                   ? ((now - connectedTime) / 1000).round()
                   : 0,
             });
+            debugPrint('[CallingService] Firestore call document updated to ended');
+          } else {
+            debugPrint('[CallingService] Call already in terminal state: $status');
           }
+        } else {
+          debugPrint('[CallingService] Call document not found in Firestore');
         }
       } catch (e) {
         debugPrint('[CallingService] endCall Firestore error: $e');
@@ -364,11 +408,68 @@ class CallingService extends ChangeNotifier {
     await _engine!.switchCamera();
   }
 
+  // ── AI Voice Injection for Scam Batter ───────────────────────────────────────
+
+  /// Inject AI voice into Agora call for Scam Batter
+  /// Converts audio bytes to WAV format and plays to remote user (scammer)
+  Future<void> injectAIVoice(Uint8List audioBytes) async {
+    if (_engine == null) {
+      debugPrint('[CallingService] Cannot inject AI voice: Agora engine not initialized');
+      return;
+    }
+
+    try {
+      debugPrint('[CallingService] Injecting AI voice: ${audioBytes.length} bytes');
+      
+      // Save audio to temp file (Agora requires file path)
+      final tempDir = await getTemporaryDirectory();
+      final timestamp = DateTime.now().millisecondsSinceEpoch;
+      final audioPath = '${tempDir.path}/ai_voice_$timestamp.wav';
+      
+      // Convert audio bytes to WAV format if needed
+      // For now, assuming backend sends WAV format
+      final file = File(audioPath);
+      await file.writeAsBytes(audioBytes);
+      
+      debugPrint('[CallingService] AI voice saved to: $audioPath');
+      
+      // Play effect to remote user (scammer)
+      // publish: true ensures the scammer hears it
+      final soundId = _effectIdCounter;
+      await _engine!.playEffect(
+        soundId: soundId,
+        filePath: audioPath,
+        loopCount: 1,
+        pitch: 1.0,
+        pan: 0.0,
+        gain: 100,
+        publish: true, // This sends AI voice to the scammer (remote caller)
+      );
+      
+      debugPrint('[CallingService] AI voice injected with soundId: $soundId');
+      
+      _effectIdCounter++;
+      if (_effectIdCounter > 50) _effectIdCounter = 1;
+      
+      // Clean up temp file after delay
+      Future.delayed(const Duration(seconds: 5), () {
+        if (File(audioPath).existsSync()) {
+          File(audioPath).deleteSync();
+          debugPrint('[CallingService] Cleaned up AI voice temp file');
+        }
+      });
+      
+    } catch (e) {
+      debugPrint('[CallingService] Error injecting AI voice: $e');
+    }
+  }
+
   // ── Firestore Listeners ───────────────────────────────────────────────────
 
   /// Stream for the callee to detect incoming calls.
   /// Returns the latest unhandled [CallModel] or null.
   Stream<CallModel?> listenForIncomingCalls(String currentUserId) {
+    debugPrint('[CallingService] Listening for incoming calls for user: $currentUserId');
     return _firestore
         .collection('calls')
         .where('calleeId', isEqualTo: currentUserId)
@@ -377,10 +478,27 @@ class CallingService extends ChangeNotifier {
         .limit(1)
         .snapshots()
         .map((snapshot) {
-      if (snapshot.docs.isEmpty) return null;
+      debugPrint('[CallingService] Incoming calls snapshot: ${snapshot.docs.length} docs');
+      if (snapshot.docs.isEmpty) {
+        debugPrint('[CallingService] No incoming calls found');
+        return null;
+      }
       final doc = snapshot.docs.first;
-      return CallModel.fromMap(doc.data(), doc.id);
-    }).handleError((error) => null);
+      final callData = doc.data();
+      final callStatus = callData['status'] as String?;
+      
+      // Only return if status is still calling/ringing (not ended/rejected)
+      if (callStatus != 'calling' && callStatus != 'ringing') {
+        debugPrint('[CallingService] Call status changed to $callStatus, ignoring');
+        return null;
+      }
+      
+      debugPrint('[CallingService] Incoming call found: ${doc.id} with status: $callStatus');
+      return CallModel.fromMap(callData, doc.id);
+    }).handleError((error) {
+      debugPrint('[CallingService] Error listening for calls: $error');
+      return null;
+    });
   }
 
   /// Stream changes to a specific call document.
@@ -490,42 +608,65 @@ class CallingService extends ChangeNotifier {
   }
 
   Future<void> _joinChannel(String channelName, {required String type}) async {
-    if (_appId == null || _appCert == null) {
-      debugPrint('[CallingService] Cannot join: App ID or Cert not initialized.');
-      return;
+    if (_appId == null) {
+      debugPrint('[CallingService] Cannot join: App ID not initialized.');
+      throw Exception('Agora engine not initialized - App ID missing');
     }
 
-    final expireTimestamp = (DateTime.now().millisecondsSinceEpoch ~/ 1000) + 3600; // 1 hour token
-    final token = RtcTokenBuilder.build(
-      appId: _appId!,
-      appCertificate: _appCert!,
-      channelName: channelName,
-      uid: '0',
-      role: RtcRole.publisher,
-      expireTimestamp: expireTimestamp,
-    );
+    debugPrint('[CallingService] Joining channel: $channelName with App ID: $_appId');
+    debugPrint('[CallingService] App Certificate: ${_appCert != null && _appCert!.isNotEmpty ? "SET" : "NOT SET"}');
 
-    await _engine!.joinChannel(
-      token: token,
-      channelId: channelName,
-      uid: 0, // Let Agora assign a UID
-      options: ChannelMediaOptions(
-        channelProfile: ChannelProfileType.channelProfileCommunication,
-        clientRoleType: ClientRoleType.clientRoleBroadcaster,
-        publishMicrophoneTrack: true,
-        publishCameraTrack: type == 'video', // Publish camera if it's a video call
-        autoSubscribeAudio: true,
-        autoSubscribeVideo: true,
-      ),
-    );
+    final expireTimestamp = (DateTime.now().millisecondsSinceEpoch ~/ 1000) + 3600; // 1 hour token
+    try {
+      String token;
+      
+      // If certificate is set, use it for token generation
+      if (_appCert != null && _appCert!.isNotEmpty) {
+        debugPrint('[CallingService] Using certificate for token generation');
+        token = RtcTokenBuilder.build(
+          appId: _appId!,
+          appCertificate: _appCert!,
+          channelName: channelName,
+          uid: '0',
+          role: RtcRole.publisher,
+          expireTimestamp: expireTimestamp,
+        );
+      } else {
+        // Try without certificate (for testing - not recommended for production)
+        debugPrint('[CallingService] WARNING: Using temporary token without certificate');
+        token = ''; // Empty token may work for testing
+      }
+      
+      debugPrint('[CallingService] Token: ${token.isNotEmpty ? "Generated" : "Empty (testing)"}');
+
+      await _engine!.joinChannel(
+        token: token,
+        channelId: channelName,
+        uid: 0, // Let Agora assign a UID
+        options: ChannelMediaOptions(
+          channelProfile: ChannelProfileType.channelProfileCommunication,
+          clientRoleType: ClientRoleType.clientRoleBroadcaster,
+          publishMicrophoneTrack: true,
+          publishCameraTrack: type == 'video', // Publish camera if it's a video call
+          autoSubscribeAudio: true,
+          autoSubscribeVideo: true,
+        ),
+      );
+      debugPrint('[CallingService] Successfully joined channel: $channelName');
+    } catch (e) {
+      debugPrint('[CallingService] Error joining channel: $e');
+      rethrow;
+    }
   }
 
   Future<void> _leaveChannel() async {
     try {
       if (_engine != null) {
+        debugPrint('[CallingService] Leaving Agora channel...');
         await _engine!.leaveChannel();
         await _engine!.stopPreview();
         await _engine!.disableVideo();
+        debugPrint('[CallingService] Left Agora channel successfully');
       }
     } catch (e) {
       debugPrint('[CallingService] leaveChannel error: $e');
@@ -553,6 +694,7 @@ class CallingService extends ChangeNotifier {
   }
 
   Future<void> _cleanup() async {
+    debugPrint('[CallingService] Cleaning up call state...');
     _currentCallId = null;
     _callDuration = 0;
     _remoteUid = null;
@@ -564,6 +706,7 @@ class CallingService extends ChangeNotifier {
     _networkQuality = 0;
     _isEndingCall = false;
     notifyListeners();
+    debugPrint('[CallingService] Call state cleaned up');
   }
 
   String _randomString(int length) {

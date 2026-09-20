@@ -8,11 +8,11 @@ import 'package:flutter/foundation.dart' show debugPrint;
 class AppConfig {
   // Agora Configuration
   static String get agoraAppId {
-    return const String.fromEnvironment('AGORA_APP_ID', defaultValue: '5d8ed074e92b4c51b1aa80c5746178f0');
+    return const String.fromEnvironment('AGORA_APP_ID', defaultValue: '74ab349c3cbb41f0aab67dc9bb189a98');
   }
 
   static String get agoraAppCert {
-    return const String.fromEnvironment('AGORA_APP_CERT', defaultValue: '7222c223f53c4f9693e845e98f30de7f');
+    return const String.fromEnvironment('AGORA_APP_CERT', defaultValue: 'ac4362c5978b473890de8963b5595d68');
   }
 
   // Backend Configuration
@@ -51,11 +51,19 @@ class AppConfig {
 
   static void printConfig() {
     debugPrint('=== PhaseGuard Configuration ===');
-    debugPrint('Agora App ID: ${agoraAppId.isNotEmpty ? "SET" : "NOT SET"}');
+    debugPrint('Agora App ID: ${agoraAppId.isNotEmpty ? agoraAppId : "NOT SET"}');
+    debugPrint('Agora App Cert: ${agoraAppCert.isNotEmpty ? agoraAppCert : "NOT SET"}');
     debugPrint('Backend URL: $backendUrl');
     debugPrint('Firebase Project ID: ${firebaseProjectId.isNotEmpty ? firebaseProjectId : "NOT SET"}');
     debugPrint('Firebase Auth Domain: ${firebaseAuthDomain.isNotEmpty ? firebaseAuthDomain : "NOT SET"}');
     debugPrint('Firebase Storage Bucket: ${firebaseStorageBucket.isNotEmpty ? firebaseStorageBucket : "NOT SET"}');
     debugPrint('===================================');
+  }
+
+  // Debug helper to check if Agora config is valid
+  static bool isAgoraConfigValid() {
+    return agoraAppId.isNotEmpty && 
+           agoraAppId != '5d8ed074e92b4c51b1aa80c5746178f0' && // Not default placeholder
+           agoraAppCert.isNotEmpty;
   }
 }

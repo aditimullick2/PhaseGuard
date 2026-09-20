@@ -140,7 +140,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     // Floating Logo / Icon (Center Aligned)
                     const Center(
                       child: PhaseGuardLogo(
-                        size: 56, 
+                        size: 80, 
                         showGlow: true,
                       ),
                     ),

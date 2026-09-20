@@ -1,7 +1,9 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
 import '../models/protocol.dart';
@@ -189,6 +191,37 @@ class ApiClient {
       throw ApiException(_detail(res) ?? 'Speech injection failed');
     }
     return jsonDecode(res.body) as Map<String, dynamic>;
+  }
+
+  /// Generate AI voice using backend TTS service
+  /// Returns audio bytes (WAV format) for Agora injection
+  Future<Uint8List?> textToSpeech(String text) async {
+    try {
+      debugPrint('[ApiClient] Generating AI voice for: $text');
+      
+      final res = await http.post(
+        Uri.parse('$baseUrl/api/v1/voice/tts'),
+        headers: _headers(),
+        body: jsonEncode({
+          'text': text,
+          'voice_id': 'default', // Use default voice or user's voice ID
+          'format': 'wav', // WAV format for Agora
+          'provider': 'fish', // Use Fish Audio for AI voice
+        }),
+      );
+
+      if (res.statusCode == 200) {
+        final audioBytes = res.bodyBytes;
+        debugPrint('[ApiClient] AI voice generated: ${audioBytes.length} bytes');
+        return audioBytes;
+      } else {
+        debugPrint('[ApiClient] TTS request failed: ${res.statusCode}');
+        return null;
+      }
+    } catch (e) {
+      debugPrint('[ApiClient] Error generating AI voice: $e');
+      return null;
+    }
   }
 
   /// Download forensic PDF dossier for a call

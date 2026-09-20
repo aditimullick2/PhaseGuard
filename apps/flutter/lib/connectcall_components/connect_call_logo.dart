@@ -15,7 +15,7 @@ class PhaseGuardLogo extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     Widget image = Image.asset(
-      'assets/icons/logo.png',
+      'assets/logo.png',
       width: size,
       height: size,
       fit: BoxFit.contain,

@@ -17,7 +17,9 @@ service cloud.firestore {
     match /calls/{callId} {
       allow read: if request.auth != null
         && (resource.data.callerId == request.auth.uid
-         || resource.data.calleeId == request.auth.uid);
+         || resource.data.calleeId == request.auth.uid
+         || request.resource.data.callerId == request.auth.uid
+         || request.resource.data.calleeId == request.auth.uid);
 
       // Allow create if the creator is the caller
       allow create: if request.auth != null
@@ -26,7 +28,9 @@ service cloud.firestore {
       // Allow update if the requester is a participant
       allow update: if request.auth != null
         && (resource.data.callerId == request.auth.uid
-         || resource.data.calleeId == request.auth.uid);
+         || resource.data.calleeId == request.auth.uid
+         || request.resource.data.callerId == request.auth.uid
+         || request.resource.data.calleeId == request.auth.uid);
 
       // Never allow deletion — call history is permanent
       allow delete: if false;

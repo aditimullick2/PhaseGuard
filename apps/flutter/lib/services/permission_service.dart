@@ -13,7 +13,10 @@ class PermissionService {
   Future<CallPermissionStatus> requestCallPermissions({
     bool requireCamera = false,
   }) async {
+    debugPrint('[PermissionService] Requesting microphone permission...');
     final micStatus = await Permission.microphone.request();
+    debugPrint('[PermissionService] Microphone permission status: $micStatus');
+    
     if (micStatus.isPermanentlyDenied) {
       return CallPermissionStatus.permanentlyDenied;
     }
@@ -22,7 +25,10 @@ class PermissionService {
     }
 
     if (requireCamera) {
+      debugPrint('[PermissionService] Requesting camera permission...');
       final camStatus = await Permission.camera.request();
+      debugPrint('[PermissionService] Camera permission status: $camStatus');
+      
       if (camStatus.isPermanentlyDenied) {
         return CallPermissionStatus.permanentlyDenied;
       }
@@ -31,6 +37,7 @@ class PermissionService {
       }
     }
 
+    debugPrint('[PermissionService] All permissions granted');
     return CallPermissionStatus.granted;
   }
 

@@ -14,11 +14,13 @@ class PhaseGuardLogo extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    Widget image = Image.asset(
-      'assets/icons/logo.png',
-      width: size,
-      height: size,
-      fit: BoxFit.contain,
+    Widget image = ClipOval(
+      child: Image.asset(
+        'assets/logo.png',
+        width: size,
+        height: size,
+        fit: BoxFit.cover,
+      ),
     );
 
     if (showGlow) {

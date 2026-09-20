@@ -161,10 +161,13 @@ class _IncomingCallScreenState extends ConsumerState<IncomingCallScreen>
                             bg: AppColors.success,
                             label: 'Accept',
                             onTap: () async {
+                              debugPrint('[IncomingCallScreen] Accept button pressed');
+                              
                               final status = await ref
                                   .read(permissionServiceProvider)
                                   .requestCallPermissions(requireCamera: isVideo);
                               if (status != CallPermissionStatus.granted) {
+                                debugPrint('[IncomingCallScreen] Permissions denied');
                                 if (mounted) {
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     const SnackBar(
@@ -177,15 +180,33 @@ class _IncomingCallScreenState extends ConsumerState<IncomingCallScreen>
                                 return;
                               }
 
-                              await ref
-                                  .read(callingServiceProvider)
-                                  .acceptCall(
-                                    callId: widget.call.callId,
-                                    channelName: widget.call.agoraChannelName,
-                                    type: widget.call.type,
+                              debugPrint('[IncomingCallScreen] Permissions granted, accepting call');
+                              
+                              try {
+                                await ref
+                                    .read(callingServiceProvider)
+                                    .acceptCall(
+                                      callId: widget.call.callId,
+                                      channelName: widget.call.agoraChannelName,
+                                      type: widget.call.type,
+                                    );
+                                
+                                debugPrint('[IncomingCallScreen] Call accepted successfully');
+                              } catch (e) {
+                                debugPrint('[IncomingCallScreen] Error accepting call: $e');
+                                if (mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text('Failed to accept call: $e'),
+                                      backgroundColor: AppColors.error,
+                                    ),
                                   );
+                                }
+                                return;
+                              }
 
                               if (mounted) {
+                                debugPrint('[IncomingCallScreen] Navigating to CallScreen');
                                 Navigator.pushReplacement(
                                   context,
                                   MaterialPageRoute(

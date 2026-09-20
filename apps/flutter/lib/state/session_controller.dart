@@ -87,15 +87,16 @@ class SessionController extends ChangeNotifier {
   bool isScambaiterActive = false;
   List<int>? lastDossierBytes;
   String? lastSavedPdfPath;
+  Uint8List? lastScambaiterAudioBytes; // Store last generated AI voice for injection
   Timer? _audioStreamTimer;
 
-  // Real backend metrics — start with baseline for visual feedback
-  double pdiScore = 0.1; // Small baseline for visual activity
+  // Real backend metrics — start with ZERO baseline (no false positives)
+  double pdiScore = 0.0; // ZERO baseline - no false scam detection
   bool isSynthetic = false;
-  double syntheticVoiceScore = 0.05;
-  double tremorEnergy = 0.12; // Small baseline for visual activity
+  double syntheticVoiceScore = 0.0; // ZERO baseline - no false deepfake detection
+  double tremorEnergy = 0.0; // ZERO baseline - no false tremor detection
   bool hasTremor = false;
-  double peakTremorHz = 120.0;
+  double peakTremorHz = 0.0;
 
   String liveTranscript = '';
   final List<String> transcriptHistory = [];
@@ -727,6 +728,30 @@ class SessionController extends ChangeNotifier {
       } catch (_) {}
     }
     return {'status': 'scambaiter_active'};
+  }
+
+  /// Generate AI voice response for Scam Batter
+  /// Uses backend TTS service to generate AI voice from text
+  Future<Uint8List?> generateAIVoiceResponse(String text) async {
+    try {
+      debugPrint('[SessionController] Generating AI voice for: $text');
+      
+      // Call backend TTS endpoint
+      final response = await _api.textToSpeech(text);
+      
+      if (response != null && response.isNotEmpty) {
+        debugPrint('[SessionController] AI voice generated: ${response.length} bytes');
+        // Store for injection
+        lastScambaiterAudioBytes = response;
+        return response;
+      } else {
+        debugPrint('[SessionController] AI voice generation failed: empty response');
+        return null;
+      }
+    } catch (e) {
+      debugPrint('[SessionController] Error generating AI voice: $e');
+      return null;
+    }
   }
 
   /// Generate forensic dossier PDF OFFLINE on device (no internet needed).

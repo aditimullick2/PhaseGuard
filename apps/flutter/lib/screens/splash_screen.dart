@@ -50,7 +50,7 @@ class SplashScreen extends ConsumerWidget {
                     );
                   },
                   child: const PhaseGuardLogo(
-                    size: 100,
+                    size: 120,
                     showGlow: true,
                   ),
                 ),

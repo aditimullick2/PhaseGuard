@@ -61,8 +61,23 @@ class _CallScreenState extends ConsumerState<CallScreen>
       if (mounted) {
         try {
           final session = prov.Provider.of<SessionController>(context, listen: false);
+          final callingService = ref.read(callingServiceProvider);
+          
           session.callerNumber = widget.remoteUser.name;
           session.callState = 'ACTIVE';
+          
+          // Connect audio capture from CallingService to SessionController
+          final audioStream = callingService.audioCaptureStream;
+          if (audioStream != null) {
+            audioStream.listen((audioData) {
+              debugPrint('🎤 Audio chunk received: ${audioData.length} bytes');
+              // Send audio to SessionController for LEVEL 2 deepfake analysis
+              session.processInAppCallAudioChunk(audioData);
+            });
+          } else {
+            debugPrint('⚠️ PhaseGuard: Audio capture stream not available');
+          }
+          
           debugPrint('🛡 PhaseGuard: AI security engine started for call with ${widget.remoteUser.name}');
         } catch (e) {
           debugPrint('⚠️ PhaseGuard: Could not start AI engine: $e');
@@ -90,9 +105,19 @@ class _CallScreenState extends ConsumerState<CallScreen>
 
   Future<void> _endCall() async {
     if (_isPopping) return;
+    debugPrint('[CallScreen] User requested to end call');
     setState(() => _isPopping = true);
-    await ref.read(callingServiceProvider).endCall();
+    
+    try {
+      await ref.read(callingServiceProvider).endCall();
+      debugPrint('[CallScreen] End call completed');
+    } catch (e) {
+      debugPrint('[CallScreen] Error ending call: $e');
+    }
+    
+    // Force close even if endCall fails
     if (mounted && Navigator.of(context).canPop()) {
+      debugPrint('[CallScreen] Forcing screen close');
       Navigator.of(context).pop();
     }
   }
@@ -126,12 +151,16 @@ class _CallScreenState extends ConsumerState<CallScreen>
       (_, next) {
         final call = next.value;
         if (call == null) return;
+        debugPrint('[CallScreen] Call status changed: ${call.status}');
         if (call.isEnded && mounted) {
           if (!_isPopping) {
+            debugPrint('[CallScreen] Call ended/disconnected, auto-closing screen...');
             setState(() => _isPopping = true);
-            // We use a post-frame callback to ensure the PopScope rebuilds with canPop=true first
-            WidgetsBinding.instance.addPostFrameCallback((_) {
+            
+            // Delay slightly to show the disconnected state briefly before closing
+            Future.delayed(const Duration(milliseconds: 500), () {
               if (mounted && Navigator.of(context).canPop()) {
+                debugPrint('[CallScreen] Navigating back after call ended');
                 Navigator.of(context).pop();
               }
             });
@@ -262,7 +291,58 @@ class _AudioCallScreen extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     GestureDetector(
-                      onTap: () {}, // Minimize/PiP in future
+                      onTap: () {
+                        // Show call options menu
+                        showModalBottomSheet(
+                          context: context,
+                          backgroundColor: Colors.transparent,
+                          builder: (context) => Container(
+                            decoration: BoxDecoration(
+                              color: AppColors.secondaryBackground,
+                              borderRadius: const BorderRadius.only(
+                                topLeft: Radius.circular(28),
+                                topRight: Radius.circular(28),
+                              ),
+                            ),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const SizedBox(height: 12),
+                                Container(
+                                  width: 40,
+                                  height: 4,
+                                  decoration: BoxDecoration(
+                                    color: Colors.white24,
+                                    borderRadius: BorderRadius.circular(2),
+                                  ),
+                                ),
+                                const SizedBox(height: 24),
+                                Padding(
+                                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                                  child: Column(
+                                    children: [
+                                      _MenuOption(
+                                        icon: Icons.security_rounded,
+                                        title: 'Security Overlay',
+                                        onTap: () {
+                                          Navigator.pop(context);
+                                          showModalBottomSheet(
+                                            context: context,
+                                            backgroundColor: Colors.transparent,
+                                            isScrollControlled: true,
+                                            builder: (_) => const SecurityOverlayModal(),
+                                          );
+                                        },
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(height: 24),
+                              ],
+                            ),
+                          ),
+                        );
+                      },
                       child: GlassmorphicContainer(
                         padding: const EdgeInsets.all(8),
                         borderRadius: BorderRadius.circular(12),
@@ -462,7 +542,58 @@ class _VideoCallScreen extends StatelessWidget {
                       padding: const EdgeInsets.all(10),
                       borderRadius: BorderRadius.circular(12),
                       child: GestureDetector(
-                        onTap: () {},
+                        onTap: () {
+                          // Show call options menu
+                          showModalBottomSheet(
+                            context: context,
+                            backgroundColor: Colors.transparent,
+                            builder: (context) => Container(
+                              decoration: BoxDecoration(
+                                color: AppColors.secondaryBackground,
+                                borderRadius: const BorderRadius.only(
+                                  topLeft: Radius.circular(28),
+                                  topRight: Radius.circular(28),
+                                ),
+                              ),
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const SizedBox(height: 12),
+                                  Container(
+                                    width: 40,
+                                    height: 4,
+                                    decoration: BoxDecoration(
+                                      color: Colors.white24,
+                                      borderRadius: BorderRadius.circular(2),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 24),
+                                  Padding(
+                                    padding: const EdgeInsets.symmetric(horizontal: 24),
+                                    child: Column(
+                                      children: [
+                                        _MenuOption(
+                                          icon: Icons.security_rounded,
+                                          title: 'Security Overlay',
+                                          onTap: () {
+                                            Navigator.pop(context);
+                                            showModalBottomSheet(
+                                              context: context,
+                                              backgroundColor: Colors.transparent,
+                                              isScrollControlled: true,
+                                              builder: (_) => const SecurityOverlayModal(),
+                                            );
+                                          },
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  const SizedBox(height: 24),
+                                ],
+                              ),
+                            ),
+                          );
+                        },
                         child: const Icon(Icons.keyboard_arrow_down_rounded, color: Colors.white, size: 24),
                       ),
                     ),
@@ -547,6 +678,53 @@ class _VideoCallScreen extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+// Menu option widget for call options
+class _MenuOption extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final VoidCallback onTap;
+
+  const _MenuOption({
+    required this.icon,
+    required this.title,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 16),
+        child: Row(
+          children: [
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: AppColors.primary10,
+                shape: BoxShape.circle,
+              ),
+              child: Icon(icon, color: AppColors.primary, size: 20),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Text(
+                title,
+                style: AppTextStyles.bodyLarge.copyWith(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+            const Icon(Icons.chevron_right_rounded, color: Colors.white38, size: 20),
+          ],
+        ),
+      ),
     );
   }
 }

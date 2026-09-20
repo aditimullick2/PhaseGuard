@@ -92,6 +92,7 @@ class AuthService extends ChangeNotifier {
         'lastSeen': DateTime.now().millisecondsSinceEpoch,
         'email': email.trim(),
         'uid': user.uid,
+        'name': user.displayName ?? email.split('@')[0],
       }, SetOptions(merge: true));
 
       return 'Success';
@@ -146,6 +147,7 @@ class AuthService extends ChangeNotifier {
           'isOnline': true,
           'lastSeen': DateTime.now().millisecondsSinceEpoch,
           'uid': user.uid,
+          'name': user.displayName ?? 'Google User',
         }, SetOptions(merge: true));
       }
 

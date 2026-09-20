@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/providers.dart';
@@ -32,6 +33,8 @@ class HomeScreen extends ConsumerStatefulWidget {
 class _HomeScreenState extends ConsumerState<HomeScreen> {
   int _selectedIndex = 0;
   String? _lastShownCallId;
+  bool _isShowingIncomingCall = false;
+  Timer? _incomingCallTimer;
 
   @override
   Widget build(BuildContext context) {
@@ -66,29 +69,59 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           );
         }
 
-        // Incoming call listener
+        // Incoming call listener with debouncing
         ref.listen<AsyncValue<CallModel?>>(
           incomingCallsProvider(user.uid),
           (previous, next) {
             final call = next.value;
-            if (call == null) return;
-            if (_lastShownCallId == call.callId) return;
-            _lastShownCallId = call.callId;
+            if (call == null) {
+              _isShowingIncomingCall = false;
+              _incomingCallTimer?.cancel();
+              return;
+            }
+            
+            // Prevent duplicate incoming call screens
+            if (_isShowingIncomingCall) {
+              debugPrint('[HomeScreen] Incoming call already showing, skipping duplicate');
+              return;
+            }
+            
+            // Debounce: wait 500ms before showing to prevent rapid duplicates
+            _incomingCallTimer?.cancel();
+            _incomingCallTimer = Timer(const Duration(milliseconds: 500), () {
+              if (!mounted) return;
+              
+              // Check again if still showing to prevent race conditions
+              if (_isShowingIncomingCall) {
+                debugPrint('[HomeScreen] Incoming call already showing after debounce, skipping');
+                return;
+              }
+              
+              if (_lastShownCallId == call.callId) return;
+              _lastShownCallId = call.callId;
+              _isShowingIncomingCall = true;
 
-            Navigator.of(context).push(
-              PageRouteBuilder(
-                pageBuilder: (_, __, ___) => IncomingCallScreen(call: call),
-                transitionsBuilder: (_, animation, __, child) => SlideTransition(
-                  position: Tween<Offset>(
-                    begin: const Offset(0, 1),
-                    end: Offset.zero,
-                  ).animate(CurvedAnimation(
-                      parent: animation, curve: Curves.easeOutCubic)),
-                  child: child,
+              debugPrint('[HomeScreen] Showing incoming call screen for call: ${call.callId}');
+              
+              Navigator.of(context).push(
+                PageRouteBuilder(
+                  pageBuilder: (_, __, ___) => IncomingCallScreen(call: call),
+                  transitionsBuilder: (_, animation, __, child) => SlideTransition(
+                    position: Tween<Offset>(
+                      begin: const Offset(0, 1),
+                      end: Offset.zero,
+                    ).animate(CurvedAnimation(
+                        parent: animation, curve: Curves.easeOutCubic)),
+                    child: child,
+                  ),
+                  transitionDuration: const Duration(milliseconds: 400),
                 ),
-                transitionDuration: const Duration(milliseconds: 400),
-              ),
-            );
+              ).then((_) {
+                // Reset flag when incoming call screen is dismissed
+                _isShowingIncomingCall = false;
+                debugPrint('[HomeScreen] Incoming call screen dismissed');
+              });
+            });
           },
         );
 
@@ -255,6 +288,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         ),
       ],
     );
+  }
+
+  @override
+  void dispose() {
+    _incomingCallTimer?.cancel();
+    super.dispose();
   }
 }
 

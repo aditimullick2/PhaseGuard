@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../state/session_controller.dart';
+import '../providers/providers.dart';
 import 'app_theme.dart';
+import 'dart:ui' as ui;
 
 // ─────────────────────────────────────────────────────────────
 // Shared helpers
@@ -17,8 +20,14 @@ _SecurityLevel _evaluate(SessionController s) {
   final hasData = s.wsConnected || s.liveTranscript.isNotEmpty;
 
   if (!hasData) return _SecurityLevel.scanning;
-  if (pdi >= 0.70 || synth >= 0.70) return _SecurityLevel.highRisk;
-  if (pdi >= 0.40 || synth >= 0.40) return _SecurityLevel.suspicious;
+  
+  // More conservative thresholds to reduce false positives
+  // Only HIGH RISK if both scam text AND deepfake are detected with high confidence
+  if (pdi >= 0.85 && synth >= 0.85) return _SecurityLevel.highRisk;
+  
+  // Suspicious if either is moderately high
+  if (pdi >= 0.60 || synth >= 0.60) return _SecurityLevel.suspicious;
+  
   return _SecurityLevel.safe;
 }
 
@@ -66,20 +75,20 @@ String _levelBody(_SecurityLevel lvl) {
 // Full Security Overlay Modal  (shown via bottom sheet)
 // ─────────────────────────────────────────────────────────────
 
-class SecurityOverlayModal extends StatelessWidget {
+class SecurityOverlayModal extends ConsumerWidget {
   const SecurityOverlayModal({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final session = context.watch<SessionController>();
     final level   = _evaluate(session);
     final color   = _levelColor(level);
 
     return Container(
       decoration: BoxDecoration(
-        color: AppColors.secondaryBackground,
+        color: Colors.black.withValues(alpha: 0.85),
         borderRadius: const BorderRadius.only(
-          topLeft:  Radius.circular(28),
+          topLeft: Radius.circular(28),
           topRight: Radius.circular(28),
         ),
         border: Border.all(color: color.withValues(alpha: 0.25), width: 1.5),
@@ -136,14 +145,91 @@ class SecurityOverlayModal extends StatelessWidget {
             ),
             const SizedBox(height: 28),
 
+            // ── Caller Scam Meter ──
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.05),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: Colors.white12),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      const Icon(Icons.person_rounded, color: AppColors.primary, size: 16),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Caller Scam Meter',
+                        style: AppTextStyles.labelMedium.copyWith(
+                          color: AppColors.primary,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  // Scam probability bar
+                  Container(
+                    height: 8,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(8),
+                      color: Colors.white12,
+                    ),
+                    child: FractionallySizedBox(
+                      widthFactor: session.pdiScore,
+                      alignment: Alignment.centerLeft,
+                      child: Container(
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(8),
+                          color: session.pdiScore >= 0.85
+                              ? AppColors.error
+                              : session.pdiScore >= 0.60
+                                  ? Colors.orangeAccent
+                                  : AppColors.success,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        '${(session.pdiScore * 100).toInt()}% Scam Probability',
+                        style: AppTextStyles.bodySmall.copyWith(
+                          color: Colors.white70,
+                        ),
+                      ),
+                      Text(
+                        session.pdiScore >= 0.85 ? 'HIGH RISK' : 
+                        session.pdiScore >= 0.60 ? 'MEDIUM' : 'LOW',
+                        style: AppTextStyles.labelSmall.copyWith(
+                          color: session.pdiScore >= 0.85
+                              ? AppColors.error
+                              : session.pdiScore >= 0.60
+                                  ? Colors.orangeAccent
+                                  : AppColors.success,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 20),
+
             // ── Detail rows ──
             _DetailRow(
               icon: Icons.record_voice_over_rounded,
               label: 'Voice Authenticity',
               value: _synthLabel(session.syntheticVoiceScore),
-              valueColor: session.syntheticVoiceScore >= 0.70
+              valueColor: session.syntheticVoiceScore >= 0.85
                   ? AppColors.error
-                  : session.syntheticVoiceScore >= 0.40
+                  : session.syntheticVoiceScore >= 0.60
                       ? Colors.orangeAccent
                       : AppColors.success,
             ),
@@ -153,9 +239,9 @@ class SecurityOverlayModal extends StatelessWidget {
               icon: Icons.manage_search_rounded,
               label: 'Scam Text Analysis',
               value: _scamLabel(session.pdiScore),
-              valueColor: session.pdiScore >= 0.70
+              valueColor: session.pdiScore >= 0.85
                   ? AppColors.error
-                  : session.pdiScore >= 0.40
+                  : session.pdiScore >= 0.60
                       ? Colors.orangeAccent
                       : AppColors.success,
             ),
@@ -203,7 +289,7 @@ class SecurityOverlayModal extends StatelessWidget {
                         fontStyle: FontStyle.italic,
                         height: 1.5,
                       ),
-                      maxLines: 4,
+                      maxLines: 10,
                       overflow: TextOverflow.ellipsis,
                     ),
                   ],
@@ -241,6 +327,121 @@ class SecurityOverlayModal extends StatelessWidget {
 
             const SizedBox(height: 28),
 
+            // ── Scam Batter Button ──
+            
+            // ── Scam Batter Button ──
+            SizedBox(
+              width: double.infinity,
+              height: 56,
+              child: ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.error,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                ),
+                onPressed: () async {
+                  // Activate AI scambaiter with voice injection
+                  try {
+                    debugPrint('[SecurityOverlay] Activating Scam Batter with AI voice');
+                    
+                    // Show loading indicator
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Activating Scam Batter AI...'),
+                          backgroundColor: AppColors.primary,
+                          duration: Duration(seconds: 2),
+                        ),
+                      );
+                    }
+                    
+                    // Activate scambaiter
+                    await session.activateScambaiter();
+                    debugPrint('[SecurityOverlay] Scam Batter activated');
+                    
+                    // Generate AI voice response
+                    final aiVoice = await session.generateAIVoiceResponse(
+                      'Arey bhai, main confused hoon. Zara slowly bolo na...'
+                    );
+                    
+                    if (aiVoice != null) {
+                      debugPrint('[SecurityOverlay] AI voice generated, injecting into call');
+                      
+                      // Inject AI voice into Agora call
+                      final callingService = ref.read(callingServiceProvider);
+                      await callingService.injectAIVoice(aiVoice);
+                      
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Scam Batter AI activated - Voice injected to scammer!'),
+                            backgroundColor: AppColors.success,
+                            duration: Duration(seconds: 3),
+                          ),
+                        );
+                        Navigator.pop(context);
+                      }
+                    } else {
+                      debugPrint('[SecurityOverlay] AI voice generation failed');
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Scam Batter activated but AI voice generation failed'),
+                            backgroundColor: Colors.orangeAccent,
+                            duration: Duration(seconds: 3),
+                          ),
+                        );
+                        Navigator.pop(context);
+                      }
+                    }
+                  } catch (e) {
+                    debugPrint('[SecurityOverlay] Error activating Scam Batter: $e');
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('Failed to activate Scam Batter: $e'),
+                          backgroundColor: AppColors.error,
+                        ),
+                      );
+                    }
+                  }
+                },
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(Icons.block_rounded, size: 18),
+                    const SizedBox(width: 8),
+                    Text('Scam Batter', style: AppTextStyles.labelMedium),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+
+            // ── PDF Report Button ──
+            SizedBox(
+              width: double.infinity,
+              height: 56,
+              child: ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.success,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                ),
+                onPressed: () {
+                  // PDF report button action
+                  Navigator.pop(context);
+                },
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(Icons.picture_as_pdf_rounded, size: 18),
+                    const SizedBox(width: 8),
+                    Text('PDF Report', style: AppTextStyles.labelMedium),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+
             // ── Close button ──
             SizedBox(
               width: double.infinity,
@@ -262,14 +463,14 @@ class SecurityOverlayModal extends StatelessWidget {
   }
 
   String _synthLabel(double score) {
-    if (score >= 0.70) return 'AI-generated ⚠';
-    if (score >= 0.40) return 'Suspicious';
+    if (score >= 0.85) return 'AI-generated ⚠';
+    if (score >= 0.60) return 'Suspicious';
     return 'Natural ✓';
   }
 
   String _scamLabel(double score) {
-    if (score >= 0.70) return 'Scam detected ⚠';
-    if (score >= 0.40) return 'Suspicious';
+    if (score >= 0.85) return 'Scam detected ⚠';
+    if (score >= 0.60) return 'Suspicious';
     return 'Normal ✓';
   }
 

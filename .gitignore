@@ -86,3 +86,5 @@ apps/flutter/assets/models/scam_detector.gguf
 # Flutter build outputs
 apps/flutter/build/
 apps/flutter/.dart_tool/
+
+apps/flutter/assets/service_account.json
