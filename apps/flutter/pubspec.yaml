@@ -42,7 +42,7 @@ dependencies:
   permission_handler: ^11.3.1
   path_provider: ^2.1.2
   record: ^7.1.1
-  flutter_dotenv: ^5.1.0  # Load environment variables from .env file
+  # flutter_dotenv: ^5.1.0  # Disabled - not working on mobile devices, use --dart-define instead
   # llama_cpp_dart: ^0.2.2  # Disabled - only used in test screens, main service uses TFLite
   google_mlkit_face_detection: ^0.13.0  # Face detection for video deepfake analysis
   # sherpa_onnx: ^1.13.8  # Disabled - only used in test screens

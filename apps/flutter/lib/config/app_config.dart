@@ -1,98 +1,52 @@
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter/foundation.dart' show debugPrint;
 
 /// App Configuration from Environment Variables
+/// 
+/// For development: Use .env file or --dart-define
+/// For production: Use --dart-define to pass values
+/// Mobile devices: --dart-define required (.env not packaged)
 class AppConfig {
-  static bool _isLoaded = false;
-
   // Agora Configuration
   static String get agoraAppId {
-    if (!_isLoaded) {
-      return const String.fromEnvironment('AGORA_APP_ID', defaultValue: '');
-    }
-    return dotenv.env['AGORA_APP_ID'] ??
-        const String.fromEnvironment('AGORA_APP_ID', defaultValue: '');
+    return const String.fromEnvironment('AGORA_APP_ID', defaultValue: '16671f3cb5804cb5bf0cb11b4874df54');
   }
 
   static String get agoraAppCert {
-    if (!_isLoaded) {
-      return const String.fromEnvironment('AGORA_APP_CERT', defaultValue: '');
-    }
-    return dotenv.env['AGORA_APP_CERT'] ??
-        const String.fromEnvironment('AGORA_APP_CERT', defaultValue: '');
+    return const String.fromEnvironment('AGORA_APP_CERT', defaultValue: '7191dfc5b6d84aab8f5c49380c4db91f');
   }
 
   // Backend Configuration
   static String get backendUrl {
-    if (!_isLoaded) {
-      return const String.fromEnvironment('PHASEGUARD_BACKEND_URL', defaultValue: 'https://phaseguard.onrender.com');
-    }
-    return dotenv.env['PHASEGUARD_BACKEND_URL'] ??
-        const String.fromEnvironment('PHASEGUARD_BACKEND_URL', defaultValue: 'https://phaseguard.onrender.com');
+    return const String.fromEnvironment('PHASEGUARD_BACKEND_URL', defaultValue: 'https://phaseguard.onrender.com');
   }
 
   // Firebase Configuration
   static String get firebaseApiKey {
-    if (!_isLoaded) {
-      return const String.fromEnvironment('FIREBASE_API_KEY', defaultValue: '');
-    }
-    return dotenv.env['FIREBASE_API_KEY'] ??
-        const String.fromEnvironment('FIREBASE_API_KEY', defaultValue: '');
+    return const String.fromEnvironment('FIREBASE_API_KEY', defaultValue: 'AIzaSyB-nmhHQBdIYUoENBtzGPGwHMarUgsBZqw');
   }
 
   static String get firebaseProjectId {
-    if (!_isLoaded) {
-      return const String.fromEnvironment('FIREBASE_PROJECT_ID', defaultValue: '');
-    }
-    return dotenv.env['FIREBASE_PROJECT_ID'] ??
-        const String.fromEnvironment('FIREBASE_PROJECT_ID', defaultValue: '');
+    return const String.fromEnvironment('FIREBASE_PROJECT_ID', defaultValue: 'phaseguard-a5bfd');
   }
 
   static String get firebaseAuthDomain {
-    if (!_isLoaded) {
-      return const String.fromEnvironment('FIREBASE_AUTH_DOMAIN', defaultValue: '');
-    }
-    return dotenv.env['FIREBASE_AUTH_DOMAIN'] ??
-        const String.fromEnvironment('FIREBASE_AUTH_DOMAIN', defaultValue: '');
+    return const String.fromEnvironment('FIREBASE_AUTH_DOMAIN', defaultValue: 'phaseguard-a5bfd.firebaseapp.com');
   }
 
   static String get firebaseStorageBucket {
-    if (!_isLoaded) {
-      return const String.fromEnvironment('FIREBASE_STORAGE_BUCKET', defaultValue: '');
-    }
-    return dotenv.env['FIREBASE_STORAGE_BUCKET'] ??
-        const String.fromEnvironment('FIREBASE_STORAGE_BUCKET', defaultValue: '');
+    return const String.fromEnvironment('FIREBASE_STORAGE_BUCKET', defaultValue: 'phaseguard-a5bfd.firebasestorage.app');
   }
 
   static String get firebaseMessagingSenderId {
-    if (!_isLoaded) {
-      return const String.fromEnvironment('FIREBASE_MESSAGING_SENDER_ID', defaultValue: '');
-    }
-    return dotenv.env['FIREBASE_MESSAGING_SENDER_ID'] ??
-        const String.fromEnvironment('FIREBASE_MESSAGING_SENDER_ID', defaultValue: '');
+    return const String.fromEnvironment('FIREBASE_MESSAGING_SENDER_ID', defaultValue: '1060611267670');
   }
 
   static String get firebaseAppId {
-    if (!_isLoaded) {
-      return const String.fromEnvironment('FIREBASE_APP_ID', defaultValue: '');
-    }
-    return dotenv.env['FIREBASE_APP_ID'] ??
-        const String.fromEnvironment('FIREBASE_APP_ID', defaultValue: '');
+    return const String.fromEnvironment('FIREBASE_APP_ID', defaultValue: '1:1060611267670:android:8e05625c29b33f1b30eff7');
   }
 
   static bool get isConfigured {
     return agoraAppId.isNotEmpty && firebaseProjectId.isNotEmpty;
-  }
-
-  static Future<void> load() async {
-    try {
-      await dotenv.load(fileName: ".env");
-      _isLoaded = true;
-      debugPrint('[AppConfig] Environment variables loaded successfully');
-    } catch (e) {
-      debugPrint('[AppConfig] Note: .env file not found or could not be loaded: $e');
-      _isLoaded = true; // Set to true even if failed to prevent repeated attempts
-    }
   }
 
   static void printConfig() {

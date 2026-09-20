@@ -17,8 +17,7 @@ import 'config/app_config.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Load environment variables from .env file FIRST
-  await AppConfig.load();
+  // Print configuration
   AppConfig.printConfig();
 
   // Initialize Firebase (graceful if google-services.json is pending)
@@ -49,8 +48,83 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'PhaseGuard',
       theme: PgTheme.data(),
-      home: const MainScreen(),
+      home: const SplashScreen(),
       debugShowCheckedModeBanner: false,
+    );
+  }
+}
+
+class SplashScreen extends StatefulWidget {
+  const SplashScreen({super.key});
+
+  @override
+  State<SplashScreen> createState() => _SplashScreenState();
+}
+
+class _SplashScreenState extends State<SplashScreen> {
+  @override
+  void initState() {
+    super.initState();
+    // Navigate to main screen after 2 seconds
+    Future.delayed(const Duration(seconds: 2), () {
+      if (mounted) {
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (_) => const MainScreen()),
+        );
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFF0D1117),
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            // Logo
+            Image.asset(
+              'assets/logo.png',
+              width: 120,
+              height: 120,
+              errorBuilder: (context, error, stackTrace) {
+                return const Icon(
+                  Icons.security,
+                  size: 120,
+                  color: Color(0xFF00E676),
+                );
+              },
+            ),
+            const SizedBox(height: 24),
+            // App Name
+            const Text(
+              'PhaseGuard',
+              style: TextStyle(
+                fontSize: 32,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+                letterSpacing: 2,
+              ),
+            ),
+            const SizedBox(height: 8),
+            // Tagline
+            const Text(
+              'Real-Time Scam & Deepfake Protection',
+              style: TextStyle(
+                fontSize: 14,
+                color: Color(0xFF8B949E),
+                letterSpacing: 1,
+              ),
+            ),
+            const SizedBox(height: 48),
+            // Loading indicator
+            const CircularProgressIndicator(
+              valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF00E676)),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
