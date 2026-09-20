@@ -23,6 +23,7 @@ class InAppCallingService extends ChangeNotifier {
   int? _remoteUid;
   int _callDurationSeconds = 0;
   Timer? _durationTimer;
+  int? _localUid; // Track local user ID to skip local audio
 
   // 100ms audio frame accumulator: 16000 Hz * 0.1s * 2 bytes = 3200 bytes
   static const int targetChunkBytes = 3200;
@@ -72,17 +73,24 @@ class InAppCallingService extends ChangeNotifier {
         AudioFrameObserver(
           // This captures REMOTE caller's audio BEFORE mixing (dusre phone ki awaaz)
           onPlaybackAudioFrameBeforeMixing: (String channelId, int uid, AudioFrame frame) {
-            debugPrint('[InAppCallingService] 🎤 Remote audio frame from user $uid (${frame.buffer?.length ?? 0} bytes)');
+            // ONLY capture REMOTE caller audio, skip local user's audio
+            // The caller (who made the call) should NOT be analyzed
+            debugPrint('[InAppCallingService] 🎤 Audio frame from user $uid (LOCAL=$_localUid REMOTE=$_remoteUid)');
+            if (uid == _localUid) {
+              debugPrint('[InAppCallingService] ⏭️ Skipping LOCAL user audio - only analyzing REMOTE caller');
+              return;
+            }
+            debugPrint('[InAppCallingService] 🎤 REMOTE audio frame from user $uid (${frame.buffer?.length ?? 0} bytes)');
             _handleIncomingAudioFrame(frame);
           },
           // Fallback: captures mixed playback audio if before mixing not available
           onPlaybackAudioFrame: (String channelId, AudioFrame frame) {
-            debugPrint('[InAppCallingService] 🎤 Playback audio frame (mixed) (${frame.buffer?.length ?? 0} bytes)');
-            _handleIncomingAudioFrame(frame);
+            debugPrint('[InAppCallingService] 🎤 Playback audio frame (mixed) - SKIPPING to avoid local audio contamination');
+            // Don't capture mixed audio as it contains local user's voice
           },
         ),
       );
-      debugPrint('[InAppCallingService] AudioFrameObserver registered - capturing REMOTE caller audio at 16kHz mono');
+      debugPrint('[InAppCallingService] AudioFrameObserver registered - capturing ONLY REMOTE caller audio at 16kHz mono');
     } catch (e) {
       debugPrint('[InAppCallingService] Error configuring raw audio observer: $e');
     }
@@ -92,6 +100,8 @@ class InAppCallingService extends ChangeNotifier {
         onJoinChannelSuccess: (RtcConnection connection, int elapsed) {
           debugPrint('[InAppCallingService] Joined channel: ${connection.channelId}');
           _isJoined = true;
+          _localUid = connection.localUid; // Capture local user's UID
+          debugPrint('[InAppCallingService] Local user UID: $_localUid');
           _engine?.enableLocalAudio(true);
           _engine?.muteLocalAudioStream(false);
           _engine?.adjustRecordingSignalVolume(100);

@@ -9,7 +9,7 @@ plugins {
 
 android {
     namespace = "com.phaseguard.phaseguard"
-    compileSdk = 36  // Allows all plugins (Agora, Firebase, etc.) to compile
+    compileSdk = flutter.compileSdkVersion
     // Explicitly set NDK 27 — required for llama_cpp_dart CMake native build
     ndkVersion = "27.0.12077973"
 
@@ -22,7 +22,7 @@ android {
     defaultConfig {
         applicationId = "com.phaseguard.phaseguard"
         minSdk = flutter.minSdkVersion  // Required for Agora RTC Engine
-        targetSdk = 36  // Required for Firebase and other plugin compatibility
+        targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
     }

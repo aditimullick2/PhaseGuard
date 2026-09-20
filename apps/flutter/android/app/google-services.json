@@ -1,26 +1,44 @@
 {
   "project_info": {
-    "project_number": "1060611267670",
-    "project_id": "phaseguard-a5bfd",
-    "storage_bucket": "phaseguard-a5bfd.firebasestorage.app"
+    "project_number": "733823100953",
+    "project_id": "phaseguard-7675a",
+    "storage_bucket": "phaseguard-7675a.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:1060611267670:android:8e05625c29b33f1b30eff7",
+        "mobilesdk_app_id": "1:733823100953:android:7aca3507baf21a13312288",
         "android_client_info": {
           "package_name": "com.phaseguard.phaseguard"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "733823100953-jqmit0o2ntdc01pgeqq08ri2o807pl6o.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.phaseguard.phaseguard",
+            "certificate_hash": "a9330ad41b4a75b15d3bc72b9dadfea316c53bba"
+          }
+        },
+        {
+          "client_id": "733823100953-tat96i631td6i16huk4tujrfrgng802f.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
-          "current_key": "AIzaSyB-nmhHQBdIYUoENBtzGPGwHMarUgsBZqw"
+          "current_key": "AIzaSyCSbRjDvyjfQbXmIRgZwXU0Y-EXK1_Dgbg"
         }
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "733823100953-tat96i631td6i16huk4tujrfrgng802f.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
         }
       }
     }

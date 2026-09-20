@@ -4,10 +4,10 @@ import 'package:google_fonts/google_fonts.dart';
 /// Design-matching color palette based on screenshots
 /// Premium dark-mode palette — deep navy/slate backgrounds, electric teal accent
 class PgColors {
-  // Backgrounds
-  static const bgPrimary = Color(0xFF0A0F1E); // Very deep navy
-  static const bgSecondary = Color(0xFF111827); // Slightly lighter card
-  static const bgElevated = Color(0xFF1E2A3A); // Elevated content areas
+  // Backgrounds - Updated to match logo background color
+  static const bgPrimary = Color(0xFF1A237E); // Dark blue (matching logo background)
+  static const bgSecondary = Color(0xFF283593); // Slightly lighter card
+  static const bgElevated = Color(0xFF3949AB); // Elevated content areas
 
   // Brand accent — electric teal/cyan
   static const accent = Color(0xFF00D4FF);

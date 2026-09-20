@@ -8,11 +8,11 @@ import 'package:flutter/foundation.dart' show debugPrint;
 class AppConfig {
   // Agora Configuration
   static String get agoraAppId {
-    return const String.fromEnvironment('AGORA_APP_ID', defaultValue: '16671f3cb5804cb5bf0cb11b4874df54');
+    return const String.fromEnvironment('AGORA_APP_ID', defaultValue: '5d8ed074e92b4c51b1aa80c5746178f0');
   }
 
   static String get agoraAppCert {
-    return const String.fromEnvironment('AGORA_APP_CERT', defaultValue: '7191dfc5b6d84aab8f5c49380c4db91f');
+    return const String.fromEnvironment('AGORA_APP_CERT', defaultValue: '7222c223f53c4f9693e845e98f30de7f');
   }
 
   // Backend Configuration
@@ -22,27 +22,27 @@ class AppConfig {
 
   // Firebase Configuration
   static String get firebaseApiKey {
-    return const String.fromEnvironment('FIREBASE_API_KEY', defaultValue: 'AIzaSyB-nmhHQBdIYUoENBtzGPGwHMarUgsBZqw');
+    return const String.fromEnvironment('FIREBASE_API_KEY', defaultValue: 'AIzaSyCSbRjDvyjfQbXmIRgZwXU0Y-EXK1_Dgbg');
   }
 
   static String get firebaseProjectId {
-    return const String.fromEnvironment('FIREBASE_PROJECT_ID', defaultValue: 'phaseguard-a5bfd');
+    return const String.fromEnvironment('FIREBASE_PROJECT_ID', defaultValue: 'phaseguard-7675a');
   }
 
   static String get firebaseAuthDomain {
-    return const String.fromEnvironment('FIREBASE_AUTH_DOMAIN', defaultValue: 'phaseguard-a5bfd.firebaseapp.com');
+    return const String.fromEnvironment('FIREBASE_AUTH_DOMAIN', defaultValue: 'phaseguard-7675a.firebaseapp.com');
   }
 
   static String get firebaseStorageBucket {
-    return const String.fromEnvironment('FIREBASE_STORAGE_BUCKET', defaultValue: 'phaseguard-a5bfd.firebasestorage.app');
+    return const String.fromEnvironment('FIREBASE_STORAGE_BUCKET', defaultValue: 'phaseguard-7675a.firebasestorage.app');
   }
 
   static String get firebaseMessagingSenderId {
-    return const String.fromEnvironment('FIREBASE_MESSAGING_SENDER_ID', defaultValue: '1060611267670');
+    return const String.fromEnvironment('FIREBASE_MESSAGING_SENDER_ID', defaultValue: '733823100953');
   }
 
   static String get firebaseAppId {
-    return const String.fromEnvironment('FIREBASE_APP_ID', defaultValue: '1:1060611267670:android:8e05625c29b33f1b30eff7');
+    return const String.fromEnvironment('FIREBASE_APP_ID', defaultValue: '1:733823100953:android:7aca3507baf21a13312288');
   }
 
   static bool get isConfigured {
