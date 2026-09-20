@@ -5,7 +5,8 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
 /// Agora Audio Capture Service
-/// Captures remote audio from Agora calls for scam detection
+/// Captures REMOTE caller's audio from Agora calls for scam detection
+/// This captures the OTHER person's voice (dusre phone ki awaaz), NOT local microphone
 /// Uses Android native CallAudioCapture for system calls
 /// Uses Agora audio frame observer for in-app calls
 class AgoraAudioCaptureService {
@@ -95,6 +96,18 @@ class AgoraAudioCaptureService {
         debugPrint('🎤 Audio stream ended');
       },
     );
+  }
+
+  /// Add audio chunk directly (from Agora AudioFrameObserver)
+  /// This chunk contains REMOTE caller's audio (dusre phone ki awaaz)
+  /// REAL-TIME: Chunks sent immediately as they arrive (100ms intervals)
+  void addAudioChunk(Uint8List chunk) {
+    if (!_isCapturing) {
+      _isCapturing = true;
+      debugPrint('✅ REMOTE caller audio capture started via AudioFrameObserver (REAL-TIME)');
+    }
+    _audioStreamController.add(chunk);
+    debugPrint('🎤 REMOTE audio chunk: ${chunk.length} bytes (REAL-TIME stream)');
   }
 
   void dispose() {

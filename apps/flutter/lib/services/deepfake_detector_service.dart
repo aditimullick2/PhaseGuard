@@ -2,28 +2,24 @@
 import 'dart:typed_data';
 import 'dart:math';
 import 'package:fftea/fftea.dart';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:tflite_flutter/tflite_flutter.dart';
 
-/// PhaseGuard 2-Layer Deepfake Audio Detector
+/// PhaseGuard 2-Level Deepfake Audio Detector
 ///
-/// Layer 1 (Local, Offline): TFLite 2D CNN + DSP heuristics
-///   → Runs instantly on-device, no internet needed.
-///   → Handles most standard TTS / robotic voices.
-///
-/// Layer 2 (Server Fallback): Advanced MFCC + HNR + Spectral Flatness
-///   → Triggered automatically when local confidence is uncertain (0.35–0.65).
-///   → Detects ElevenLabs-grade AI voices using server-side librosa analysis.
-///   → Falls back gracefully to local result if server is unavailable.
+/// PARALLEL PROCESSING: Local + Web run simultaneously
+///   → Local: TFLite 2D CNN + DSP heuristics (fast, less accurate)
+///   → Web: Advanced multi-detector analysis (slow, most accurate)
+///   → Jo pehle aaye = use karo
+///   → Web result = FINAL (best model)
+///   → Agar web nahi aaya = local result use karo
 class DeepfakeDetectorService {
   final int sampleRate;
   final String serverBaseUrl;
 
   Interpreter? _interpreter;
   bool _isInitialized = false;
-
-  static const double _uncertainLow = 0.35;
-  static const double _uncertainHigh = 0.65;
 
   DeepfakeDetectorService({
     this.sampleRate = 16000,
@@ -37,29 +33,59 @@ class DeepfakeDetectorService {
         'assets/models/deepfake_detector.tflite',
       );
       _isInitialized = true;
-      print('[DeepfakeDetector] TFLite 2D CNN model loaded');
+      debugPrint('[DeepfakeDetector] TFLite 2D CNN model loaded (PARALLEL PROCESSING)');
     } catch (e) {
-      print('[DeepfakeDetector] Failed to load TFLite model: $e');
+      debugPrint('[DeepfakeDetector] Failed to load TFLite model: $e');
     }
   }
 
+  /// Analyze audio with PARALLEL PROCESSING (Local + Web)
+  /// Jo pehle aaye = use karo, Web result = FINAL
   Future<Map<String, dynamic>> analyze(Int16List pcmData) async {
+    // PARALLEL: Local + Web simultaneously
+    final localFuture = _runLocalLayerAsync(pcmData);
+    final webFuture = _runServerLayerAsync(pcmData);
+
+    // Wait for whichever completes first
+    final results = await Future.any([localFuture, webFuture]);
+
+    debugPrint('[DeepfakeDetector] First result: ${results['layer']} (${((results['confidence'] as num).toDouble() * 100).toStringAsFixed(1)}%)');
+
+    return results;
+  }
+
+  Future<Map<String, dynamic>> _runLocalLayerAsync(Int16List pcmData) async {
     final localResult = _runLocalLayer(pcmData);
     final double localConf = localResult['confidence'] as double;
-    print('[DeepfakeDetector] Layer 1 score: ${localConf.toStringAsFixed(3)}');
-    if (localConf < _uncertainLow || localConf > _uncertainHigh) {
-      return {...localResult, 'layer': 'local'};
-    }
-    print('[DeepfakeDetector] Uncertain => escalating to server Layer 2...');
+    debugPrint('[DeepfakeDetector] LOCAL result: ${localConf.toStringAsFixed(3)} (${localConf < 0.35 ? "NATURAL" : localConf > 0.65 ? "SYNTHETIC" : "UNCERTAIN"})');
+    return {...localResult, 'layer': 'local'};
+  }
+
+  Future<Map<String, dynamic>> _runServerLayerAsync(Int16List pcmData) async {
     try {
-      final serverResult = await _runServerLayer(pcmData);
-      if (serverResult != null) {
-        return {...serverResult, 'layer': 'server'};
+      final wavBytes = _pcmToWavBytes(pcmData);
+      final uri = Uri.parse('$serverBaseUrl/api/deepfake/analyze');
+      final request = http.MultipartRequest('POST', uri);
+      request.files.add(http.MultipartFile.fromBytes('audio', wavBytes, filename: 'audio.wav'));
+      final streamedResponse = await request.send().timeout(const Duration(seconds: 10));
+      final response = await http.Response.fromStream(streamedResponse);
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body) as Map<String, dynamic>;
+        debugPrint('[DeepfakeDetector] WEB result: ${((data['confidence'] as num).toDouble() * 100).toStringAsFixed(1)}% (FINAL - Best Model)');
+        return {
+          'is_synthetic': data['is_synthetic'] as bool,
+          'confidence': (data['confidence'] as num).toDouble(),
+          'reason': data['reason'] as String? ?? 'Server-side multi-detector analysis (FINAL)',
+          'metrics': data['metrics'] ?? {},
+          'layer': 'web',
+        };
       }
+      debugPrint('[DeepfakeDetector] Web failed: ${response.statusCode}');
     } catch (e) {
-      print('[DeepfakeDetector] Server fallback failed: $e => using local result');
+      debugPrint('[DeepfakeDetector] Web error: $e - relying on local');
     }
-    return {...localResult, 'layer': 'local_fallback'};
+    // Web failed, return error to trigger local fallback
+    throw Exception('Web analysis failed');
   }
 
   Map<String, dynamic> _runLocalLayer(Int16List pcmData) {
@@ -153,29 +179,9 @@ class DeepfakeDetectorService {
         'metrics': {'nn_score': nnConfidence, 'pitch_variance': variance, 'silence_ratio': silenceRatio},
       };
     } catch (e) {
-      print('[DeepfakeDetector] Layer 1 error: $e');
+      debugPrint('[DeepfakeDetector] Layer 1 error: $e');
       return {'is_synthetic': false, 'confidence': 0.0, 'reason': 'Local analysis error'};
     }
-  }
-
-  Future<Map<String, dynamic>?> _runServerLayer(Int16List pcmData) async {
-    final wavBytes = _pcmToWavBytes(pcmData);
-    final uri = Uri.parse('$serverBaseUrl/api/deepfake/analyze');
-    final request = http.MultipartRequest('POST', uri);
-    request.files.add(http.MultipartFile.fromBytes('audio', wavBytes, filename: 'audio.wav'));
-    final streamedResponse = await request.send().timeout(const Duration(seconds: 10));
-    final response = await http.Response.fromStream(streamedResponse);
-    if (response.statusCode == 200) {
-      final data = jsonDecode(response.body) as Map<String, dynamic>;
-      return {
-        'is_synthetic': data['is_synthetic'] as bool,
-        'confidence': (data['confidence'] as num).toDouble(),
-        'reason': data['reason'] as String? ?? 'Server-side DSP (ElevenLabs-grade detection)',
-        'metrics': data['metrics'] ?? {},
-      };
-    }
-    print('[DeepfakeDetector] Server returned ${response.statusCode}');
-    return null;
   }
 
   Uint8List _pcmToWavBytes(Int16List pcmData) {

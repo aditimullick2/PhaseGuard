@@ -1,3 +1,5 @@
+import 'dart:async';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../services/agora_calling_service.dart';
@@ -31,17 +33,25 @@ class InAppCallingScreen extends StatefulWidget {
 
 class _InAppCallingScreenState extends State<InAppCallingScreen> {
   late AgoraCallingService _callingService;
+  StreamSubscription<Uint8List>? _scambaiterAudioSub;
 
   @override
   void initState() {
     super.initState();
     _callingService = context.read<AgoraCallingService>();
     _startCall();
+    _setupScambaiterAudio();
   }
 
   Future<void> _startCall() async {
     try {
       final userId = _generateUserId();
+
+      // Connect Agora audio stream to SessionController for dual processing
+      final sessionController = context.read<SessionController>();
+      _callingService.setAudioChunkCallback((audioChunk) {
+        sessionController.processInAppCallAudioChunk(audioChunk);
+      });
 
       if (widget.isVideoCall) {
         await _callingService.startVideoCall(
@@ -60,6 +70,11 @@ class _InAppCallingScreenState extends State<InAppCallingScreen> {
           remoteUserName: widget.remoteUserName,
         );
       }
+
+      // Start PhaseGuard protection session
+      await sessionController.startInAppCallProtection(
+        remotePartyName: widget.remoteUserName,
+      );
     } catch (e) {
       debugPrint('Failed to start call: $e');
       if (mounted) Navigator.pop(context);
@@ -70,12 +85,26 @@ class _InAppCallingScreenState extends State<InAppCallingScreen> {
     return DateTime.now().millisecondsSinceEpoch.remainder(0x7fffffff);
   }
 
+  void _setupScambaiterAudio() {
+    final sessionController = context.read<SessionController>();
+    // Listen to AI Scambaiter TTS bytes and inject them into the active call
+    // SCENARIO: We call victim → Scammer is on victim's phone (remote caller)
+    // This AI voice goes to the SCAMMER (who is on the remote end), not the victim
+    _scambaiterAudioSub = sessionController.scambaiterAudioStream.listen((chunk) {
+      if (mounted && _callingService.isJoined) {
+        _callingService.playScambaiterAudio(chunk);
+        debugPrint('[InAppCallingScreen] 🔊 AI scambaiter audio sent to SCAMMER (remote caller)');
+      }
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
-    return WillPopScope(
-      onWillPop: () async {
+    return PopScope(
+      canPop: true,
+      onPopInvokedWithResult: (didPop, result) async {
+        if (didPop) return;
         await _callingService.endCall();
-        return true;
       },
       child: Scaffold(
         backgroundColor: Colors.black,
@@ -322,7 +351,7 @@ class _InAppCallingScreenState extends State<InAppCallingScreen> {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.black.withOpacity(0.7),
+        color: Colors.black.withValues(alpha: 0.7),
         borderRadius: BorderRadius.circular(8),
         border: Border.all(
           color: sessionController.isScamDetected ? Colors.red : Colors.green,
@@ -400,6 +429,7 @@ class _InAppCallingScreenState extends State<InAppCallingScreen> {
 
   @override
   void dispose() {
+    _scambaiterAudioSub?.cancel();
     super.dispose();
   }
 }

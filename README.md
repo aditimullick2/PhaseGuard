@@ -48,24 +48,31 @@ PhaseGuard is a comprehensive anti-scam platform that detects scam content from 
 ┌─────────────────────────────────────────────────────────────────┐
 │              PHASEGUARD MOBILE APP (FLUTTER)                    │
 │  ┌─────────────────────────────────────────────────────────┐   │
-│  │ Layer 1: Keyword Detection (Instant, <1ms)              │   │
+│  │ LEVEL 1: Local Scam Text (Keyword + ML)                │   │
 │  │ - 300+ scam keywords                                    │   │
+│  │ - TFLite neural network                                 │   │
 │  │ - Multi-language support                               │   │
-│  │ - If confidence high → Return verdict                   │   │
+│  │ - If confident (SCAM/SAFE) → Stop (API SAVED)          │   │
+│  │ - If uncertain → Go to LEVEL 2                          │   │
+│  │ - Works COMPLETELY OFFLINE                              │   │
 │  └────────────────────┬────────────────────────────────────┘   │
 │                       ↓ (if uncertain)                         │
 │  ┌─────────────────────────────────────────────────────────┐   │
-│  │ Layer 2: TFLite Model (Local ML, ~100ms)               │   │
-│  │ - Dense neural network                                  │   │
-│  │ - 35 scam categories                                    │   │
-│  │ - If confidence high → Return verdict                   │   │
+│  │ LEVEL 2: Local Deepfake (TFLite Model)                 │   │
+│  │ - TFLite CNN model                                     │   │
+│  │ - DSP heuristics                                      │   │
+│  │ - If confident (SYNTHETIC/NATURAL) → Stop (API SAVED) │   │
+│  │ - If uncertain → Go to LEVEL 3                          │   │
+│  │ - Works COMPLETELY OFFLINE                              │   │
 │  └────────────────────┬────────────────────────────────────┘   │
-│                       ↓ (if uncertain or online)                │
+│                       ↓ (if uncertain or fact-checking needed) │
 │  ┌─────────────────────────────────────────────────────────┐   │
-│  │ Layer 3: Backend API (Online, 1-4s)                   │   │
+│  │ LEVEL 3: Web Backend (Online, Only When Needed)        │   │
 │  │ - Groq LLM analysis                                     │   │
 │  │ - Web search fact-checking                              │   │
+│  │ - Company/scheme verification                           │   │
 │  │ - Most powerful analysis                               │   │
+│  │ - API SAVED: Only called when necessary                 │   │
 │  └────────────────────┬────────────────────────────────────┘   │
 └────────────────────────────┼────────────────────────────────────┘
                              ↓
@@ -103,6 +110,33 @@ PhaseGuard is a comprehensive anti-scam platform that detects scam content from 
 │  - Scambaiter Response (if activated)                          │
 │  - Forensic PDF Dossier (1930 portal compatible)              │
 └─────────────────────────────────────────────────────────────────┘
+```
+
+### 🎯 Sequential Architecture - API Saving Strategy
+
+**Web Backend Only Called When:**
+1. **Local Levels Uncertain:** Confidence 30-70% (needs advanced analysis)
+2. **Fact-Checking Needed:** Company names, scheme names, government references
+3. **Advanced Verification:** Complex patterns requiring full AI pipeline
+
+**Web Backend NOT Called When:**
+1. **Local Confident SCAM:** >70% confidence locally (API SAVED)
+2. **Local Confident SAFE:** <30% confidence locally (API SAVED)
+3. **No Internet:** Offline mode active (local levels provide full protection)
+
+**Example Flow:**
+```
+Scammer: "Your account will be blocked in 24 hours"
+    ↓
+LEVEL 1 (Local): SCAM DETECTED (90% confidence)
+    ↓
+STOP HERE - Web NOT called (API SAVED) ✅
+
+Scammer: "I'm from SBI Bank with a new scheme"
+    ↓
+LEVEL 1 (Local): Fact-checking needed (company/scheme)
+    ↓
+Go to LEVEL 3 (Web) for verification ✅
 ```
 
 ---
@@ -275,78 +309,128 @@ If Detector 4 fails → Use ensemble mode
 
 ---
 
-## 🧠 3-Level Scam Detection Architecture
+## 🧠 3-Level Sequential Scam Detection Architecture
 
-### Why 3 Levels?
+### Why Sequential 3 Levels?
 
-To maximize accuracy while maintaining privacy and offline capability:
+To maximize accuracy while maintaining privacy, offline capability, and API efficiency:
 
 ```
-Layer 1: Keywords (Instant) → If confident → Return
-              ↓ (if uncertain)
-Layer 2: TFLite Model (Local ML) → If confident → Return
-              ↓ (if uncertain or online)
-Layer 3: Backend API (Online LLM) → Return
-              ↓ (if offline failed)
-Fallback to Layer 2 → Return
-              ↓ (if L2 failed)
-Fallback to Layer 1 → Return
+LEVEL 1 (Local Scam Text) → LEVEL 2 (Local Deepfake) → LEVEL 3 (Web Backend)
+        ↓                            ↓                         ↓
+   Keyword + ML                 TFLite CNN + DSP          Full AI Pipeline
+   Confidence Check            Confidence Check         Fact-Check/Advanced
+        ↓                            ↓                         ↓
+   If CONFIDENT                 If CONFIDENT              If UNCERTAIN
+   STOP (API SAVED)            STOP (API SAVED)           Go to Web
 ```
 
-### Layer 1: Keyword Detection (Instant, <1ms)
+### LEVEL 1: Local Scam Text Detection (Offline)
 - **Location:** Flutter app (local)
-- **Method:** 300+ scam keywords + rule-based matching
-- **Accuracy:** 98.7%
+- **Method:** 300+ scam keywords + TFLite neural network
+- **Accuracy:** 98.7% (keywords), 85%+ (ML model)
 - **Languages:** Hindi, English, Tamil, Telugu, Bengali, Marathi, Kannada, Malayalam, Punjabi, Gujarati
 - **Categories:** 35 scam types (digital arrest, sextortion, UPI fraud, etc.)
-- **Offline:** ✅ Yes
+- **Offline:** ✅ COMPLETELY OFFLINE (no internet needed)
+- **Latency:** <1ms (keywords), ~100ms (ML model)
+
+**Web Called When:**
+- Confidence 30-70% (uncertain)
+- Fact-checking needed (company names, schemes, government references)
+
+**Web NOT Called When:**
+- Confidence >70% (SCAM) → Stop (API SAVED)
+- Confidence <30% (SAFE) → Stop (API SAVED)
+- No internet → Works offline (local protection)
 
 **Example:**
 ```
 Input: "digital arrest warrant from CBI"
 Keyword match: "digital arrest" + "CBI" + "warrant"
 Verdict: CRITICAL (99% confidence)
-Category: DIGITAL_ARREST
-Latency: <1ms
+STOP HERE - Web NOT called (API SAVED) ✅
 ```
 
-### Layer 2: TFLite Model (Local ML, ~100ms)
+### LEVEL 2: Local Deepfake Detection (Offline)
 - **Location:** Flutter app (local)
-- **Method:** Dense neural network (TFLite)
-- **Accuracy:** 85%+ (35 categories)
-- **Training:** 2083 samples (1564 scam, 519 legitimate)
-- **Offline:** ✅ Yes
+- **Method:** TFLite CNN model + DSP heuristics
+- **Accuracy:** 75% on user voices
+- **Audio Format:** 16kHz mono PCM
+- **Offline:** ✅ COMPLETELY OFFLINE (no internet needed)
+- **Latency:** ~200ms
 
-**Purpose:**
-- Catches nuanced/indirect scam patterns
-- Detects patterns missed by keywords
-- Provides ML-based confidence scoring
+**Web Called When:**
+- Confidence 30-70% (uncertain about voice analysis)
+- Advanced voice analysis needed
 
-### Layer 3: Backend API (Online, 1-4s)
+**Web NOT Called When:**
+- Confidence >70% (SYNTHETIC) → Stop (API SAVED)
+- Confidence <30% (NATURAL) → Stop (API SAVED)
+- No internet → Works offline (local protection)
+
+**Example:**
+```
+Input: Robotic/elevenLabs voice
+VoiceShield analysis: SYNTHETIC (85% confidence)
+STOP HERE - Web NOT called (API SAVED) ✅
+```
+
+### LEVEL 3: Web Backend (Online - Only When Needed)
 - **Location:** Backend server
-- **Method:** Groq LLM + web search fact-checking
+- **Method:** Groq LLM + web search fact-checking + multi-detector deepfake
 - **Accuracy:** High (AI-powered)
-- **Purpose:** Most powerful analysis
+- **Purpose:** Most powerful analysis, fact-checking, advanced verification
 
 **Features:**
 - Groq LLM (Whisper STT + Llama analysis)
 - 4-tier search fallback (Tavily → Jina → Serper → DuckDuckGo)
 - Real-time fact-checking
-- Called only when L1 + L2 are uncertain (0.30-0.70 zone)
+- Company/scheme verification
+- Multi-detector deepfake analysis
+
+**Web Called When:**
+- Local levels uncertain (30-70% confidence)
+- Fact-checking needed (company names, schemes, government references)
+- Advanced analysis required
 
 **Example:**
 ```
-Input: "Your electricity connection will be disconnected in 2 hours"
-Layer 1: No direct keyword match (confidence: 0.45)
-Layer 2: TFLite prediction: SCAM (confidence: 0.60)
-Layer 3: Backend analysis:
-  - STT: Transcript generated
-  - Claim extraction: "electricity disconnection threat"
-  - Search: "real electricity disconnection process India"
-  - Fact-check: "No real utility disconnects in 2 hours without notice"
+Input: "I'm from SBI Bank with Pradhan Mantri Yojana"
+LEVEL 1: Fact-checking needed (company + scheme)
+LEVEL 2: Uncertain
+LEVEL 3: Backend analysis:
+  - Company verification: SBI Bank
+  - Scheme verification: Pradhan Mantri Yojana
+  - Fact-check: Scheme legitimacy
   - Verdict: CRITICAL (95% confidence)
-  - Category: ELECTRICITY_THREAT
+  - Category: GOVERNMENT_SCAM
 ```
+
+### 🎯 API Saving Summary
+
+| Scenario | LEVEL 1 | LEVEL 2 | LEVEL 3 (Web) | API Calls |
+|----------|---------|---------|---------------|-----------|
+| Obvious scam keywords | SCAM (90%) | - | NOT called | 0 (SAVED) |
+| Safe conversation | SAFE (95%) | - | NOT called | 0 (SAVED) |
+| Synthetic voice | - | SYNTHETIC (85%) | NOT called | 0 (SAVED) |
+| Natural voice | - | NATURAL (90%) | NOT called | 0 (SAVED) |
+| Uncertain text | UNCERTAIN (45%) | - | CALLED | 1 |
+| Fact-check needed | COMPANY detected | - | CALLED | 1 |
+| No internet | Works offline | Works offline | SKIPPED | 0 (OFFLINE) |
+
+### 📊 Performance
+
+**Offline Protection (No Internet):**
+- ✅ LEVEL 1: Full scam text detection
+- ✅ LEVEL 2: Full deepfake detection
+- ✅ Real-time alerts
+- ✅ 100% protection available
+
+**Online Protection (With Internet):**
+- ✅ LEVEL 1: Full scam text detection
+- ✅ LEVEL 2: Full deepfake detection
+- ✅ LEVEL 3: Advanced fact-checking (when needed)
+- ✅ Maximum protection with API efficiency
 
 ---
 
@@ -502,21 +586,34 @@ Scambaiter Response Text
 **Location:** `apps/flutter/`
 
 **Features:**
-- ✅ **Local VoiceShield Detection:** Offline deepfake detection on device
-- ✅ **3-Level Scam Detection Architecture:** Hybrid flow maximizing privacy
-- ✅ Layer 1: Keyword detection (98.7% accuracy, 300+ keywords)
-- ✅ Layer 2: TFLite model (35 categories, weighted patterns)
-- ✅ Layer 3: Backend API (Groq LLM + web search)
-- ✅ **2-Level Audio Deepfake Detection:** Local first, backend fallback
-- ✅ Real-time WebSocket integration
-- ✅ Audio capture services & Shizuku integration
-- ✅ Multi-language support (10 languages)
-- ✅ Offline capability (Layers 1 + 2 work without internet)
+- ✅ **3-Level Sequential Architecture:** LEVEL 1 (Scam Text) → LEVEL 2 (Deepfake) → LEVEL 3 (Web)
+- ✅ **LEVEL 1 (Local Scam Text):** Keyword + TFLite ML model (98.7% accuracy, 300+ keywords)
+- ✅ **LEVEL 2 (Local Deepfake):** TFLite CNN model + DSP heuristics (75% accuracy)
+- ✅ **LEVEL 3 (Web Backend):** Full AI pipeline (only when needed for fact-checking)
+- ✅ **API Saving Strategy:** Web only called when local uncertain or fact-checking needed
+- ✅ **Offline Capability:** LEVEL 1 & LEVEL 2 work completely offline (no internet needed)
+- ✅ **Real-time Audio Capture:** Agora AudioFrameObserver (no speakerphone needed)
+- ✅ **Scambaiter Integration:** AI voice sent to remote scammer via Agora
+- ✅ **WebSocket Integration:** Binary audio streaming + JSON transcript
+- ✅ **Multi-language Support:** 10 languages (Hindi, English, Tamil, Telugu, Bengali, Marathi, Kannada, Malayalam, Punjabi, Gujarati)
+- ✅ **Connectivity Monitoring:** Automatic offline/online mode switching
 
-**Deepfake Detection:**
-- **Local:** VoiceShield TFLite model (always available)
-- **Remote:** Multi-detector fallback (Vocalyx + others)
-- **Offline Capability:** Works without internet using local detector
+**Architecture:**
+```
+Scammer Audio → Agora AudioFrameObserver → Local Processing
+    ↓
+LEVEL 1 (Scam Text): Keyword + ML (OFFLINE)
+    ↓
+LEVEL 2 (Deepfake): TFLite CNN + DSP (OFFLINE)
+    ↓
+LEVEL 3 (Web): Fact-checking (ONLY WHEN NEEDED)
+```
+
+**Offline Mode:**
+- ✅ LEVEL 1: Full scam text detection works offline
+- ✅ LEVEL 2: Full deepfake detection works offline
+- ✅ Real-time protection without internet
+- ✅ Web automatically skipped when offline
 
 ---
 
@@ -724,12 +821,12 @@ This project is open source. See LICENSE file for details.
 
 ## 🤝 Contributing
 
-Contributions welcome! Please read our contributing guidelines before submitting PRs.
+Contributions welcome! Please read our contributing guidelines before submitting PRs at https://github.com/yourusername/PhaseGuard/blob/main/CONTRIBUTING.md.
 
 ## 📧 Contact
 
-For questions or support, please open an issue on GitHub.
 
+For questions or support, please open an issue on GitHub.
 ---
 
 **Made with ❤️ for India** | **Protecting citizens from scams** | **Building a safer digital future**

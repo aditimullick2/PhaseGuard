@@ -1,30 +1,17 @@
 ﻿import 'dart:convert';
-import 'dart:typed_data';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
-import 'package:http/http.dart' as http;
 import 'package:tflite_flutter/tflite_flutter.dart';
 import 'scam_detector.dart';
 
-/// PhaseGuard 3-Layer Scam Text Detector
+/// PhaseGuard 3-Level Scam Text Detector
 ///
-/// Layer 1 (Instant, Offline): Keyword pattern matching
-///   → Returns in <1ms with no ML overhead.
+/// LOCAL ONLY (SEQUENTIAL): Keyword + TFLite ML model
+///   → Runs on-device, no internet needed.
 ///   → Catches obvious scams (OTP, block account, CBI, etc.)
-///   → If CONFIRMED scam (score ≥ 3) or CONFIRMED clean (score = 0) → done.
-///
-/// Layer 2 (Local ML, Offline): TFLite 3-layer Dense NN (TF-IDF)
-///   → Runs on-device in ~100ms.
 ///   → Catches nuanced, indirect, and "twisted" scam patterns.
-///   → If confident (>0.70 or <0.30) → done.
-///
-/// Layer 3 (Server Fallback): PhaseGuard AI factcheck API
-///   → Called only when both Layer 1 and 2 are uncertain.
-///   → Uses full LLM/factcheck pipeline on server.
-///   → Falls back to Layer 2 result if server unavailable.
-
+///   → Returns local result with confidence score.
 class ScamDetectorService {
-  final String serverBaseUrl;
-
   Interpreter? _interpreter;
   Map<String, dynamic>? _metadata;
   Map<String, int>? _vocab;
@@ -35,9 +22,7 @@ class ScamDetectorService {
   static const double _lowConfidenceThreshold = 0.30;
   static const int _keywordConfirmedScam = 3;
 
-  ScamDetectorService({
-    this.serverBaseUrl = 'http://10.0.2.2:8000',
-  });
+  ScamDetectorService();
 
   Future<void> init() async {
     if (_isModelReady) return;
@@ -62,15 +47,16 @@ class ScamDetectorService {
       );
 
       _isModelReady = true;
-      print('[ScamDetector] TFLite model + vocabulary loaded ✅ (${_vocab!.length} tokens)');
+      debugPrint('[ScamDetector] TFLite model + vocabulary loaded ✅ (${_vocab!.length} tokens)');
     } catch (e) {
-      print('[ScamDetector] Failed to load model: $e');
+      debugPrint('[ScamDetector] Failed to load model: $e');
     }
   }
 
   // ─── PUBLIC ENTRY POINT ────────────────────────────────────────────────────
 
-  /// Analyze text using 3-layer pipeline.
+  /// Analyze text using local keyword + TFLite ML pipeline.
+  /// Returns local result only - works completely offline.
   Future<ScamAnalysisResult> analyze(String text) async {
     if (!_isModelReady) await init();
 
@@ -78,7 +64,7 @@ class ScamDetectorService {
 
     // ── LAYER 1: Keyword Matching ──────────────────────────────────────────
     final keywordResult = _runKeywordLayer(normalizedText);
-    print('[ScamDetector] L1 keyword score: ${keywordResult.keywordScore}');
+    debugPrint('[ScamDetector] L1 keyword score: ${keywordResult.keywordScore}');
 
     // Hard confirmed: ≥ 3 STRONG scam keywords → immediate alert
     if (keywordResult.keywordScore >= _keywordConfirmedScam) {
@@ -106,7 +92,8 @@ class ScamDetectorService {
 
     // ── LAYER 2: TFLite Model ──────────────────────────────────────────────
     final mlResult = _runModelLayer(normalizedText);
-    print('[ScamDetector] L2 model confidence: ${mlResult.toStringAsFixed(3)}');
+    final status = mlResult < 0.30 ? 'SAFE' : mlResult > 0.70 ? 'SCAM' : 'UNCERTAIN';
+    debugPrint('[ScamDetector] L2 model confidence: ${mlResult.toStringAsFixed(3)} ($status)');
 
     // Confident scam
     if (mlResult > _highConfidenceThreshold) {
@@ -132,32 +119,13 @@ class ScamDetectorService {
       );
     }
 
-    // ── LAYER 3: Server Fallback (uncertain zone) ──────────────────────────
-    print('[ScamDetector] L2 uncertain (${mlResult.toStringAsFixed(2)}) → escalating to server Layer 3...');
-    try {
-      final serverResult = await _runServerLayer(text);
-      if (serverResult != null) {
-        return ScamAnalysisResult(
-          isScam: serverResult['is_scam'] as bool,
-          confidence: (serverResult['confidence'] as num).toDouble(),
-          layer: 'server',
-          category: serverResult['category'] as String? ?? 'UNKNOWN',
-          reasoning: serverResult['reasoning'] as String? ?? 'Server AI analysis',
-          keywordScore: keywordResult.keywordScore,
-        );
-      }
-    } catch (e) {
-      print('[ScamDetector] Server fallback failed: $e → using L2 result');
-    }
-
-    // Server unavailable → return L2 result with honest uncertainty
+    // Uncertain → return with honest uncertainty
     return ScamAnalysisResult(
       isScam: mlResult >= 0.50,
       confidence: mlResult,
-      layer: 'tflite_fallback',
+      layer: 'tflite',
       category: mlResult >= 0.50 ? 'POSSIBLE_SCAM' : 'LIKELY_SAFE',
-      reasoning: 'Uncertain: TFLite score=${mlResult.toStringAsFixed(2)}. '
-          'Keyword hits=${keywordResult.keywordScore}. Server offline.',
+      reasoning: 'Uncertain: TFLite score=${mlResult.toStringAsFixed(2)}. Keyword hits=${keywordResult.keywordScore}.',
       keywordScore: keywordResult.keywordScore,
     );
   }
@@ -225,26 +193,9 @@ class ScamDetectorService {
 
       return (output[0][0] as double).clamp(0.0, 1.0);
     } catch (e) {
-      print('[ScamDetector] Layer 2 error: $e');
+      debugPrint('[ScamDetector] Layer 2 error: $e');
       return 0.5;
     }
-  }
-
-  // ─── LAYER 3: SERVER ───────────────────────────────────────────────────────
-
-  Future<Map<String, dynamic>?> _runServerLayer(String text) async {
-    final uri = Uri.parse('$serverBaseUrl/api/scam/analyze');
-    final response = await http.post(
-      uri,
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({'text': text}),
-    ).timeout(const Duration(seconds: 8));
-
-    if (response.statusCode == 200) {
-      return jsonDecode(response.body) as Map<String, dynamic>;
-    }
-    print('[ScamDetector] Server returned ${response.statusCode}');
-    return null;
   }
 
   // ─── HELPERS ───────────────────────────────────────────────────────────────

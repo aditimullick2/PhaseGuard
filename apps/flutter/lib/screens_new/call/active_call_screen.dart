@@ -69,9 +69,12 @@ class _ActiveCallScreenState extends State<ActiveCallScreen> {
     });
 
     // Listen to AI Scambaiter TTS bytes and inject them into the active call
+    // SCENARIO: We call victim → Scammer is on victim's phone (remote caller)
+    // This AI voice goes to the SCAMMER (who is on the remote end), not the victim
     _scambaiterAudioSub = session.scambaiterAudioStream.listen((chunk) {
       if (mounted && widget.callingService.isJoined) {
         widget.callingService.playScambaiterAudio(chunk);
+        debugPrint('[ActiveCallScreen] 🔊 AI scambaiter audio sent to SCAMMER (remote caller)');
       }
     });
   }
