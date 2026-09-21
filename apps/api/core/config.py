@@ -45,7 +45,7 @@ class Settings(BaseSettings):
 
     # ── Groq (STT + LLM) ──────────────────────────────────────────────────────
     groq_api_key: str = Field(default="", description="Groq API key")
-    groq_stt_model: str = Field(default="whisper-large-v3")
+    groq_stt_model: str = Field(default="whisper-large-v3-turbo")
     groq_llm_model: str = Field(default="llama-3.1-8b-instant")
 
     # ── NewsAPI (3-tier search Tier 1) ────────────────────────────────────────
