@@ -2,14 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:permission_handler/permission_handler.dart';
 import '../services/realtime_scam_detection.dart';
 import '../services/audio_streaming.dart';
-// import '../services/local_stt_service.dart';  // Gradle build issues - use backend Whisper STT
-import '../services/scam_detector.dart';
 import '../theme/tokens.dart';
 
 /// Demo screen for real-time scam detection
 /// 
 /// Shows how to integrate backend AI scam detection with mobile app
 /// Uses native AudioRecord with speakerphone for in-call audio capture
+/// BACKEND-ONLY: All processing happens on the server
 class ScamDetectionDemo extends StatefulWidget {
   const ScamDetectionDemo({super.key});
 
@@ -20,7 +19,6 @@ class ScamDetectionDemo extends StatefulWidget {
 class _ScamDetectionDemoState extends State<ScamDetectionDemo> {
   final RealtimeScamDetection _scamDetection = RealtimeScamDetection();
   late final AudioStreaming _audioStreaming;
-  // final LocalSttService _localSttService = LocalSttService();  // Gradle build issues - use backend Whisper STT
   
   bool _isInitialized = false;
   bool _isRecording = false;
@@ -33,18 +31,10 @@ class _ScamDetectionDemoState extends State<ScamDetectionDemo> {
   String _audioSource = 'MIC';
   double _audioAmplitude = 0.0;
   
-  // Local DSP metrics
-  double _localTremorScore = 0.0;
-  double _localPhaseDispersion = 0.0;
-
-  // Local NLP metrics
-  // String _localTranscript = '';  // Gradle build issues - use backend Whisper STT
-  
   @override
   void initState() {
     super.initState();
     _audioStreaming = AudioStreaming(scamDetection: _scamDetection);
-    // _localSttService.initialize();  // Gradle build issues - use backend Whisper STT
     _setupEventListeners();
     _checkPermissions();
   }

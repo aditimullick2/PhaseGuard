@@ -1,8 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'services/agora_audio_capture.dart';
 import 'services/calling_service.dart';
-import 'services/deepfake_detector_service.dart';
-import 'services/scam_detector_service.dart';
+
 import 'state/session_controller.dart';
 
 /// Debug verification script to check all PhaseGuard connections
@@ -17,22 +16,7 @@ class DebugConnections {
     debugPrint('   ✅ Audio capture service created');
     debugPrint('   ✅ Audio stream available: ${audioCapture.audioStream != null}');
     
-    // 2. Check Deepfake Detector Service
-    debugPrint('🤖 2. DEEPFAKE DETECTOR SERVICE:');
-    final deepfakeDetector = DeepfakeDetectorService();
-    try {
-      await deepfakeDetector.init();
-      debugPrint('   ✅ Deepfake detector initialized');
-      debugPrint('   ✅ TFLite model loaded');
-    } catch (e) {
-      debugPrint('   ❌ Deepfake detector failed: $e');
-    }
-    
-    // 3. Check Scam Detector Service
-    debugPrint('🔍 3. SCAM DETECTOR SERVICE:');
-    final scamDetector = ScamDetectorService();
-    debugPrint('   ✅ Scam detector service created');
-    debugPrint('   ✅ Keywords loaded: ${scamDetector.keywordPatterns.length}');
+
     
     // 4. Check Session Controller
     debugPrint('🎮 4. SESSION CONTROLLER:');

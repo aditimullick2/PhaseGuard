@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:collection';
 import 'dart:io';
 import 'dart:typed_data';
 import 'package:agora_rtc_engine/agora_rtc_engine.dart';
@@ -24,6 +25,11 @@ class InAppCallingService extends ChangeNotifier {
   int _callDurationSeconds = 0;
   Timer? _durationTimer;
   int? _localUid; // Track local user ID to skip local audio
+
+  // AI Scambaiter Audio Queue
+  final Queue<Uint8List> _scambaiterAudioQueue = Queue<Uint8List>();
+  bool _isPlayingScambaiter = false;
+  int _effectIdCounter = 1;
 
   // 100ms audio frame accumulator: 16000 Hz * 0.1s * 2 bytes = 3200 bytes
   static const int targetChunkBytes = 3200;
@@ -129,6 +135,12 @@ class InAppCallingService extends ChangeNotifier {
           _remoteUid = null;
           _stopDurationTimer();
           notifyListeners();
+        },
+        onAudioEffectFinished: (int soundId) {
+          if (soundId >= 1 && soundId <= 50) {
+            _isPlayingScambaiter = false;
+            _processScambaiterQueue();
+          }
         },
         onError: (ErrorCodeType err, String msg) {
           debugPrint('[InAppCallingService] Agora error $err: $msg');
@@ -285,7 +297,6 @@ class InAppCallingService extends ChangeNotifier {
   }
 
   // ==== SCAMBAITER AUDIO INJECTION ====
-  int _effectIdCounter = 1;
 
   Uint8List _addWavHeader(Uint8List pcmBytes) {
     int channels = 1;
@@ -319,24 +330,44 @@ class InAppCallingService extends ChangeNotifier {
   /// publish: true sends audio to the remote caller (scammer)
   /// REAL-TIME: Optimized for minimal latency (<500ms total)
   Future<void> playScambaiterAudio(Uint8List pcmBytes) async {
-    if (_engine == null || pcmBytes.isEmpty) return;
+    if (pcmBytes.isEmpty) return;
+    _scambaiterAudioQueue.add(pcmBytes);
+    _processScambaiterQueue();
+  }
 
+  Future<void> _processScambaiterQueue() async {
+    if (_isPlayingScambaiter || _scambaiterAudioQueue.isEmpty || _engine == null) return;
+
+    _isPlayingScambaiter = true;
+    final audioBytes = _scambaiterAudioQueue.removeFirst();
     final startTime = DateTime.now();
 
     try {
-      // Step 1: Convert PCM to WAV (fast operation)
+      // ── Step 1: Detect audio format ───────────────────────────────────────
+      // MP3 magic bytes: MPEG sync word starts with 0xFF 0xEx/0xFx
+      // ID3 tag (common MP3 header): 0x49 0x44 0x33 ("ID3")
+      final isMp3 = audioBytes.length > 3 &&
+          ((audioBytes[0] == 0xFF && (audioBytes[1] & 0xE0) == 0xE0) ||
+           (audioBytes[0] == 0x49 && audioBytes[1] == 0x44 && audioBytes[2] == 0x33));
+
+      final String ext = isMp3 ? 'mp3' : 'wav';
+      debugPrint('🔊 ScamBaiter audio chunk: ${audioBytes.length} bytes, format=${isMp3 ? "MP3" : "PCM→WAV"}');
+
+      // ── Step 2: Build final audio bytes ───────────────────────────────────
       final convertStart = DateTime.now();
-      final wavBytes = _addWavHeader(pcmBytes);
+      final Uint8List fileBytes = isMp3
+          ? audioBytes                  // MP3: use directly, no header needed
+          : _addWavHeader(audioBytes);  // PCM: wrap with RIFF/WAV header
       final convertTime = DateTime.now().difference(convertStart).inMilliseconds;
 
-      // Step 2: Write to temp file (fast on modern devices)
+      // ── Step 3: Write to temp file ────────────────────────────────────────
       final writeStart = DateTime.now();
       final tempDir = await getTemporaryDirectory();
-      final file = File('${tempDir.path}/scam_audio_$_effectIdCounter.wav');
-      await file.writeAsBytes(wavBytes);
+      final file = File('${tempDir.path}/scam_audio_$_effectIdCounter.$ext');
+      await file.writeAsBytes(fileBytes);
       final writeTime = DateTime.now().difference(writeStart).inMilliseconds;
 
-      // Step 3: Play via Agora (network latency depends on connection)
+      // ── Step 4: Play via Agora (publish=true → sent to remote scammer) ────
       final playStart = DateTime.now();
       await _engine!.playEffect(
         soundId: _effectIdCounter,
@@ -353,13 +384,15 @@ class InAppCallingService extends ChangeNotifier {
       if (_effectIdCounter > 50) _effectIdCounter = 1;
 
       final totalTime = DateTime.now().difference(startTime).inMilliseconds;
-      debugPrint('[InAppCallingService] 🔊 AI scambaiter to SCAMMER: convert=${convertTime}ms, write=${writeTime}ms, play=${playTime}ms, total=${totalTime}ms (REAL-TIME target: <500ms)');
+      debugPrint('🔊 AI scambaiter to SCAMMER: format=$ext, convert=${convertTime}ms, write=${writeTime}ms, play=${playTime}ms, total=${totalTime}ms');
 
       // Cleanup old files to prevent storage bloat
       _cleanupOldAudioFiles(tempDir);
 
     } catch (e) {
-      debugPrint('[InAppCallingService] play effect error: $e');
+      debugPrint('❌ Scambaiter audio play error: $e');
+      _isPlayingScambaiter = false;
+      _processScambaiterQueue();
     }
   }
 

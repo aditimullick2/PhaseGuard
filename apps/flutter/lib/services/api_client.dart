@@ -7,16 +7,12 @@ import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
 import '../models/protocol.dart';
+import '../config/app_config.dart';
 
-/// Same production host the React Native client uses.
-
-/// Same production host the React Native client uses.
+/// Backend-only architecture - uses local backend URL from config
 class ApiClient {
   ApiClient({
-    this.baseUrl = const String.fromEnvironment(
-      'PHASEGUARD_BACKEND_URL',
-      defaultValue: 'https://phaseguard.onrender.com',
-    ),
+    this.baseUrl = AppConfig.backendUrl,
   });
 
   final String baseUrl;

@@ -22,9 +22,13 @@ class AgoraAudioCaptureService {
     _engine = engine;
     
     // Register audio frame observer
-    _engine!.registerAudioFrameObserver(
+    _engine!.getMediaEngine().registerAudioFrameObserver(
       AudioFrameObserver(
-        onAudioFrame: (AudioFrame frame) {
+        onRecordAudioFrame: (String channelId, AudioFrame frame) {},
+        onPlaybackAudioFrame: (String channelId, AudioFrame frame) {},
+        onMixedAudioFrame: (String channelId, AudioFrame frame) {},
+        onEarMonitoringAudioFrame: (AudioFrame frame) {},
+        onPlaybackAudioFrameBeforeMixing: (String channelId, int uid, AudioFrame frame) {
           if (_isCapturing) {
             _processAudioFrame(frame);
           }
@@ -50,28 +54,10 @@ class AgoraAudioCaptureService {
   /// Process audio frame from Agora
   void _processAudioFrame(AudioFrame frame) {
     try {
-      // Convert audio frame to bytes
-      // Agora provides PCM audio data
-      final samples = frame.samples;
-      final bytesPerSample = frame.bytesPerSample;
-      final channels = frame.channels;
-      
-      // Calculate total bytes
-      final totalBytes = samples.length * bytesPerSample;
-      final audioBytes = Uint8List(totalBytes);
-      
-      // Convert samples to bytes
-      for (int i = 0; i < samples.length; i++) {
-        final sample = samples[i];
-        // Int16 to bytes (little-endian)
-        if (bytesPerSample == 2) {
-          audioBytes[i * 2] = sample & 0xFF;
-          audioBytes[i * 2 + 1] = (sample >> 8) & 0xFF;
-        }
+      final audioBytes = frame.buffer;
+      if (audioBytes != null) {
+        _audioStreamController.add(audioBytes);
       }
-      
-      // Add to stream
-      _audioStreamController.add(audioBytes);
     } catch (e) {
       debugPrint('[AgoraAudioCapture] Error processing frame: $e');
     }
@@ -81,30 +67,4 @@ class AgoraAudioCaptureService {
     _isCapturing = false;
     _audioStreamController.close();
   }
-}
-
-/// AudioFrameObserver — Agora audio frame observer interface
-class AudioFrameObserver {
-  final Function(AudioFrame frame) onAudioFrame;
-
-  AudioFrameObserver({required this.onAudioFrame});
-}
-
-/// AudioFrame — Represents a single audio frame from Agora
-class AudioFrame {
-  final Int16List samples;
-  final int sampleRate;
-  final int channels;
-  final int samplesPerChannel;
-  final int bytesPerSample;
-  final int type;
-
-  AudioFrame({
-    required this.samples,
-    required this.sampleRate,
-    required this.channels,
-    required this.samplesPerChannel,
-    required this.bytesPerSample,
-    required this.type,
-  });
 }

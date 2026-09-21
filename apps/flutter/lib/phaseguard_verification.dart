@@ -1,7 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'services/agora_audio_capture.dart';
-import 'services/deepfake_detector_service.dart';
-import 'services/scam_detector_service.dart';
+
 import 'state/session_controller.dart';
 import 'config/app_config.dart';
 
@@ -29,28 +28,7 @@ class PhaseGuardVerification {
     debugPrint('   ✅ Audio source: REMOTE caller only (scammer voice)');
     debugPrint('   ✅ Format: 16kHz mono PCM');
     
-    // 3. DEEPFAKE DETECTOR SERVICE
-    debugPrint('🤖 3. DEEPFAKE DETECTOR SERVICE:');
-    final deepfakeDetector = DeepfakeDetectorService();
-    try {
-      await deepfakeDetector.init();
-      debugPrint('   ✅ Service created');
-      debugPrint('   ✅ TFLite model loaded: deepfake_detector.tflite');
-      debugPrint('   ✅ Parallel processing: Local + Web');
-      debugPrint('   ✅ Priority: Web result = FINAL (best model)');
-      debugPrint('   ✅ Fallback: Local if web fails');
-    } catch (e) {
-      debugPrint('   ❌ Deepfake detector failed: $e');
-    }
-    
-    // 4. SCAM DETECTOR SERVICE
-    debugPrint('🔍 4. SCAM DETECTOR SERVICE:');
-    final scamDetector = ScamDetectorService();
-    debugPrint('   ✅ Service created');
-    debugPrint('   ✅ TFLite model loaded: scam_detector.tflite');
-    debugPrint('   ✅ Keywords: 300+ scam patterns');
-    debugPrint('   ✅ Web escalation: When uncertain (30-70% confidence)');
-    debugPrint('   ✅ Fact-checking: Company/scheme detection');
+
     
     // 5. SESSION CONTROLLER
     debugPrint('🎮 5. SESSION CONTROLLER:');

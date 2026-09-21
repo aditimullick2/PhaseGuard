@@ -14,69 +14,29 @@ import '../services/api_client.dart';
 import '../services/call_socket.dart';
 import '../services/offline_dossier_service.dart';
 import '../services/phone_call_monitor.dart';
-import '../services/scam_taxonomy.dart';
-import '../services/scam_detector_service.dart';
-import '../services/deepfake_detector_service.dart';
-import '../services/video_deepfake_detector.dart';
-import '../services/offline_storage.dart';
-import '../services/connectivity_monitor.dart';
 
 class SessionController extends ChangeNotifier {
   SessionController({ApiClient? api, CallSocket? socket})
       : _api = api ?? ApiClient(),
         _socket = socket ?? CallSocket() {
-    _initOfflineMode();
   }
 
-  /// OFFLINE MODE: Initialize connectivity monitoring and offline storage
-  Future<void> _initOfflineMode() async {
-    try {
-      _offlineStorage = await OfflineStorage.create();
-      _connectivityMonitor = ConnectivityMonitor()
-        ..onOffline = _handleOfflineTransition
-        ..onOnline = _handleOnlineTransition;
-      _connectivityMonitor.startMonitoring();
-
-      // Check initial connectivity state
-      isOnline = await _connectivityMonitor.isConnected();
-      isOfflineMode = !isOnline;
-      debugPrint('📡 Offline mode initialized: isOnline=$isOnline, Local levels ready');
-    } catch (e) {
-      debugPrint('⚠️ Failed to initialize offline mode: $e');
-    }
-  }
-
-  /// 3-LEVEL ARCHITECTURE OVERVIEW:
-  /// LEVEL 1 (Local Scam Text): Keyword + ML model - detects scam patterns in transcript (LOCAL)
-  /// LEVEL 2 (Local Deepfake): TFLite model + Web Multi-detector - detects synthetic voices (PARALLEL PROCESSING)
-  /// LEVEL 3 (Web Backend): Full AI pipeline - factcheck, deepfake, ensemble analysis
-  ///
-  /// LEVEL 1: LOCAL with Web escalation when uncertain/fact-checking needed
-  /// LEVEL 2: PARALLEL PROCESSING - Local + Web run simultaneously, jo pehle aaye use karo, web result = FINAL
-  /// LEVEL 3: Web Backend - Advanced analysis when needed
-  ///
-  /// LEVEL 1 aur LEVEL 2 real-time mein saath mein chalenge
-  /// Deepfake me web parallel hai (best model)
-  /// Scam text me local processing with web escalation for uncertain cases/fact-checking
+  /// BACKEND-ONLY ARCHITECTURE:
+  /// All processing happens on the backend server
+  /// Flutter app captures audio and sends to backend via WebSocket
+  /// Backend performs scam detection, deepfake analysis, and scambaiter responses
+  /// No local ML models or processing - pure backend architecture
 
   final ApiClient _api;
   final CallSocket _socket;
-  final ScamDetectorService _localDetector = ScamDetectorService();
-  final DeepfakeDetectorService _deepfakeDetector = DeepfakeDetectorService();
-  final VideoDeepfakeDetector _videoDeepfakeDetector = VideoDeepfakeDetector();
-  late OfflineStorage _offlineStorage;
-  late ConnectivityMonitor _connectivityMonitor;
 
-  // Video Spoofing states
+  // Video Spoofing states (backend only)
   bool isVideoSpoof = false;
   double videoSpoofScore = 0.0;
   String? videoSpoofReason;
   Timer? _videoSnapshotTimer;
 
-  // OFFLINE MODE STATE
-  bool isOfflineMode = false;
-  OfflineStorage? get offlineStorage => _offlineStorage;
-  bool isOnline = true;
+  // Audio streaming state
   AudioRecorder? _audioRecorder;
   StreamSubscription<List<int>>? _micStreamSub;
 
@@ -119,8 +79,7 @@ class SessionController extends ChangeNotifier {
   final StreamController<Uint8List> scambaiterAudioStreamController = StreamController<Uint8List>.broadcast();
   Stream<Uint8List> get scambaiterAudioStream => scambaiterAudioStreamController.stream;
 
-  // Deepfake detector buffer
-  final List<int> _deepfakeAudioBuffer = [];
+
 
   void clearError() {
     error = null;
@@ -408,10 +367,11 @@ class SessionController extends ChangeNotifier {
     }
     connecting = true;
     error = null;
+    liveTranscript = 'Connecting to AI server... (may take 60s)';
     notifyListeners();
     try {
       final init = await _api.initCall(callerNumber: this.callerNumber).timeout(
-        const Duration(seconds: 6),
+        const Duration(seconds: 120),
       );
       callId = init.callId;
       token = init.token;
@@ -429,7 +389,7 @@ class SessionController extends ChangeNotifier {
           notifyListeners();
         },
       ).timeout(
-        const Duration(seconds: 6),
+        const Duration(seconds: 30),
       );
       wsConnected = true;
       callState = 'ACTIVE';
@@ -440,6 +400,7 @@ class SessionController extends ChangeNotifier {
       // Don't fallback to local mode - require real backend connection
       wsConnected = false;
       callState = 'IDLE';
+      liveTranscript = 'Connection failed. Please retry.';
     } finally {
       connecting = false;
       notifyListeners();
@@ -479,29 +440,28 @@ class SessionController extends ChangeNotifier {
       case 'transcript_update':
         final text = json['text'] as String? ?? '';
         if (text.isNotEmpty) {
-          liveTranscript = text;
           transcriptHistory.add(text);
-
-          // 3-LEVEL SEQUENTIAL ARCHITECTURE: LEVEL 1 (Scam Text) → LEVEL 2 (Deepfake) → LEVEL 3 (Web)
-          // LEVEL 1 (Local Scam Text) runs first, if uncertain then send to web
-          _runSequentialTextAnalysis(text);
+          if (transcriptHistory.length > 50) {
+             transcriptHistory.removeAt(0);
+          }
+          liveTranscript = transcriptHistory.join(' ');
+          // Backend handles all scam detection - no local processing
         }
         break;
 
       case 'factcheck_update':
-        // LEVEL 3 (Web Backend): FINAL result - overrides all local results
-        // This is the most accurate and comprehensive analysis
+        // Backend handles all scam detection - no local processing
         factcheck = FactCheckUpdate.fromJson(json);
-        debugPrint('🔍 LEVEL 3 (Web Factcheck) - FINAL: ${factcheck?.status} - ${factcheck?.message} (${factcheck?.category})');
+        debugPrint('🔍 Backend Factcheck: ${factcheck?.status} - ${factcheck?.message} (${factcheck?.category})');
         break;
 
       case 'ensemble_update':
-        // LEVEL 3 (Web Backend): FINAL ensemble result - overrides local results
+        // Backend handles all analysis - no local processing
         ensemble = EnsembleUpdate.fromJson(json);
         if (ensemble != null) {
-          pdiScore = ensemble!.ensembleScore; // Override local score with web score
+          pdiScore = ensemble!.ensembleScore;
           isSynthetic = ensemble!.label.toUpperCase() == 'SYNTHETIC' || ensemble!.ensembleScore >= 0.70;
-          debugPrint('📊 LEVEL 3 (Web Ensemble) - FINAL: ${ensemble!.ensembleScore}');
+          debugPrint('📊 Backend Ensemble: ${ensemble!.ensembleScore}');
         }
         break;
 
@@ -630,17 +590,6 @@ class SessionController extends ChangeNotifier {
       throw ApiException('No live call session. Wait for /call/init.');
     }
 
-    // OFFLINE MODE: Queue escalation for sync if offline
-    if (isOfflineMode || !isOnline) {
-      await storeEscalationForSync(
-        type: 'draft',
-        payload: {'call_id': id},
-      );
-      throw OfflineException(
-        'Backend unavailable. Escalation queued for sync when online.',
-      );
-    }
-
     return _api.draftEscalation(callId: id, token: t);
   }
 
@@ -649,17 +598,6 @@ class SessionController extends ChangeNotifier {
     final t = token;
     if (id == null || t == null) {
       throw ApiException('No live call session.');
-    }
-
-    // OFFLINE MODE: Queue escalation for sync if offline
-    if (isOfflineMode || !isOnline) {
-      await storeEscalationForSync(
-        type: 'confirm',
-        payload: {'draft_id': draftId, 'call_id': id},
-      );
-      throw OfflineException(
-        'Backend unavailable. Confirmation queued for sync when online.',
-      );
     }
 
     final result = await _api.confirmEscalation(
@@ -692,17 +630,6 @@ class SessionController extends ChangeNotifier {
     final t = token;
     if (id == null || t == null) {
       throw ApiException('No live call session.');
-    }
-
-    // OFFLINE MODE: Queue escalation for sync if offline
-    if (isOfflineMode || !isOnline) {
-      await storeEscalationForSync(
-        type: 'cybercell',
-        payload: {'call_id': id},
-      );
-      throw OfflineException(
-        'Backend unavailable. Cybercell escalation queued for sync when online.',
-      );
     }
 
     final result = await _api.escalateToCybercell(callId: id, token: t);
@@ -1067,6 +994,7 @@ class SessionController extends ChangeNotifier {
   }
 
   /// Start protection and audio pipeline for an active in-app call (Agora RTC)
+  /// BACKEND-ONLY: Simply connect to backend, no local processing
   Future<void> startInAppCallProtection({String? remotePartyName}) async {
     callerNumber = remotePartyName ?? 'In-App Peer';
     callerLocation = 'PhaseGuard Direct';
@@ -1078,12 +1006,10 @@ class SessionController extends ChangeNotifier {
     if (!wsConnected && !connecting) {
       await startSession(callerNumber: callerNumber);
     }
-    
-    // Initialize local deepfake model
-    unawaited(_deepfakeDetector.init());
   }
 
-  /// Starts periodic video snapshots (every 2-3 seconds) to detect 2D photos or deepfakes
+  /// Video snapshots now use backend processing only
+  /// Send video frames to backend for deepfake detection
   void startVideoDeepfakeDetection(dynamic callingService) {
     if (_videoSnapshotTimer != null) return;
 
@@ -1091,33 +1017,21 @@ class SessionController extends ChangeNotifier {
       final file = File(filePath);
       if (!await file.exists()) return;
 
-      final result = await _videoDeepfakeDetector.processFrame(file);
-      
-      if (result['is_spoof'] == true) {
-        isVideoSpoof = true;
-        videoSpoofReason = result['spoof_reason'];
-        videoSpoofScore = 0.95; // High confidence spoof
-        
-        // Spike overall PDI threat score since video spoof is a critical threat
-        if (pdiScore < 0.9) {
-          pdiScore = 0.95;
-          if (pdiScore > _peakPdiScore) _peakPdiScore = pdiScore;
-          
-          factcheck = FactCheckUpdate(
-            status: 'CRITICAL',
-            message: '🚨 VIDEO SPOOF DETECTED: $videoSpoofReason',
-            category: 'video_deepfake',
-            ts: DateTime.now().toIso8601String(),
+      // Send video frame to backend for analysis
+      if (wsConnected && callId != null && token != null) {
+        try {
+          final frameBytes = await file.readAsBytes();
+          await _api.uploadFrame(
+            callId: callId!,
+            token: token!,
+            frameBytes: frameBytes,
           );
+          debugPrint('� Video frame sent to backend for analysis');
+        } catch (e) {
+          debugPrint('⚠️ Failed to send video frame to backend: $e');
         }
-      } else {
-        // If it's a real live person, we can gently decay the video spoof score
-        videoSpoofScore = (videoSpoofScore * 0.5).clamp(0.0, 1.0);
-        if (videoSpoofScore < 0.1) isVideoSpoof = false;
       }
-      
-      notifyListeners();
-      
+
       // Cleanup snapshot
       try {
         await file.delete();
@@ -1133,17 +1047,10 @@ class SessionController extends ChangeNotifier {
   }
 
   /// Process and stream raw 16kHz 16-bit mono PCM chunks from an active in-app call
-  /// This processes REMOTE caller's audio (dusre phone ki awaaz), NOT local microphone
-  /// LEVEL 1 (Scam Text) aur LEVEL 2 (Deepfake) real-time mein saath mein chalenge
-  /// LEVEL 2 has PARALLEL PROCESSING (Local + Web), jo pehle aaye use karo
-  /// REAL-TIME: 100ms chunks (3200 bytes) processed
+  /// BACKEND-ONLY: Simply stream audio to backend, no local processing
+  /// Backend handles all scam detection, deepfake analysis, and scambaiter responses
   void processInAppCallAudioChunk(Uint8List chunk) {
     if (chunk.isEmpty) return;
-
-    final startTime = DateTime.now();
-
-    // LEVEL 2 (Local Deepfake): Process audio (parallel with web in service)
-    _runLocalAudioProcessing(chunk);
 
     // Update transcript to show audio is being detected
     if (liveTranscript == 'Listening for scammer speech...') {
@@ -1151,271 +1058,17 @@ class SessionController extends ChangeNotifier {
       notifyListeners();
     }
 
-    final totalTime = DateTime.now().difference(startTime).inMilliseconds;
-    debugPrint('⏱️ Total audio processing: ${totalTime}ms (REAL-TIME: <50ms target)');
-
-    notifyListeners();
-  }
-
-  /// Local audio processing for early warning system
-  /// Processes REMOTE caller's audio (dusre phone ki awaaz) locally
-  /// 3-LEVEL SEQUENTIAL ARCHITECTURE: LEVEL 1 (Scam Text) → LEVEL 2 (Deepfake) → LEVEL 3 (Web)
-  /// LEVEL 2 (Deepfake) processes audio chunks for voice analysis
-  void _runLocalAudioProcessing(Uint8List chunk) {
-    // Compute RMS and tremor energy for the live HUD meters
-    double sumSquares = 0;
-    final sampleCount = chunk.length ~/ 2;
-    final byteData = ByteData.sublistView(chunk);
-    for (int i = 0; i < sampleCount; i++) {
-      final val = byteData.getInt16(i * 2, Endian.little);
-      sumSquares += val * val;
-    }
-    final rms = sampleCount > 0 ? sqrt(sumSquares / sampleCount) / 32768.0 : 0.0;
-    tremorEnergy = (rms * 3.2).clamp(0.05, 0.98);
-    hasTremor = tremorEnergy > 0.35;
-
-    // Baseline acoustic reactivity for HUD (early warning)
-    if (!isPotentialScam && rms > 0.01) {
-      final volumePdi = (rms * 1.5).clamp(0.05, 0.35);
-      // Only update local score if no web result has arrived yet
-      if (factcheck == null || factcheck!.status == 'VERIFYING') {
-        if (volumePdi > pdiScore) {
-          pdiScore = volumePdi;
-          syntheticVoiceScore = pdiScore * 0.8;
-        }
-      }
+    // STREAM AUDIO TO WEB BACKEND FOR ALL PROCESSING
+    // Backend handles: STT, scam detection, deepfake analysis, scambaiter
+    if (wsConnected) {
+      _socket.sendBytes(chunk);
     }
 
-    // LEVEL 2: Deepfake Detection (Local TFLite Model)
-    // Accumulate REMOTE caller audio for local deepfake detection (0.5 second = 16000 bytes at 16kHz 16-bit)
-    _deepfakeAudioBuffer.addAll(chunk);
-    if (_deepfakeAudioBuffer.length >= 16000) {
-      final analysisChunk = Uint8List.fromList(_deepfakeAudioBuffer.sublist(0, 16000));
-      _deepfakeAudioBuffer.removeRange(0, 16000);
-
-      unawaited(_runLevel2DeepfakeAnalysis(analysisChunk));
-    }
-  }
-  
-  /// LEVEL 2: Deepfake Detection (Local TFLite Model)
-  /// PARALLEL PROCESSING: Local + Web run simultaneously in service
-  /// Jo pehle aaye = use karo, Web result = FINAL (best model)
-  Future<void> _runLevel2DeepfakeAnalysis(Uint8List pcmBytes) async {
-    try {
-      // PARALLEL: Initialize local deepfake detector (works without internet)
-      await _deepfakeDetector.init();
-
-      final int16List = Int16List.view(pcmBytes.buffer);
-      final result = await _deepfakeDetector.analyze(int16List);
-
-      if (result['is_synthetic'] == true) {
-        isSynthetic = true;
-        pdiScore = (result['confidence'] as double).clamp(0.7, 1.0);
-        syntheticVoiceScore = pdiScore;
-
-        debugPrint('🤖 LEVEL 2 (Deepfake): DEEPFAKE DETECTED! Confidence: ${(pdiScore * 100).toStringAsFixed(1)}% (${result['layer'] == 'web' ? 'WEB (FINAL)' : 'LOCAL'})');
-
-        // Show immediate alert if not already detected
-        if (factcheck == null || factcheck!.status == 'VERIFYING') {
-          factcheck = FactCheckUpdate(
-            status: 'CRITICAL',
-            message: '🤖 LEVEL 2: Synthetic/Deepfake Voice Detected!',
-            category: 'DEEPFAKE_AUDIO',
-            evidenceUrls: [],
-            ts: DateTime.now().toIso8601String(),
-          );
-          isPotentialScam = true;
-          notifyListeners();
-        }
-
-        return;
-      }
-
-      // If NATURAL with high confidence
-      if (result['is_synthetic'] == false && (result['confidence'] as double) < 0.30) {
-        debugPrint('🤖 LEVEL 2 (Deepfake): Voice is NATURAL (high confidence: ${((result['confidence'] as double) * 100).toStringAsFixed(1)}%) (${result['layer'] == 'web' ? 'WEB (FINAL)' : 'LOCAL'})');
-
-        return;
-      }
-
-      // Uncertain result - service already handled parallel processing internally
-      // If result is LOCAL and uncertain, escalate to web for advanced analysis
-      if (result['layer'] == 'local' && (result['confidence'] as double) >= 0.35 && (result['confidence'] as double) <= 0.65) {
-        debugPrint('🤖 LEVEL 2 (Deepfake): UNCERTAIN (LOCAL: ${((result['confidence'] as double) * 100).toStringAsFixed(1)}%) → Escalating to LEVEL 3 (Web) for advanced voice analysis');
-        _escalateToWebAudioAnalysis(pcmBytes);
-      } else {
-        debugPrint('🤖 LEVEL 2 (Deepfake): UNCERTAIN (${((result['confidence'] as double) * 100).toStringAsFixed(1)}%) (${result['layer'] == 'web' ? 'WEB (FINAL)' : 'LOCAL'})');
-      }
-
-    } catch (e) {
-      debugPrint('⚠️ LEVEL 2 (Deepfake) error: $e');
-    }
-  }
-
-  /// Escalate to LEVEL 3 (Web) for audio analysis (advanced deepfake detection)
-  void _escalateToWebAudioAnalysis(Uint8List pcmBytes) {
-    // OFFLINE: If no internet, don't escalate
-    if (!isOnline || !wsConnected) {
-      debugPrint('📴 OFFLINE - Cannot escalate to LEVEL 3 (Web), relying on local result');
-      return;
-    }
-
-    // Send audio to web backend via websocket for advanced analysis
-    _socket.sendBytes(pcmBytes);
-    debugPrint('📤 Escalating to LEVEL 3 (Web) for advanced voice analysis (${pcmBytes.length} bytes)');
+    debugPrint('📤 Audio chunk sent to backend: ${chunk.length} bytes');
   }
 
 
 
-  /// LEVEL 1: Scam Text Detection (Local Keyword + ML Model)
-  /// LOCAL processing with LEVEL 3 (Web) escalation when uncertain/fact-checking needed
-  /// Runs in parallel with LEVEL 2 (Deepfake) via SessionController
-  /// Made public for testing purposes
-  Future<void> runLevel1ScamTextAnalysis(String transcript) async {
-    try {
-      // LOCAL: Initialize local detector (works without internet)
-      await _localDetector.init();
-
-      final result = await _localDetector.analyze(transcript);
-
-      // If fact-checking triggers detected, escalate to web immediately
-      if (_hasFactCheckTriggers(transcript)) {
-        debugPrint('🔍 Fact-checking triggers detected → Going to LEVEL 3 (Web) for verification');
-        _escalateToWebTextAnalysis(transcript);
-        // Still show local result as early warning
-        if (result.isScam) {
-          pdiScore = result.confidence.clamp(0.5, 0.9);
-          if (factcheck == null || factcheck!.status == 'VERIFYING') {
-            factcheck = FactCheckUpdate(
-              status: 'VERIFYING',
-              message: '🔍 LEVEL 1 (LOCAL): Scam Pattern Detected - ${result.reasoning}. Fact-checking via LEVEL 3 (Web)...',
-              category: result.category,
-              evidenceUrls: [],
-              ts: DateTime.now().toIso8601String(),
-            );
-            isPotentialScam = true;
-            notifyListeners();
-          }
-        }
-        return;
-      }
-
-      // If research/reach triggers detected, escalate to web
-      if (_hasReachTriggers(transcript)) {
-        debugPrint('🔍 Research/reach triggers detected → Going to LEVEL 3 (Web) for comprehensive analysis');
-        _escalateToWebTextAnalysis(transcript);
-        return;
-      }
-
-      if (result.isScam) {
-        pdiScore = result.confidence.clamp(0.5, 0.9);
-
-        debugPrint('🔍 LEVEL 1 (Scam Text - LOCAL): SCAM DETECTED! Confidence: ${(result.confidence * 100).toStringAsFixed(1)}%');
-
-        // Show alert if not already detected
-        if (factcheck == null || factcheck!.status == 'VERIFYING') {
-          factcheck = FactCheckUpdate(
-            status: result.confidence > 0.85 ? 'CRITICAL' : 'WARNING',
-            message: '🔍 LEVEL 1 (LOCAL): Scam Pattern Detected - ${result.reasoning}',
-            category: result.category,
-            evidenceUrls: [],
-            ts: DateTime.now().toIso8601String(),
-          );
-          isPotentialScam = true;
-          notifyListeners();
-        }
-
-        return;
-      }
-
-      // If SAFE with high confidence
-      if (!result.isScam && result.confidence < 0.30) {
-        debugPrint('🔍 LEVEL 1 (Scam Text - LOCAL): Text is SAFE (high confidence: ${((result.confidence) * 100).toStringAsFixed(1)}%)');
-
-        if (factcheck == null || factcheck!.status == 'VERIFYING') {
-          factcheck = FactCheckUpdate(
-            status: 'SAFE',
-            message: '🔍 LEVEL 1 (LOCAL): Text appears safe - ${result.reasoning}',
-            category: 'SAFE',
-            evidenceUrls: [],
-            ts: DateTime.now().toIso8601String(),
-          );
-          notifyListeners();
-        }
-
-        return;
-      }
-
-      // UNCERTAIN → Go to LEVEL 3 (Web) for fact-checking
-      // Check if service explicitly requests web escalation
-      if (result.needsWebEscalation) {
-        debugPrint('🔍 LEVEL 1 (Scam Text - LOCAL): UNCERTAIN (${(result.confidence * 100).toStringAsFixed(1)}%) → Web escalation requested');
-        _escalateToWebTextAnalysis(transcript);
-      } else {
-        debugPrint('🔍 LEVEL 1 (Scam Text - LOCAL): UNCERTAIN (${(result.confidence * 100).toStringAsFixed(1)}%) - No web escalation needed');
-      }
-
-    } catch (e) {
-      debugPrint('⚠️ LEVEL 1 (Scam Text) error: $e');
-    }
-  }
-
-  /// Check for fact-checking triggers (company names, schemes, government references)
-  /// These require web verification to confirm legitimacy
-  bool _hasFactCheckTriggers(String text) {
-    final lowerText = text.toLowerCase();
-    const factCheckKeywords = [
-      // Company names
-      'company', 'sbi', 'lic', 'hdfc', 'icici', 'axis bank', 'amazon', 'flipkart', 'paytm',
-      // Government references
-      'pradhan mantri', 'pm', 'modi', 'government', 'police', 'court',
-      'income tax', 'pan card', 'aadhar', 'rbi', 'sebi',
-      // Schemes
-      'scheme', 'yojana', 'mutual fund', 'sip', 'fd', 'rd', 'insurance',
-      // Other triggers
-      'department', 'official', 'registered', 'verify', 'verification'
-    ];
-
-    return factCheckKeywords.any((keyword) => lowerText.contains(keyword));
-  }
-
-  /// Check for research/reach triggers that need web verification
-  /// When local uncertain but needs more comprehensive analysis
-  bool _hasReachTriggers(String text) {
-    final lowerText = text.toLowerCase();
-    const reachKeywords = [
-      // Complex/technical terms that need web verification
-      'blockchain', 'crypto', 'bitcoin', 'trading', 'investment',
-      'policy', 'claim', 'policy number', 'scheme details',
-      'offer', 'promotion', 'discount', 'cashback', 'reward',
-      'urgent', 'immediate', 'action required', 'verification needed'
-    ];
-
-    return reachKeywords.any((keyword) => lowerText.contains(keyword));
-  }
-
-  /// Escalate to LEVEL 3 (Web) for text analysis (fact-checking)
-  void _escalateToWebTextAnalysis(String text) {
-    // OFFLINE: If no internet, don't escalate
-    if (!isOnline || !wsConnected) {
-      debugPrint('📴 OFFLINE - Cannot escalate to LEVEL 3 (Web), relying on local result');
-      return;
-    }
-
-    // Send transcript to web backend via websocket for fact-checking
-    _socket.sendJson({
-      'type': 'transcript_analysis_request',
-      'text': text,
-      'timestamp': DateTime.now().toIso8601String(),
-    });
-    debugPrint('📤 Escalating to LEVEL 3 (Web) for fact-checking: ${text.substring(0, 50)}...');
-  }
-
-  /// Sequential text analysis: LEVEL 1 (LOCAL) - LEVEL 2 (PARALLEL)
-  void _runSequentialTextAnalysis(String text) {
-    // Run LEVEL 1 (Local Scam Text) - completely offline
-    runLevel1ScamTextAnalysis(text);
-  }
 
   /// Start capturing VOICE_CALL audio via privileged native channel.
   /// Requires CAPTURE_AUDIO_OUTPUT granted via Shizuku:
@@ -1645,153 +1298,7 @@ class SessionController extends ChangeNotifier {
     return lastSavedPdfPath!;
   }
 
-  /// OFFLINE MODE: Transition to offline (backend unreachable)
-  Future<void> _handleOfflineTransition() async {
-    isOnline = false;
-    isOfflineMode = true;
-    operationalMode = 'offline';
-    debugPrint('🔴 OFFLINE MODE ACTIVATED - Local levels only (LEVEL 1 & LEVEL 2)');
-    notifyListeners();
-  }
 
-  /// OFFLINE MODE: Transition to online (backend reconnected)
-  Future<void> _handleOnlineTransition() async {
-    isOnline = true;
-    isOfflineMode = false;
-    operationalMode = 'full';
-    debugPrint('🟢 ONLINE MODE RESTORED - Full 3-level system active');
-
-    // Sync pending escalations when reconnecting
-    unawaited(_syncPendingEscalations());
-
-    // Try to reconnect to backend if we have an active session
-    if (callId != null && token != null && !wsConnected) {
-      unawaited(startSession(callerNumber: callerNumber));
-    }
-
-    notifyListeners();
-  }
-
-
-
-  Future<void> analyzeTranscriptOffline(String text) async {
-    if (text.isEmpty) return;
-
-    final verdict = ScamTaxonomy.analyzeOffline(text);
-
-    // Convert offline verdict to FactCheckUpdate-compatible format
-    factcheck = FactCheckUpdate(
-      status: verdict['status'] as String,
-      message: '${verdict['message']} (offline analysis)',
-      category: verdict['category'] as String,
-      evidenceUrls: [],
-      ts: DateTime.now().toIso8601String(),
-    );
-
-    // Cache the offline score
-    if (callId != null) {
-      await _offlineStorage.storeCallMetadata(
-        callId!,
-        transcript: text,
-        pdiScore: pdiScore,
-        offlineVerdict: verdict,
-      );
-    }
-
-    debugPrint('📊 Offline analysis: ${verdict['status']} (${verdict['category']})');
-    notifyListeners();
-  }
-
-  /// OFFLINE MODE: Store escalation for later sync when reconnected
-  Future<void> storeEscalationForSync({
-    required String type, // 'draft', 'confirm', 'cybercell'
-    required Map<String, dynamic> payload,
-  }) async {
-    if (callId == null) {
-      throw Exception('No active call to escalate');
-    }
-
-    await _offlineStorage.storePendingEscalation(
-      callId!,
-      type: type,
-      payload: payload,
-      createdAt: DateTime.now(),
-    );
-
-    lastActionMessage = 'Escalation queued for sync ($type)';
-    debugPrint('💾 Escalation queued for sync: $type');
-    notifyListeners();
-  }
-
-  /// OFFLINE MODE: Sync pending escalations when backend reconnected
-  Future<void> _syncPendingEscalations() async {
-    try {
-      final pending = _offlineStorage.getPendingEscalations();
-      if (pending.isEmpty) return;
-
-      debugPrint('🔄 Syncing ${pending.length} pending escalations...');
-
-      for (final escalation in pending) {
-        if (escalation['synced'] == true) continue;
-
-        try {
-          final callId = escalation['callId'] as String;
-          final type = escalation['type'] as String;
-          final payload = escalation['payload'] as Map<String, dynamic>;
-
-          // Re-send the escalation using the stored payload
-          if (type == 'draft') {
-            await _api.draftEscalation(
-              callId: callId,
-              token: token ?? '',
-            );
-          } else if (type == 'confirm') {
-            await _api.confirmEscalation(
-              callId: callId,
-              token: token ?? '',
-              draftId: payload['draft_id'] as String,
-            );
-          } else if (type == 'cybercell') {
-            await _api.escalateToCybercell(
-              callId: callId,
-              token: token ?? '',
-            );
-          }
-
-          // Mark as synced
-          await _offlineStorage.markEscalationSynced(callId, type);
-          debugPrint('✅ Synced $type escalation for $callId');
-        } catch (e) {
-          debugPrint('⚠️ Failed to sync escalation: $e');
-        }
-      }
-
-      lastActionMessage = 'Synced all pending escalations';
-      await _offlineStorage.recordSync();
-      notifyListeners();
-    } catch (e) {
-      debugPrint('⚠️ Sync failed: $e');
-    }
-  }
-
-  /// OFFLINE MODE: Get user-friendly status message
-  String getOfflineStatus() {
-    if (isOnline) {
-      final lastSync = _offlineStorage.getLastSync();
-      if (lastSync != null) {
-        final minAgo = DateTime.now().difference(lastSync).inMinutes;
-        return '🟢 Online (synced ${minAgo}m ago)';
-      }
-      return '🟢 Online';
-    } else {
-      final pending = _offlineStorage.getPendingEscalations()
-          .where((e) => e['synced'] == false)
-          .length;
-      return pending > 0
-          ? '🔴 Offline ($pending pending)'
-          : '🔴 Offline';
-    }
-  }
 
   void dispose() {
     _videoSnapshotTimer?.cancel();

@@ -19,6 +19,7 @@ class AgoraCallingService extends ChangeNotifier {
   bool _isMuted = false;
   bool _isSpeakerEnabled = false;
   bool _isCameraMuted = false;
+  bool _isSpeaker = false;
   bool _isVideoCall = false;
   bool _isJoined = false;
   bool _isConnected = false;
@@ -28,6 +29,11 @@ class AgoraCallingService extends ChangeNotifier {
   String _connectionState = 'Disconnected';
   int _networkQuality = 0;
   bool _isEndingCall = false;
+
+  // AI Scambaiter Audio Queue
+  final Queue<Uint8List> _scambaiterAudioQueue = Queue<Uint8List>();
+  bool _isPlayingScambaiter = false;
+  int _effectIdCounter = 1;
 
   // Audio capture for scam detection
   final AgoraAudioCaptureService _audioCaptureService = AgoraAudioCaptureService();
@@ -113,6 +119,12 @@ class AgoraCallingService extends ChangeNotifier {
           },
           onRemoteAudioStateChanged: (RtcConnection connection, int remoteUid, RemoteAudioState state, RemoteAudioStateReason reason, int elapsed) {
             _onRemoteAudioStateChanged(connection, remoteUid, state, reason, elapsed);
+          },
+          onAudioEffectFinished: (int soundId) {
+            if (soundId >= 1 && soundId <= 50) {
+              _isPlayingScambaiter = false;
+              _processScambaiterQueue();
+            }
           },
         ),
       );
@@ -512,8 +524,16 @@ class AgoraCallingService extends ChangeNotifier {
   /// Supports both raw PCM16LE (wrapped in WAV) and MP3 bytes (used directly).
   /// Backend (Fish API / gTTS) returns MP3 — do NOT wrap MP3 in WAV header!
   Future<void> playScambaiterAudio(Uint8List audioBytes) async {
-    if (_engine == null || audioBytes.isEmpty) return;
+    if (audioBytes.isEmpty) return;
+    _scambaiterAudioQueue.add(audioBytes);
+    _processScambaiterQueue();
+  }
 
+  Future<void> _processScambaiterQueue() async {
+    if (_isPlayingScambaiter || _scambaiterAudioQueue.isEmpty || _engine == null) return;
+
+    _isPlayingScambaiter = true;
+    final audioBytes = _scambaiterAudioQueue.removeFirst();
     final startTime = DateTime.now();
 
     try {
@@ -525,7 +545,7 @@ class AgoraCallingService extends ChangeNotifier {
            (audioBytes[0] == 0x49 && audioBytes[1] == 0x44 && audioBytes[2] == 0x33));
 
       final String ext = isMp3 ? 'mp3' : 'wav';
-      debugPrint('🔊 ScamBaiter audio: ${audioBytes.length} bytes, format=${isMp3 ? "MP3" : "PCM→WAV"}');
+      debugPrint('🔊 ScamBaiter audio chunk: ${audioBytes.length} bytes, format=${isMp3 ? "MP3" : "PCM→WAV"}');
 
       // ── Step 2: Build final audio bytes ───────────────────────────────────
       final convertStart = DateTime.now();
@@ -565,6 +585,9 @@ class AgoraCallingService extends ChangeNotifier {
 
     } catch (e) {
       debugPrint('❌ Scambaiter audio play error: $e');
+      // If error, skip this chunk and try next
+      _isPlayingScambaiter = false;
+      _processScambaiterQueue();
     }
   }
 

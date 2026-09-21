@@ -1,4 +1,6 @@
 import 'dart:async';
+import 'dart:collection';
+import 'dart:math';
 import 'dart:math';
 import 'dart:io';
 import 'package:path_provider/path_provider.dart';
@@ -42,6 +44,11 @@ class ConnectCallCallingService extends ChangeNotifier {
   int _networkQuality = 0; // 0=unknown 1=excellent 2=good 3=poor 4=bad
   bool _isEndingCall = false; // Guard against concurrent endCall() calls
 
+  // AI Scambaiter Audio Queue
+  final Queue<Uint8List> _scambaiterAudioQueue = Queue<Uint8List>();
+  bool _isPlayingScambaiter = false;
+  int _effectIdCounter = 1;
+
   // PhaseGuard STT Integration
   final AgoraAudioCaptureService _audioCapture = AgoraAudioCaptureService();
   final ConnectCallSttService _sttService = ConnectCallSttService();
@@ -73,7 +80,6 @@ class ConnectCallCallingService extends ChangeNotifier {
       final tempDir = await getTemporaryDirectory();
       final tempFile = File('${tempDir.path}/remote_snapshot_${DateTime.now().millisecondsSinceEpoch}.jpg');
       await _engine!.takeSnapshot(
-        channel: _currentCallId!,
         uid: _remoteUid!,
         filePath: tempFile.path,
       );
@@ -118,9 +124,8 @@ class ConnectCallCallingService extends ChangeNotifier {
           // Start duration timer when the remote peer actually joins
           _startDurationTimer();
           
-          // Start PhaseGuard audio capture and STT
-          _startPhaseGuardDetection();
-          
+          // PhaseGuard detection is now handled centrally via SessionController
+          // when it observes the call becoming ACTIVE.
           notifyListeners();
         },
 
@@ -160,6 +165,13 @@ class ConnectCallCallingService extends ChangeNotifier {
               break;
           }
           notifyListeners();
+        },
+
+        onAudioEffectFinished: (int soundId) {
+          if (soundId >= 1 && soundId <= 50) {
+            _isPlayingScambaiter = false;
+            _processScambaiterQueue();
+          }
         },
 
         onSnapshotTaken: (RtcConnection connection, int uid, String filePath, int width, int height, int errCode) {
@@ -610,7 +622,6 @@ class ConnectCallCallingService extends ChangeNotifier {
   }
 
   // ==== SCAMBAITER AUDIO INJECTION ====
-  int _effectIdCounter = 1;
 
   Uint8List _addWavHeader(Uint8List pcmBytes) {
     int channels = 1;
@@ -639,14 +650,45 @@ class ConnectCallCallingService extends ChangeNotifier {
   }
 
   Future<void> playScambaiterAudio(Uint8List pcmBytes) async {
-    if (_engine == null || pcmBytes.isEmpty) return;
+    if (pcmBytes.isEmpty) return;
+    _scambaiterAudioQueue.add(pcmBytes);
+    _processScambaiterQueue();
+  }
+
+  Future<void> _processScambaiterQueue() async {
+    if (_isPlayingScambaiter || _scambaiterAudioQueue.isEmpty || _engine == null) return;
+
+    _isPlayingScambaiter = true;
+    final audioBytes = _scambaiterAudioQueue.removeFirst();
+    final startTime = DateTime.now();
 
     try {
-      final wavBytes = _addWavHeader(pcmBytes);
-      final tempDir = await getTemporaryDirectory();
-      final file = File('${tempDir.path}/scam_audio_$_effectIdCounter.wav');
-      await file.writeAsBytes(wavBytes);
+      // ── Step 1: Detect audio format ───────────────────────────────────────
+      // MP3 magic bytes: MPEG sync word starts with 0xFF 0xEx/0xFx
+      // ID3 tag (common MP3 header): 0x49 0x44 0x33 ("ID3")
+      final isMp3 = audioBytes.length > 3 &&
+          ((audioBytes[0] == 0xFF && (audioBytes[1] & 0xE0) == 0xE0) ||
+           (audioBytes[0] == 0x49 && audioBytes[1] == 0x44 && audioBytes[2] == 0x33));
 
+      final String ext = isMp3 ? 'mp3' : 'wav';
+      debugPrint('🔊 ScamBaiter audio chunk: ${audioBytes.length} bytes, format=${isMp3 ? "MP3" : "PCM→WAV"}');
+
+      // ── Step 2: Build final audio bytes ───────────────────────────────────
+      final convertStart = DateTime.now();
+      final Uint8List fileBytes = isMp3
+          ? audioBytes                  // MP3: use directly, no header needed
+          : _addWavHeader(audioBytes);  // PCM: wrap with RIFF/WAV header
+      final convertTime = DateTime.now().difference(convertStart).inMilliseconds;
+
+      // ── Step 3: Write to temp file ────────────────────────────────────────
+      final writeStart = DateTime.now();
+      final tempDir = await getTemporaryDirectory();
+      final file = File('${tempDir.path}/scam_audio_$_effectIdCounter.$ext');
+      await file.writeAsBytes(fileBytes);
+      final writeTime = DateTime.now().difference(writeStart).inMilliseconds;
+
+      // ── Step 4: Play via Agora (publish=true → sent to remote scammer) ────
+      final playStart = DateTime.now();
       await _engine!.playEffect(
         soundId: _effectIdCounter,
         filePath: file.path,
@@ -654,15 +696,23 @@ class ConnectCallCallingService extends ChangeNotifier {
         pitch: 1.0,
         pan: 0.0,
         gain: 100,
-        publish: true, 
+        publish: true, // This sends AI voice to the scammer (remote caller)
       );
+      final playTime = DateTime.now().difference(playStart).inMilliseconds;
 
       _effectIdCounter++;
       if (_effectIdCounter > 50) _effectIdCounter = 1;
-      
+
+      final totalTime = DateTime.now().difference(startTime).inMilliseconds;
+      debugPrint('🔊 AI scambaiter to SCAMMER: format=$ext, convert=${convertTime}ms, write=${writeTime}ms, play=${playTime}ms, total=${totalTime}ms');
+
+      // Cleanup old files to prevent storage bloat
       _cleanupOldAudioFiles(tempDir);
+
     } catch (e) {
-      debugPrint('[ConnectCallCallingService] Failed to play scambaiter audio: $e');
+      debugPrint('❌ Scambaiter audio play error: $e');
+      _isPlayingScambaiter = false;
+      _processScambaiterQueue();
     }
   }
 

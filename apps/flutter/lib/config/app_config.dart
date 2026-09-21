@@ -17,7 +17,7 @@ class AppConfig {
 
   // Backend Configuration
   static String get backendUrl {
-    return const String.fromEnvironment('PHASEGUARD_BACKEND_URL', defaultValue: 'https://phaseguard.onrender.com');
+    return const String.fromEnvironment('PHASEGUARD_BACKEND_URL', defaultValue: 'http://localhost:8000');
   }
 
   // Firebase Configuration

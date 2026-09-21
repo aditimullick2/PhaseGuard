@@ -177,3 +177,87 @@ async def generate_scambaiter_response(
     except Exception as exc:
         logger.error("Scambaiter[%s]: LLM error: %s", call_id, exc)
         return None
+
+async def generate_scambaiter_response_stream(
+    caller_speech: str,
+    exchange_history: list[dict],
+    call_id: str = "",
+):
+    """
+    Generate a scambaiter response as a stream of sentences.
+    Yields chunks of text as soon as a punctuation boundary is reached.
+    """
+    import os
+    import re
+    from core.config import get_settings
+    from groq import AsyncGroq
+
+    cfg = get_settings()
+    if not cfg.groq_api_key:
+        logger.warning("Scambaiter: GROQ_API_KEY not set")
+        yield "अरे भाई, क्या आप अपना ओ.टी.पी. वापस बताएंगे?"
+        return
+
+    safe_caller_speech = caller_speech.replace("<", "").replace(">", "")
+    persona_prompt = os.getenv("SCAMBAITER_PERSONA_PROMPT", _DEFAULT_PERSONA_SYSTEM_PROMPT)
+
+    messages = [{"role": "system", "content": persona_prompt}]
+    messages.extend(exchange_history[-10:])
+    
+    recent_assistant_msgs = [msg["content"] for msg in exchange_history[-6:] if msg["role"] == "assistant"]
+    if recent_assistant_msgs:
+        recent_text = " | ".join(recent_assistant_msgs).replace("\n", " ")
+        anti_loop_prompt = (
+            "CRITICAL REMINDER: You have recently used the following phrases/excuses: "
+            f"'{recent_text}'. "
+            "DO NOT mention these again. Invent a COMPLETELY NEW excuse or tangent now."
+        )
+        messages.append({"role": "system", "content": anti_loop_prompt})
+
+    messages.append({"role": "user", "content": f"Scammer said: {safe_caller_speech}"})
+
+    client = AsyncGroq(api_key=cfg.groq_api_key)
+
+    try:
+        stream = await client.chat.completions.create(
+            model=cfg.groq_llm_model,
+            messages=messages,
+            temperature=0.8,
+            max_tokens=150,
+            stream=True
+        )
+        
+        buffer = ""
+        # Match boundaries: punctuation marking end of clause/sentence in Hindi/English
+        boundary_pattern = re.compile(r'([।।!?|.\n])') 
+        
+        async for chunk in stream:
+            content = chunk.choices[0].delta.content
+            if content:
+                buffer += content
+                # If we see a boundary, we can yield the sentence
+                if boundary_pattern.search(buffer):
+                    # split on the last boundary
+                    parts = boundary_pattern.split(buffer)
+                    # parts will look like ["text before", "!", "text after"]
+                    # We want to yield everything up to and including the boundary
+                    if len(parts) >= 3:
+                        # Combine text + boundary
+                        sentence_to_yield = "".join(parts[:-1]).strip()
+                        buffer = parts[-1].lstrip() # Keep the rest in buffer
+                        
+                        if sentence_to_yield:
+                            sanitized = _sanitize_response(sentence_to_yield)
+                            logger.debug("Scambaiter[%s] Yielding chunk: %r", call_id, sanitized)
+                            yield sanitized
+
+        # Yield any remaining text
+        buffer = buffer.strip()
+        if buffer:
+            sanitized = _sanitize_response(buffer)
+            logger.debug("Scambaiter[%s] Yielding final chunk: %r", call_id, sanitized)
+            yield sanitized
+
+    except Exception as exc:
+        logger.error("Scambaiter[%s]: LLM streaming error: %s", call_id, exc)
+        yield "मैं थोड़ा ऊँचा सुनता हूँ, वापस बोलोगे क्या?"

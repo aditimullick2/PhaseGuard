@@ -5,9 +5,6 @@ import '../widgets/app_background.dart';
 import '../widgets/pg_animations.dart';
 import '../widgets/pg_custom_icons.dart';
 import '../state/session_controller.dart';
-import '../services/local_scambaiter_service.dart';
-
-const int maxRecordingDuration = 15; // 15 seconds
 
 class ScambaiterSession extends StatefulWidget {
   const ScambaiterSession({super.key});
@@ -19,12 +16,9 @@ class ScambaiterSession extends StatefulWidget {
 class _ScambaiterSessionState extends State<ScambaiterSession> {
   final TextEditingController _promptController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
-  final LocalScambaiterService _scambaiterService = LocalScambaiterService();
   
   bool isScambaiterActive = true;
   bool isSendingPrompt = false;
-  bool isRecording = false;
-  int recordingDuration = 0;
 
   @override
   void initState() {
@@ -36,18 +30,8 @@ class _ScambaiterSessionState extends State<ScambaiterSession> {
       if (!session.wsConnected && !session.connecting) {
         session.startSession();
       }
-      
-      // Listen to scambaiter service events
-      _scambaiterService.responseStream.listen((event) {
-        if (event['event'] == 'recording_started') {
-          setState(() {
-            isRecording = true;
-            recordingDuration = 0;
-          });
-        } else if (event['event'] == 'recording_stopped') {
-          setState(() {
-            isRecording = false;
-            recordingDuration = event['duration'] ?? 0;
+    });
+  }
           });
         }
       });
@@ -58,7 +42,6 @@ class _ScambaiterSessionState extends State<ScambaiterSession> {
   void dispose() {
     _promptController.dispose();
     _scrollController.dispose();
-    _scambaiterService.dispose();
     super.dispose();
   }
 
@@ -81,14 +64,6 @@ class _ScambaiterSessionState extends State<ScambaiterSession> {
     await session.sendScambaiterPrompt(text);
     _scrollToBottom();
     setState(() => isSendingPrompt = false);
-  }
-
-  Future<void> _toggleRecording() async {
-    if (isRecording) {
-      await _scambaiterService.stopRecording();
-    } else {
-      await _scambaiterService.startRecording();
-    }
   }
 
   @override
@@ -661,51 +636,8 @@ class _ScambaiterSessionState extends State<ScambaiterSession> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // Recording indicator
-            if (isRecording)
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                decoration: BoxDecoration(
-                  color: PgColors.scam.withValues(alpha: 0.2),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: PgColors.scam.withValues(alpha: 0.5)),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Container(
-                      width: 8,
-                      height: 8,
-                      decoration: BoxDecoration(
-                        color: PgColors.scam,
-                        shape: BoxShape.circle,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      '🎙️ Recording: ${recordingDuration}s / 15s',
-                      style: const TextStyle(
-                        color: PgColors.scam,
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            const SizedBox(height: 8),
             Row(
               children: [
-                // Recording button
-                IconButton(
-                  onPressed: _toggleRecording,
-                  icon: Icon(
-                    isRecording ? Icons.stop : Icons.mic,
-                    color: isRecording ? PgColors.scam : PgColors.accent,
-                  ),
-                  tooltip: isRecording ? 'Stop Recording' : 'Start Recording',
-                ),
-                const SizedBox(width: 8),
                 Expanded(
                   child: Container(
                     decoration: BoxDecoration(

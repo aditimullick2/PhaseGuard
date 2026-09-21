@@ -4,7 +4,6 @@ import '../models/connectcall_call.dart';
 import '../models/connectcall_user.dart';
 import '../providers/providers.dart';
 import '../state/session_controller.dart';
-import '../services/local_scambaiter_service.dart';
 
 import '../connectcall_components/app_theme.dart';
 import '../connectcall_components/animated_gif_background.dart';
@@ -26,7 +25,6 @@ class _ConnectCallIncomingCallScreenState extends ConsumerState<ConnectCallIncom
     with TickerProviderStateMixin {
   late AnimationController _ringCtrl;
   late Animation<double> _ring1, _ring2, _ring3;
-  final LocalScambaiterService _scambaiterService = LocalScambaiterService();
 
   @override
   void initState() {
@@ -58,10 +56,7 @@ class _ConnectCallIncomingCallScreenState extends ConsumerState<ConnectCallIncom
   void _autoActivateScambaiter() {
     // Auto-activate scambaiter when scammer calls
     final session = context.read<SessionController>();
-    _scambaiterService.autoActivateOnScam(
-      'Scam call detected',
-      'YOUR_AI_API_KEY', // TODO: Replace with actual API key
-    );
+    session.activateScambaiter();
   }
 
   @override

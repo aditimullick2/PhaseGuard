@@ -345,48 +345,53 @@ async def _fire_scambaiter_turn(call_id: str, caller_speech: str) -> None:
     if not session or not caller_speech.strip():
         return
         
-    from scambaiter.persona import generate_scambaiter_response
+    from scambaiter.persona import generate_scambaiter_response_stream
     from scambaiter.tts import synthesize_speech
     
-    logger.info("Scambaiter Turn Started for call_id=%r with input: %r", call_id, caller_speech)
+    logger.info("Scambaiter Turn Started (STREAMING) for call_id=%r with input: %r", call_id, caller_speech)
     
-    # 1. Generate text response
-    response_text = await generate_scambaiter_response(
+    full_response_text = ""
+    
+    # 1. Generate text response as a stream of sentences
+    async for sentence in generate_scambaiter_response_stream(
         caller_speech=caller_speech,
         exchange_history=session.scambaiter_log,
         call_id=call_id
-    )
-    if not response_text:
-        return
+    ):
+        if not sentence.strip():
+            continue
+            
+        full_response_text += sentence + " "
         
-    # Append to history
-    session.scambaiter_log.append({"role": "user", "content": caller_speech})
-    session.scambaiter_log.append({"role": "assistant", "content": response_text})
-
-    # Broadcast the text exchange to frontend BEFORE audio so UI is ready
-    try:
-        await manager.send_json(call_id, {
-            "type": "scambaiter_turn",
-            "caller_text": caller_speech,
-            "ai_text": response_text,
-            "ts": _ts(),
-        })
-    except Exception as exc:
-        logger.warning("Failed to send scambaiter_turn JSON: %s", exc)
-
-    # 2. Synthesize audio
-    audio_bytes = await synthesize_speech(response_text, call_id=call_id)
-    if not audio_bytes:
-        return
-        
-    # 3. Send binary audio to frontend
-    if session.websocket and session.state not in (CallState.ENDED,):
+        # Broadcast the text exchange chunk to frontend so UI updates incrementally
         try:
-            await session.websocket.send_bytes(audio_bytes)
-            # Add verifiable logging as requested by user
-            logger.info("[Scambaiter] Generated reply: %r | Audio bytes: %d | Sent over WS", response_text, len(audio_bytes))
+            await manager.send_json(call_id, {
+                "type": "scambaiter_turn",
+                "caller_text": caller_speech,
+                "ai_text": full_response_text.strip(),
+                "ts": _ts(),
+            })
         except Exception as exc:
-            logger.error("Scambaiter failed to send audio: %s", exc)
+            logger.warning("Failed to send scambaiter_turn JSON: %s", exc)
+
+        # 2. Synthesize audio for this specific sentence chunk
+        audio_bytes = await synthesize_speech(sentence, call_id=call_id)
+        if not audio_bytes:
+            continue
+            
+        # 3. Send binary audio chunk to frontend IMMEDIATELY
+        if session.websocket and session.state not in (CallState.ENDED,):
+            try:
+                await session.websocket.send_bytes(audio_bytes)
+                logger.info("[Scambaiter] Streamed chunk audio for: %r | Audio bytes: %d", sentence, len(audio_bytes))
+            except Exception as exc:
+                logger.error("Scambaiter failed to send audio chunk: %s", exc)
+                break
+                
+    # Append the full response to history once the stream is complete
+    if full_response_text.strip():
+        session.scambaiter_log.append({"role": "user", "content": caller_speech})
+        session.scambaiter_log.append({"role": "assistant", "content": full_response_text.strip()})
 
 
 async def _scambaiter_loop(call_id: str) -> None:
