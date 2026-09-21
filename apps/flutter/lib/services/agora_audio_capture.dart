@@ -8,6 +8,7 @@ import 'package:agora_rtc_engine/agora_rtc_engine.dart';
 /// This service hooks into Agora's audio frame observer to capture
 /// real-time audio for STT and scam detection.
 /// CRITICAL: We capture ONLY remote caller audio (scammer's voice), not local audio.
+/// Method: onPlaybackAudioFrameBeforeMixing captures audio BEFORE mixing with local microphone.
 class AgoraAudioCaptureService {
   RtcEngine? _engine;
   bool _isCapturing = false;
@@ -27,15 +28,15 @@ class AgoraAudioCaptureService {
       AudioFrameObserver(
         // SKIP local audio recording (our microphone)
         onRecordAudioFrame: (String channelId, AudioFrame frame) {
-          debugPrint('[AgoraAudioCapture] SKIPPING local audio record frame');
+          // Local microphone - DO NOT CAPTURE
         },
-        // SKIP playback audio (what we hear)
+        // SKIP playback audio (what we hear - mixed with local)
         onPlaybackAudioFrame: (String channelId, AudioFrame frame) {
-          debugPrint('[AgoraAudioCapture] SKIPPING playback audio frame');
+          // Mixed audio - DO NOT CAPTURE
         },
         // SKIP mixed audio (combined local + remote)
         onMixedAudioFrame: (String channelId, AudioFrame frame) {
-          debugPrint('[AgoraAudioCapture] SKIPPING mixed audio frame');
+          // Mixed audio - DO NOT CAPTURE
         },
         // SKIP ear monitoring
         onEarMonitoringAudioFrame: (AudioFrame frame) {},
@@ -43,8 +44,10 @@ class AgoraAudioCaptureService {
         // This is the scammer's voice WITHOUT our local audio
         onPlaybackAudioFrameBeforeMixing: (String channelId, int uid, AudioFrame frame) {
           if (_isCapturing) {
-            debugPrint('[AgoraAudioCapture] Capturing REMOTE caller audio (scammer voice): ${frame.samplesPerChannel} samples');
+            debugPrint('[AgoraAudioCapture] 🎤 REMOTE UID=$uid | Samples=${frame.samplesPerChannel} | Bytes=${frame.buffer?.length ?? 0}');
             _processAudioFrame(frame);
+          } else {
+            debugPrint('[AgoraAudioCapture] ⚠️ Remote audio available but capture not started');
           }
         },
       ),

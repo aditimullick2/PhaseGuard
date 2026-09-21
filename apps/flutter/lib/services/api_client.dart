@@ -199,6 +199,7 @@ class ApiClient {
     try {
       debugPrint('[ApiClient] Generating AI voice for: $text');
       
+      // Try Fish first, then fallback to Sonex if Fish fails
       final res = await http.post(
         Uri.parse('$baseUrl/api/v1/voice/tts'),
         headers: _headers(),
@@ -206,7 +207,7 @@ class ApiClient {
           'text': text,
           'voice_id': 'default', // Use default voice or user's voice ID
           'format': 'wav', // WAV format for Agora
-          'provider': 'fish', // Use Fish Audio for AI voice
+          'provider': 'auto', // Auto-selects available provider (fish -> sonex -> sarvam)
         }),
       );
 
@@ -215,7 +216,7 @@ class ApiClient {
         debugPrint('[ApiClient] AI voice generated: ${audioBytes.length} bytes');
         return audioBytes;
       } else {
-        debugPrint('[ApiClient] TTS request failed: ${res.statusCode}');
+        debugPrint('[ApiClient] TTS request failed: ${res.statusCode} - ${res.body}');
         return null;
       }
     } catch (e) {

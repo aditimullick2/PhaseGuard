@@ -39,7 +39,7 @@ class CallingService extends ChangeNotifier {
   int? _remoteUid;
   Timer? _callTimeoutTimer;
   Timer? _durationTimer;
-  int _callDuration = 0;
+  int _callDurationSeconds = 0;
   String _connectionState = 'Disconnected';
   int _networkQuality = 0; // 0=unknown 1=excellent 2=good 3=poor 4=bad
   bool _isEndingCall = false; // Guard against concurrent endCall() calls
@@ -62,7 +62,7 @@ class CallingService extends ChangeNotifier {
   bool get isJoined => _isJoined;
   bool get isConnected => _isConnected;
   int? get remoteUid => _remoteUid;
-  int get callDuration => _callDuration;
+  int get callDurationSeconds => _callDurationSeconds;
   String get connectionState => _connectionState;
   int get networkQuality => _networkQuality;
   String? get currentCallId => _currentCallId;
@@ -250,6 +250,10 @@ class CallingService extends ChangeNotifier {
     await _configureEngine(type: type);
     await _joinChannel(channelName, type: type);
 
+    // Start audio capture immediately after joining channel
+    _audioCapture.startCapture();
+    debugPrint('[CallingService] Started PhaseGuard audio capture after joining channel');
+
     // 4. 30-second timeout → mark as missed if no answer
     _callTimeoutTimer = Timer(const Duration(seconds: 30), () async {
       final snap =
@@ -276,7 +280,16 @@ class CallingService extends ChangeNotifier {
     required String channelName,
     required String type,
   }) async {
-    // 1. Permissions
+    debugPrint('[CallingService] acceptCall called for callId: $callId');
+
+    // 1. Cleanup any existing call completely
+    if (_isJoined || _currentCallId != null) {
+      debugPrint('[CallingService] Cleaning up existing call before accepting new call');
+      await _cleanup();
+      await Future.delayed(const Duration(milliseconds: 500)); // Wait for cleanup
+    }
+
+    // 2. Permissions
     final permStatus = await _permissionService.requestCallPermissions(
       requireCamera: type == 'video',
     );
@@ -286,22 +299,47 @@ class CallingService extends ChangeNotifier {
           : 'Microphone${type == 'video' ? '/Camera' : ''} permission is required.');
     }
 
-    if (!_isInitialized) throw Exception('Agora engine not initialized');
+    if (!_isInitialized) {
+      debugPrint('[CallingService] Agora engine not initialized, initializing...');
+      throw Exception('Agora engine not initialized');
+    }
 
-    // 2. Update Firestore
-    await _firestore.collection('calls').doc(callId).update({
-      'status': 'connected',
-      'connectedTime': DateTime.now().millisecondsSinceEpoch,
-    });
+    debugPrint('[CallingService] Permissions granted, engine initialized');
+
+    // 3. Update Firestore first
+    try {
+      await _firestore.collection('calls').doc(callId).update({
+        'status': 'connected',
+        'connectedTime': DateTime.now().millisecondsSinceEpoch,
+      });
+      debugPrint('[CallingService] Firestore updated to connected');
+    } catch (e) {
+      debugPrint('[CallingService] Error updating Firestore: $e');
+    }
 
     _currentCallId = callId;
     _isEndingCall = false;
     _connectionState = 'Connecting...';
     notifyListeners();
 
-    // 3. Configure and join Agora channel
-    await _configureEngine(type: type);
-    await _joinChannel(channelName, type: type);
+    // 4. Configure and join Agora channel
+    try {
+      await _configureEngine(type: type);
+      await _joinChannel(channelName, type: type);
+      debugPrint('[CallingService] Joined Agora channel successfully');
+    } catch (e) {
+      debugPrint('[CallingService] Error joining Agora channel: $e');
+      // Revert Firestore status on failure
+      await _firestore.collection('calls').doc(callId).update({
+        'status': 'failed',
+        'endTime': DateTime.now().millisecondsSinceEpoch,
+      });
+      throw e;
+    }
+
+    // Start audio capture immediately after joining channel
+    _audioCapture.startCapture();
+    debugPrint('[CallingService] Started PhaseGuard audio capture after joining channel (accept call)');
   }
 
   // ── Reject Call ───────────────────────────────────────────────────────────
@@ -327,57 +365,50 @@ class CallingService extends ChangeNotifier {
     _isEndingCall = true;
     debugPrint('[CallingService] Starting endCall process for call: $_currentCallId');
 
-    // Cancel timers first
-    _callTimeoutTimer?.cancel();
-    _callTimeoutTimer = null;
-    _durationTimer?.cancel();
-    _durationTimer = null;
-
-    // Leave Agora channel
-    debugPrint('[CallingService] Leaving Agora channel...');
-    await _leaveChannel();
-    debugPrint('[CallingService] Left Agora channel');
-
-    // Update Firestore call document (only if not already ended)
-    if (_currentCallId != null) {
-      try {
-        debugPrint('[CallingService] Updating Firestore call document...');
-        final snap =
-            await _firestore.collection('calls').doc(_currentCallId).get();
-        if (snap.exists) {
-          final data = snap.data()!;
-          final status = data['status'] as String?;
-          debugPrint('[CallingService] Current call status: $status');
-          // Only write if call isn't already in a terminal state
-          if (status == null ||
-              status == 'connected' ||
-              status == 'calling' ||
-              status == 'ringing') {
-            final connectedTime = data['connectedTime'] as int?;
-            final now = DateTime.now().millisecondsSinceEpoch;
-            await _firestore
-                .collection('calls')
-                .doc(_currentCallId)
-                .update({
-              'status': 'ended',
-              'endTime': now,
-              'duration': connectedTime != null
-                  ? ((now - connectedTime) / 1000).round()
-                  : 0,
-            });
-            debugPrint('[CallingService] Firestore call document updated to ended');
-          } else {
-            debugPrint('[CallingService] Call already in terminal state: $status');
-          }
-        } else {
-          debugPrint('[CallingService] Call document not found in Firestore');
-        }
-      } catch (e) {
-        debugPrint('[CallingService] endCall Firestore error: $e');
+    try {
+      // 1. Update Firestore status
+      if (_currentCallId != null) {
+        await _firestore.collection('calls').doc(_currentCallId).update({
+          'status': 'ended',
+          'endTime': DateTime.now().millisecondsSinceEpoch,
+          'duration': _callDurationSeconds,
+        });
+        debugPrint('[CallingService] Firestore updated to ended');
       }
-    }
 
-    await _cleanup();
+      // 2. Leave Agora channel
+      if (_isJoined) {
+        await _engine!.leaveChannel();
+        _isJoined = false;
+        debugPrint('[CallingService] Left Agora channel');
+      }
+
+      // 3. Stop duration timer
+      _durationTimer?.cancel();
+      _durationTimer = null;
+
+      // 4. Stop audio capture
+      _audioCapture.stopCapture();
+
+      // 5. Reset state
+      _remoteUid = null;
+      _isConnected = false;
+      _currentCallId = null;
+      _callDurationSeconds = 0;
+      _connectionState = 'Idle';
+      _isEndingCall = false;
+
+      debugPrint('[CallingService] Call ended successfully');
+      notifyListeners();
+    } catch (e) {
+      debugPrint('[CallingService] Error ending call: $e');
+      // Force reset even on error
+      _isEndingCall = false;
+      _currentCallId = null;
+      _isJoined = false;
+      _isConnected = false;
+      notifyListeners();
+    }
   }
 
   // ── Controls ──────────────────────────────────────────────────────────────
@@ -680,9 +711,9 @@ class CallingService extends ChangeNotifier {
   void _startDurationTimer() {
     // Prevent multiple timers
     _durationTimer?.cancel();
-    _callDuration = 0;
+    _callDurationSeconds = 0;
     _durationTimer = Timer.periodic(const Duration(seconds: 1), (_) {
-      _callDuration++;
+      _callDurationSeconds++;
       notifyListeners();
     });
   }
@@ -695,16 +726,38 @@ class CallingService extends ChangeNotifier {
 
   Future<void> _cleanup() async {
     debugPrint('[CallingService] Cleaning up call state...');
+    
+    // Cancel timers
+    _callTimeoutTimer?.cancel();
+    _callTimeoutTimer = null;
+    _durationTimer?.cancel();
+    _durationTimer = null;
+    
+    // Stop audio capture
+    _audioCapture.stopCapture();
+    
+    // Leave Agora channel if joined
+    if (_isJoined && _engine != null) {
+      try {
+        await _leaveChannel();
+        debugPrint('[CallingService] Left Agora channel');
+      } catch (e) {
+        debugPrint('[CallingService] Error leaving channel: $e');
+      }
+    }
+    
+    // Reset all state
     _currentCallId = null;
-    _callDuration = 0;
+    _callDurationSeconds = 0;
     _remoteUid = null;
     _isJoined = false;
     _isConnected = false;
     _isMuted = false;
     _isCameraMuted = false;
-    _connectionState = 'Disconnected';
+    _connectionState = 'Idle';
     _networkQuality = 0;
     _isEndingCall = false;
+    
     notifyListeners();
     debugPrint('[CallingService] Call state cleaned up');
   }

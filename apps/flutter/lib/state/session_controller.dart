@@ -98,7 +98,7 @@ class SessionController extends ChangeNotifier {
   bool hasTremor = false;
   double peakTremorHz = 0.0;
 
-  String liveTranscript = '';
+  String liveTranscript = 'Listening for scammer speech...';
   final List<String> transcriptHistory = [];
   int timesReported = 0;
   String operationalMode = 'full';
@@ -1075,7 +1075,8 @@ class SessionController extends ChangeNotifier {
   /// LEVEL 1: Scam Text Detection (Local Keyword + ML Model)
   /// LOCAL processing with LEVEL 3 (Web) escalation when uncertain/fact-checking needed
   /// Runs in parallel with LEVEL 2 (Deepfake) via SessionController
-  Future<void> _runLevel1ScamTextAnalysis(String transcript) async {
+  /// Made public for testing purposes
+  Future<void> runLevel1ScamTextAnalysis(String transcript) async {
     try {
       // LOCAL: Initialize local detector (works without internet)
       await _localDetector.init();
@@ -1218,7 +1219,7 @@ class SessionController extends ChangeNotifier {
   /// Sequential text analysis: LEVEL 1 (LOCAL) - LEVEL 2 (PARALLEL)
   void _runSequentialTextAnalysis(String text) {
     // Run LEVEL 1 (Local Scam Text) - completely offline
-    _runLevel1ScamTextAnalysis(text);
+    runLevel1ScamTextAnalysis(text);
   }
 
   /// Start capturing VOICE_CALL audio via privileged native channel.

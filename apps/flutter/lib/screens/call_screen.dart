@@ -66,6 +66,10 @@ class _CallScreenState extends ConsumerState<CallScreen>
           session.callerNumber = widget.remoteUser.name;
           session.callState = 'ACTIVE';
           
+          // Real-time scam detection will work when audio is captured
+          // Transcript will be updated via WebSocket when scammer speaks
+          // Scam detection will run automatically on the transcript
+          
           // Connect audio capture from CallingService to SessionController
           final audioStream = callingService.audioCaptureStream;
           if (audioStream != null) {
@@ -157,13 +161,11 @@ class _CallScreenState extends ConsumerState<CallScreen>
             debugPrint('[CallScreen] Call ended/disconnected, auto-closing screen...');
             setState(() => _isPopping = true);
             
-            // Delay slightly to show the disconnected state briefly before closing
-            Future.delayed(const Duration(milliseconds: 500), () {
-              if (mounted && Navigator.of(context).canPop()) {
-                debugPrint('[CallScreen] Navigating back after call ended');
-                Navigator.of(context).pop();
-              }
-            });
+            // Force close and go back to home screen
+            if (mounted) {
+              debugPrint('[CallScreen] Navigating back to home screen');
+              Navigator.of(context).popUntil((route) => route.isFirst);
+            }
           }
         }
       },
