@@ -406,7 +406,7 @@ class ApiClient {
       Uri.parse('$baseUrl/api/v1/voice/tts'),
       headers: _headers(),
       body: jsonEncode(body),
-    );
+    ).timeout(const Duration(seconds: 15));
     if (res.statusCode < 200 || res.statusCode >= 300) {
       throw ApiException(_detail(res) ?? 'TTS synthesis failed');
     }

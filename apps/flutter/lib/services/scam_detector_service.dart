@@ -28,8 +28,7 @@ class ScamDetectorService {
     if (_isModelReady) return;
     try {
       final options = InterpreterOptions()
-        ..threads = 4
-        ..useNnApiForAndroid = true;
+        ..threads = 4;
         
       _interpreter = await Interpreter.fromAsset(
         'assets/models/scam_detector.tflite',

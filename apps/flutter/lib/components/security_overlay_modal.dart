@@ -336,7 +336,7 @@ class SecurityOverlayModal extends ConsumerWidget {
 
             const SizedBox(height: 28),
 
-            // ── Scam Batter Button ──
+            // ── Deploy Scambaiter Button ──
             SizedBox(
               width: double.infinity,
               height: 56,
@@ -348,13 +348,13 @@ class SecurityOverlayModal extends ConsumerWidget {
                 onPressed: () async {
                   // Activate AI scambaiter with voice injection
                   try {
-                    debugPrint('[SecurityOverlay] Activating Scam Batter with AI voice');
+                    debugPrint('[SecurityOverlay] Activating Deploy Scambaiter with AI voice');
                     
                     // Show loading indicator
                     if (context.mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
-                          content: Text('Scam Batter activating...'),
+                          content: Text('Deploy Scambaiter activating...'),
                           backgroundColor: AppColors.primary,
                           duration: Duration(seconds: 2),
                         ),
@@ -363,7 +363,7 @@ class SecurityOverlayModal extends ConsumerWidget {
                     
                     // Activate scambaiter (this works regardless of scam detection)
                     await session.activateScambaiter();
-                    debugPrint('[SecurityOverlay] Scam Batter activated');
+                    debugPrint('[SecurityOverlay] Deploy Scambaiter activated');
                     
                     // Generate AI voice response
                     String responseText = 'Arey bhai, main confused hoon. Zara slowly bolo na...';
@@ -392,7 +392,7 @@ class SecurityOverlayModal extends ConsumerWidget {
                       if (context.mounted) {
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(
-                            content: Text('Scam Batter AI activated - Voice injected to scammer!'),
+                            content: Text('Deploy Scambaiter AI activated - Voice injected to scammer!'),
                             backgroundColor: AppColors.success,
                             duration: Duration(seconds: 3),
                           ),
@@ -404,7 +404,7 @@ class SecurityOverlayModal extends ConsumerWidget {
                       if (context.mounted) {
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(
-                            content: Text('Scam Batter activated but AI voice generation failed - using local response'),
+                            content: Text('Deploy Scambaiter activated but AI voice generation failed - using local response'),
                             backgroundColor: Colors.orangeAccent,
                             duration: Duration(seconds: 3),
                           ),
@@ -413,11 +413,11 @@ class SecurityOverlayModal extends ConsumerWidget {
                       }
                     }
                   } catch (e) {
-                    debugPrint('[SecurityOverlay] Error activating Scam Batter: $e');
+                    debugPrint('[SecurityOverlay] Error activating Deploy Scambaiter: $e');
                     if (context.mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
-                          content: Text('Scam Batter activated: $e'),
+                          content: Text('Deploy Scambaiter activated: $e'),
                           backgroundColor: AppColors.primary,
                         ),
                       );
@@ -430,7 +430,7 @@ class SecurityOverlayModal extends ConsumerWidget {
                   children: [
                     const Icon(Icons.block_rounded, size: 18),
                     const SizedBox(width: 8),
-                    Text('Scam Batter', style: AppTextStyles.labelMedium),
+                    Text('Deploy Scambaiter', style: AppTextStyles.labelMedium),
                   ],
                 ),
               ),

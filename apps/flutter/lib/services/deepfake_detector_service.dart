@@ -31,15 +31,14 @@ class DeepfakeDetectorService {
     if (_isInitialized) return;
     try {
       final options = InterpreterOptions()
-        ..threads = 4
-        ..useNnApiForAndroid = true;
+        ..threads = 4;
         
       _interpreter = await Interpreter.fromAsset(
         'assets/models/deepfake_detector.tflite',
         options: options,
       );
       _isInitialized = true;
-      debugPrint('[DeepfakeDetector] TFLite 2D CNN model loaded (PARALLEL PROCESSING)');
+      debugPrint('[DeepfakeDetector] TFLite model loaded successfully (PARALLEL PROCESSING)');
     } catch (e) {
       debugPrint('[DeepfakeDetector] Failed to load TFLite model: $e');
     }

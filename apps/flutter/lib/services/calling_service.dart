@@ -439,9 +439,9 @@ class CallingService extends ChangeNotifier {
     await _engine!.switchCamera();
   }
 
-  // ── AI Voice Injection for Scam Batter ───────────────────────────────────────
+  // ── AI Voice Injection for Scambaiter ───────────────────────────────────────
 
-  /// Inject AI voice into Agora call for Scam Batter
+  /// Inject AI voice into Agora call for Scambaiter
   /// Converts audio bytes to WAV format and plays to remote user (scammer)
   Future<void> injectAIVoice(Uint8List audioBytes) async {
     if (_engine == null) {
@@ -551,13 +551,11 @@ class CallingService extends ChangeNotifier {
     final callerStream = _firestore
         .collection('calls')
         .where('callerId', isEqualTo: userId)
-        .orderBy('startTime', descending: true)
         .snapshots();
 
     final calleeStream = _firestore
         .collection('calls')
         .where('calleeId', isEqualTo: userId)
-        .orderBy('startTime', descending: true)
         .snapshots();
 
     // Merge by keeping a map of docId → CallModel, updated on each snapshot

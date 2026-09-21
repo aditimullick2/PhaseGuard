@@ -446,13 +446,11 @@ class ConnectCallCallingService extends ChangeNotifier {
     final callerStream = _firestore
         .collection('calls')
         .where('callerId', isEqualTo: userId)
-        .orderBy('startTime', descending: true)
         .snapshots();
 
     final calleeStream = _firestore
         .collection('calls')
         .where('calleeId', isEqualTo: userId)
-        .orderBy('startTime', descending: true)
         .snapshots();
 
     // Merge by keeping a map of docId → CallModel, updated on each snapshot

@@ -52,15 +52,19 @@ class OfflineDossierService {
         ? callStartTime.toIso8601String().substring(0, 19)
         : 'N/A';
 
-    // ── Color palette ────────────────────────────────────────────────────────
-    const redColor = PdfColor.fromInt(0xFFE11D48); // Rose 600
-    const safeColor = PdfColor.fromInt(0xFF10B981); // Emerald 500
-    const orangeColor = PdfColor.fromInt(0xFFF59E0B); // Amber 500
-    const greyLight = PdfColor.fromInt(0xFFF1F5F9); // Slate 100
-    const greyDark = PdfColor.fromInt(0xFF334155); // Slate 700
-    const headerBg = PdfColor.fromInt(0xFF1E40AF); // Blue 800
-    const accentBg = PdfColor.fromInt(0xFF3B82F6); // Blue 500
-    const textColor = PdfColor.fromInt(0xFF0F172A); // Slate 900
+    // ── Color palette (Premium Look) ─────────────────────────────────────────
+    const brandBlue = PdfColor.fromInt(0xFF0F172A); // Slate 900
+    const primaryAccent = PdfColor.fromInt(0xFF2563EB); // Blue 600
+    const redColor = PdfColor.fromInt(0xFFDC2626); // Red 600
+    const safeColor = PdfColor.fromInt(0xFF059669); // Emerald 600
+    const orangeColor = PdfColor.fromInt(0xFFD97706); // Amber 600
+    
+    const bgLight = PdfColor.fromInt(0xFFF8FAFC); // Slate 50
+    const bgDarker = PdfColor.fromInt(0xFFF1F5F9); // Slate 100
+    const borderDark = PdfColor.fromInt(0xFFCBD5E1); // Slate 300
+    
+    const textMain = PdfColor.fromInt(0xFF1E293B); // Slate 800
+    const textMuted = PdfColor.fromInt(0xFF64748B); // Slate 500
 
     final verdictColor = verdict == 'CRITICAL'
         ? redColor
@@ -69,248 +73,371 @@ class OfflineDossierService {
             : orangeColor;
 
     // ── Styles ───────────────────────────────────────────────────────────────
-    final titleStyle = pw.TextStyle(
-      fontSize: 20,
-      fontWeight: pw.FontWeight.bold,
-      color: PdfColors.white,
-    );
-    final headingStyle = pw.TextStyle(
-      fontSize: 13,
-      fontWeight: pw.FontWeight.bold,
-      color: textColor,
-    );
-    final labelStyle = pw.TextStyle(
-      fontSize: 9,
-      fontWeight: pw.FontWeight.bold,
-      color: greyDark,
-    );
-    final valueStyle = pw.TextStyle(fontSize: 9, color: textColor);
+    final baseStyle = pw.TextStyle(fontSize: 10, color: textMain);
+    final h1Style = pw.TextStyle(fontSize: 22, fontWeight: pw.FontWeight.bold, color: brandBlue);
+    final h2Style = pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold, color: primaryAccent);
+    final labelStyle = pw.TextStyle(fontSize: 9, fontWeight: pw.FontWeight.bold, color: textMuted);
+    final valueStyle = pw.TextStyle(fontSize: 10, color: textMain, fontWeight: pw.FontWeight.bold);
+    
     final codeStyle = pw.TextStyle(
-      fontSize: 8,
-      color: PdfColors.grey800,
-      fontStyle: pw.FontStyle.italic,
+      fontSize: 9,
+      color: textMain,
     );
 
     // ── Helpers ──────────────────────────────────────────────────────────────
     pw.Widget _sectionHeader(String title) => pw.Container(
-          margin: const pw.EdgeInsets.only(top: 14, bottom: 4),
-          padding: const pw.EdgeInsets.symmetric(horizontal: 8, vertical: 5),
-          decoration: pw.BoxDecoration(
-            color: accentBg,
-            borderRadius: pw.BorderRadius.circular(4),
+          margin: const pw.EdgeInsets.only(top: 20, bottom: 8),
+          padding: const pw.EdgeInsets.only(bottom: 4),
+          decoration: const pw.BoxDecoration(
+            border: pw.Border(bottom: pw.BorderSide(color: borderDark, width: 1)),
           ),
-          child: pw.Text(title, style: headingStyle.copyWith(color: PdfColors.white)),
+          child: pw.Row(
+            children: [
+              pw.Container(
+                width: 4,
+                height: 14,
+                margin: const pw.EdgeInsets.only(right: 6),
+                color: primaryAccent,
+              ),
+              pw.Text(title, style: h2Style),
+            ]
+          ),
         );
 
-    pw.Widget _kv(String label, String value) => pw.Padding(
-          padding: const pw.EdgeInsets.symmetric(vertical: 2),
-          child: pw.Row(
+    pw.Widget _kvBlock(String label, String value) => pw.Expanded(
+          child: pw.Column(
             crossAxisAlignment: pw.CrossAxisAlignment.start,
             children: [
-              pw.SizedBox(
-                width: 150,
-                child: pw.Text(label, style: labelStyle),
-              ),
-              pw.Expanded(child: pw.Text(value, style: valueStyle)),
+              pw.Text(label.toUpperCase(), style: labelStyle),
+              pw.SizedBox(height: 2),
+              pw.Text(value, style: valueStyle),
             ],
           ),
         );
 
-    // ── PDF Pages ────────────────────────────────────────────────────────────
+    // ── Header Builder ───────────────────────────────────────────────────────
+    pw.Widget _buildHeader(pw.Context context) {
+      return pw.Container(
+        margin: const pw.EdgeInsets.only(bottom: 20),
+        child: pw.Column(
+          children: [
+            pw.Row(
+              mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+              crossAxisAlignment: pw.CrossAxisAlignment.start,
+              children: [
+                pw.Expanded(
+                  child: pw.Column(
+                    crossAxisAlignment: pw.CrossAxisAlignment.start,
+                    children: [
+                      pw.Text('PHASEGUARD', style: h1Style.copyWith(letterSpacing: 2)),
+                      pw.Text('OFFICIAL CYBER CRIME EVIDENCE DOSSIER', 
+                        style: pw.TextStyle(fontSize: 11, color: textMuted, fontWeight: pw.FontWeight.bold, letterSpacing: 1)),
+                      pw.SizedBox(height: 4),
+                      pw.Text('Format: India National Cyber Crime Portal (1930)', style: pw.TextStyle(fontSize: 8, color: textMuted)),
+                    ],
+                  )
+                ),
+                pw.Container(
+                  height: 50,
+                  width: 50,
+                  child: pw.BarcodeWidget(
+                    barcode: pw.Barcode.qrCode(),
+                    data: 'PG-CALL-$callId',
+                    drawText: false,
+                    color: brandBlue,
+                  ),
+                ),
+              ],
+            ),
+            pw.SizedBox(height: 15),
+            
+            // Verdict Banner
+            pw.Container(
+              width: double.infinity,
+              padding: const pw.EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              decoration: pw.BoxDecoration(
+                color: verdictColor,
+                borderRadius: pw.BorderRadius.circular(4),
+              ),
+              child: pw.Row(
+                mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                children: [
+                  pw.Text(
+                    'VERDICT: $verdict',
+                    style: pw.TextStyle(fontSize: 16, fontWeight: pw.FontWeight.bold, color: PdfColors.white, letterSpacing: 2),
+                  ),
+                  pw.Text(
+                    'Generated: $generatedAt',
+                    style: pw.TextStyle(fontSize: 9, color: PdfColors.white),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    // ── Footer Builder ───────────────────────────────────────────────────────
+    pw.Widget _buildFooter(pw.Context context) {
+      return pw.Container(
+        margin: const pw.EdgeInsets.only(top: 20),
+        padding: const pw.EdgeInsets.only(top: 10),
+        decoration: const pw.BoxDecoration(
+          border: pw.Border(top: pw.BorderSide(color: borderDark, width: 1)),
+        ),
+        child: pw.Row(
+          mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+          children: [
+            pw.Text(
+              'Confidential Evidence Document | PhaseGuard Anti-Scam OS',
+              style: pw.TextStyle(fontSize: 8, color: textMuted),
+            ),
+            pw.Text(
+              'Page ${context.pageNumber} of ${context.pagesCount}',
+              style: pw.TextStyle(fontSize: 8, color: textMuted),
+            ),
+          ],
+        ),
+      );
+    }
+
+    // ── PDF MultiPage ────────────────────────────────────────────────────────
     pdf.addPage(
       pw.MultiPage(
         pageFormat: PdfPageFormat.a4,
-        margin: const pw.EdgeInsets.all(30),
+        margin: const pw.EdgeInsets.all(36),
+        header: _buildHeader,
+        footer: _buildFooter,
         build: (context) => [
-          // Header banner
-          pw.Container(
-            width: double.infinity,
-            padding: const pw.EdgeInsets.all(16),
-            decoration: pw.BoxDecoration(
-              color: headerBg,
-              borderRadius: pw.BorderRadius.circular(8),
-            ),
-            child: pw.Column(
-              crossAxisAlignment: pw.CrossAxisAlignment.start,
-              children: [
-                pw.Text('🛡 PhaseGuard Forensic Evidence Dossier', style: titleStyle),
-                pw.SizedBox(height: 4),
-                pw.Text(
-                  'India Cyber Crime Portal (1930) Compatible Report',
-                  style: pw.TextStyle(fontSize: 10, color: PdfColors.grey400),
-                ),
-              ],
-            ),
-          ),
-
-          pw.SizedBox(height: 12),
-
-          // Verdict badge
-          pw.Container(
-            padding: const pw.EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            decoration: pw.BoxDecoration(
-              color: verdictColor,
-              borderRadius: pw.BorderRadius.circular(6),
-            ),
-            child: pw.Row(
-              mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-              children: [
-                pw.Text(
-                  'VERDICT: $verdict',
-                  style: pw.TextStyle(
-                    fontSize: 14,
-                    fontWeight: pw.FontWeight.bold,
-                    color: PdfColors.white,
-                  ),
-                ),
-                pw.Text(
-                  'Generated: $generatedAt',
-                  style: pw.TextStyle(fontSize: 9, color: PdfColors.white),
-                ),
-              ],
-            ),
-          ),
-
+          
           // Section 1: Call Metadata
-          _sectionHeader('1. Call Metadata'),
+          _sectionHeader('1. CALL METADATA'),
           pw.Container(
-            padding: const pw.EdgeInsets.all(8),
+            padding: const pw.EdgeInsets.all(12),
             decoration: pw.BoxDecoration(
-              color: greyLight,
-              borderRadius: pw.BorderRadius.circular(4),
+              color: bgLight,
+              borderRadius: pw.BorderRadius.circular(6),
+              border: pw.Border.all(color: borderDark, width: 0.5),
             ),
             child: pw.Column(
               children: [
-                _kv('Call ID:', callId),
-                _kv('Caller Name:', callerName ?? 'Unknown'),
-                _kv('Phone Number(s):', phoneNumbers.isNotEmpty ? phoneNumbers.join(', ') : 'Unknown'),
-                _kv('Call Start:', callStart),
-                _kv('Generated At:', generatedAt),
-                _kv('Audio Duration:', '$audioDurationSec seconds'),
-                _kv('Ingestion Mode:', 'phone_audio'),
+                pw.Row(
+                  children: [
+                    _kvBlock('Call ID', callId),
+                    _kvBlock('Caller Name', callerName ?? 'Unknown'),
+                    _kvBlock('Phone Number', phoneNumbers.isNotEmpty ? phoneNumbers.join(', ') : 'Unknown'),
+                  ]
+                ),
+                pw.SizedBox(height: 12),
+                pw.Row(
+                  children: [
+                    _kvBlock('Call Start Time', callStart),
+                    _kvBlock('Audio Duration', '$audioDurationSec seconds'),
+                    _kvBlock('Ingestion Mode', 'Direct Device Audio'),
+                  ]
+                ),
               ],
             ),
           ),
 
           // Section 1.5: AI Voice Analysis
           if (aiVoiceReason != null && aiVoiceReason.isNotEmpty) ...[
-            _sectionHeader('1.5 AI Voice Generation Analysis'),
+            _sectionHeader('AI VOICE / DEEPFAKE ANALYSIS'),
             pw.Container(
-              padding: const pw.EdgeInsets.all(8),
-              decoration: pw.BoxDecoration(color: greyLight, borderRadius: pw.BorderRadius.circular(4)),
+              padding: const pw.EdgeInsets.all(12),
+              decoration: pw.BoxDecoration(
+                color: PdfColor.fromInt(0xFFFEF2F2), // Red 50
+                borderRadius: pw.BorderRadius.circular(6),
+                border: pw.Border.all(color: PdfColor.fromInt(0xFFFCA5A5), width: 1),
+              ),
               child: pw.Text(
-                'AI/Deepfake Detection Reason:\n$aiVoiceReason',
+                'WARNING: Deepfake / AI Voice Detected\n\n$aiVoiceReason',
                 style: codeStyle.copyWith(color: redColor, fontWeight: pw.FontWeight.bold),
               ),
             ),
           ],
 
           // Section 2: Forensic Hash
-          _sectionHeader('2. Forensic Audio Integrity (Chain of Custody)'),
+          _sectionHeader('2. FORENSIC CHAIN OF CUSTODY'),
           pw.Container(
-            padding: const pw.EdgeInsets.all(8),
-            decoration: pw.BoxDecoration(color: greyLight, borderRadius: pw.BorderRadius.circular(4)),
+            padding: const pw.EdgeInsets.all(12),
+            decoration: pw.BoxDecoration(
+              color: bgLight,
+              borderRadius: pw.BorderRadius.circular(6),
+              border: pw.Border.all(color: borderDark, width: 0.5),
+            ),
             child: pw.Column(
+              crossAxisAlignment: pw.CrossAxisAlignment.start,
               children: [
-                _kv('Algorithm:', 'SHA-256'),
-                _kv('Audio Hash:', audioHash),
-                _kv('Hash Verified:', audioBytes != null ? 'YES' : 'No audio captured'),
+                pw.Row(
+                  children: [
+                    _kvBlock('Algorithm', 'SHA-256'),
+                    _kvBlock('Hash Verified', audioBytes != null ? 'YES' : 'No audio captured'),
+                  ]
+                ),
+                pw.SizedBox(height: 12),
+                pw.Text('AUDIO HASH:', style: labelStyle),
+                pw.SizedBox(height: 2),
+                pw.Text(audioHash, style: valueStyle.copyWith(fontSize: 8)), // Smaller for hash
               ],
             ),
           ),
 
           // Section 3: Identified Scam Markers
-          _sectionHeader('3. Extracted Scam Identifiers'),
+          _sectionHeader('3. EXTRACTED SCAM IDENTIFIERS'),
           pw.Container(
-            padding: const pw.EdgeInsets.all(8),
-            decoration: pw.BoxDecoration(color: greyLight, borderRadius: pw.BorderRadius.circular(4)),
+            padding: const pw.EdgeInsets.all(12),
+            decoration: pw.BoxDecoration(
+              color: bgLight,
+              borderRadius: pw.BorderRadius.circular(6),
+              border: pw.Border.all(color: borderDark, width: 0.5),
+            ),
             child: pw.Column(
               children: [
-                _kv('UPI IDs Found:', upiIds.isEmpty ? 'None detected' : upiIds.join(', ')),
-                _kv('Impersonated Entities:', impersonatedEntities.isEmpty ? 'None' : impersonatedEntities.join(', ')),
-                _kv('Scam Keywords:', detectedKeywords.isEmpty ? 'None' : detectedKeywords.take(20).join(', ')),
+                pw.Row(
+                  crossAxisAlignment: pw.CrossAxisAlignment.start,
+                  children: [
+                    _kvBlock('UPI IDs / Bank Details', upiIds.isEmpty ? 'None detected' : upiIds.join(', ')),
+                    _kvBlock('Impersonated Entities', impersonatedEntities.isEmpty ? 'None' : impersonatedEntities.join(', ')),
+                  ]
+                ),
+                pw.SizedBox(height: 12),
+                pw.Row(
+                  crossAxisAlignment: pw.CrossAxisAlignment.start,
+                  children: [
+                    _kvBlock('Scam Keywords', detectedKeywords.isEmpty ? 'None' : detectedKeywords.take(20).join(', ')),
+                    pw.Expanded(child: pw.SizedBox()), // Spacer
+                  ]
+                ),
               ],
             ),
           ),
 
           // Section 4: Transcript with Highlighted Scam Terms
-          _sectionHeader('4. Call Transcript'),
+          _sectionHeader('4. CERTIFIED CALL TRANSCRIPT'),
           if (transcriptHistory.isEmpty)
-            pw.Text('No transcript captured.', style: codeStyle)
+            pw.Text('No transcript captured during this session.', style: codeStyle.copyWith(color: textMuted))
           else
             pw.Container(
-              padding: const pw.EdgeInsets.all(8),
-              decoration: pw.BoxDecoration(color: greyLight, borderRadius: pw.BorderRadius.circular(4)),
+              padding: const pw.EdgeInsets.all(12),
+              decoration: pw.BoxDecoration(
+                color: bgLight,
+                borderRadius: pw.BorderRadius.circular(6),
+                border: pw.Border.all(color: borderDark, width: 0.5),
+              ),
               child: pw.Column(
                 crossAxisAlignment: pw.CrossAxisAlignment.start,
                 children: transcriptHistory.map((t) {
-                  // Basic highlighting: split text by keywords if found
-                  final spans = <pw.TextSpan>[];
-                  String remaining = t;
-                  
-                  // Simple approach: just check if the sentence contains any keywords and make the whole line bold if it does
                   bool containsKeyword = detectedKeywords.any((kw) => t.toLowerCase().contains(kw.toLowerCase()));
                   
                   return pw.Padding(
-                    padding: const pw.EdgeInsets.only(bottom: 3),
-                    child: pw.Text(
-                      t, 
-                      style: codeStyle.copyWith(
-                        color: containsKeyword ? redColor : PdfColors.grey800,
-                        fontWeight: containsKeyword ? pw.FontWeight.bold : pw.FontWeight.normal,
-                      ),
-                    ),
+                    padding: const pw.EdgeInsets.only(bottom: 6),
+                    child: pw.Row(
+                      crossAxisAlignment: pw.CrossAxisAlignment.start,
+                      children: [
+                        pw.Container(
+                          width: 2,
+                          height: 12,
+                          margin: const pw.EdgeInsets.only(right: 8, top: 2),
+                          color: containsKeyword ? redColor : borderDark,
+                        ),
+                        pw.Expanded(
+                          child: pw.Text(
+                            t, 
+                            style: codeStyle.copyWith(
+                              color: containsKeyword ? redColor : textMain,
+                              fontWeight: containsKeyword ? pw.FontWeight.bold : pw.FontWeight.normal,
+                            ),
+                          ),
+                        ),
+                      ]
+                    )
                   );
                 }).toList(),
               ),
             ),
 
           // Section 5: Factcheck History
-          _sectionHeader('5. AI Fact-Check Log'),
+          _sectionHeader('5. REAL-TIME AI FACT-CHECK LOG'),
           if (factcheckHistory.isEmpty)
-            pw.Text('No fact-checks performed.', style: codeStyle)
+            pw.Text('No fact-checks performed.', style: codeStyle.copyWith(color: textMuted))
           else
-            pw.TableHelper.fromTextArray(
-              headers: ['Time', 'Status', 'Summary'],
-              data: factcheckHistory
-                  .take(15)
-                  .map((f) => [
-                        (f['ts'] as String? ?? '').substring(0, 16),
-                        f['status'] ?? '',
-                        (f['message'] as String? ?? '').substring(
-                            0, ((f['message'] as String? ?? '').length).clamp(0, 80)),
-                      ])
-                  .toList(),
-              headerStyle: pw.TextStyle(
-                fontWeight: pw.FontWeight.bold,
-                fontSize: 9,
-                color: PdfColors.white,
+            pw.Container(
+              decoration: pw.BoxDecoration(
+                border: pw.Border.all(color: borderDark, width: 0.5),
+                borderRadius: pw.BorderRadius.circular(6),
               ),
-              headerDecoration: pw.BoxDecoration(color: headerBg),
-              cellStyle: pw.TextStyle(fontSize: 8),
-              cellPadding: const pw.EdgeInsets.symmetric(horizontal: 4, vertical: 3),
-              oddRowDecoration: pw.BoxDecoration(color: greyLight),
+              child: pw.TableHelper.fromTextArray(
+                headers: ['Timestamp', 'Status', 'AI Verdict / Summary'],
+                data: factcheckHistory
+                    .take(15)
+                    .map((f) => [
+                          (f['ts'] as String? ?? '').substring(0, 16).replaceFirst('T', ' '),
+                          f['status'] ?? '',
+                          (f['message'] as String? ?? '').substring(
+                              0, ((f['message'] as String? ?? '').length).clamp(0, 100)) + (((f['message'] as String? ?? '').length > 100) ? '...' : ''),
+                        ])
+                    .toList(),
+                headerStyle: pw.TextStyle(
+                  fontWeight: pw.FontWeight.bold,
+                  fontSize: 9,
+                  color: PdfColors.white,
+                ),
+                headerDecoration: const pw.BoxDecoration(
+                  color: brandBlue,
+                  borderRadius: pw.BorderRadius.vertical(top: pw.Radius.circular(5)),
+                ),
+                cellStyle: pw.TextStyle(fontSize: 8, color: textMain),
+                cellPadding: const pw.EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                oddRowDecoration: const pw.BoxDecoration(color: bgDarker),
+                border: null, // Custom border handled by container
+              ),
             ),
 
           // Section 6: Scambaiter Log
-          _sectionHeader('6. AI Scambaiter Exchange Log'),
+          _sectionHeader('6. AI SCAMBAITER EXCHANGE LOG'),
           if (scambaiterLog.isEmpty)
-            pw.Text('Scambaiter not activated during this call.', style: codeStyle)
+            pw.Text('Scambaiter was not activated during this call.', style: codeStyle.copyWith(color: textMuted))
           else
             pw.Container(
-              padding: const pw.EdgeInsets.all(8),
-              decoration: pw.BoxDecoration(color: greyLight, borderRadius: pw.BorderRadius.circular(4)),
+              padding: const pw.EdgeInsets.all(12),
+              decoration: pw.BoxDecoration(
+                color: bgLight,
+                borderRadius: pw.BorderRadius.circular(6),
+                border: pw.Border.all(color: borderDark, width: 0.5),
+              ),
               child: pw.Column(
                 crossAxisAlignment: pw.CrossAxisAlignment.start,
                 children: scambaiterLog
                     .map((s) => pw.Padding(
-                          padding: const pw.EdgeInsets.only(bottom: 4),
+                          padding: const pw.EdgeInsets.only(bottom: 12),
                           child: pw.Column(
                             crossAxisAlignment: pw.CrossAxisAlignment.start,
                             children: [
-                              pw.Text('Scammer: ${s['input'] ?? ''}', style: codeStyle),
-                              pw.Text('Ramesh Ji: ${s['response'] ?? ''}',
-                                  style: codeStyle.copyWith(color: PdfColors.blue700)),
+                              // Scammer Bubble
+                              pw.Container(
+                                padding: const pw.EdgeInsets.all(8),
+                                margin: const pw.EdgeInsets.only(bottom: 4, right: 40),
+                                decoration: pw.BoxDecoration(
+                                  color: PdfColors.white,
+                                  borderRadius: pw.BorderRadius.circular(6),
+                                  border: pw.Border.all(color: borderDark, width: 0.5),
+                                ),
+                                child: pw.Text('Scammer: ${s['input'] ?? ''}', style: codeStyle),
+                              ),
+                              // AI Bubble
+                              pw.Container(
+                                padding: const pw.EdgeInsets.all(8),
+                                margin: const pw.EdgeInsets.only(left: 40),
+                                decoration: pw.BoxDecoration(
+                                  color: PdfColor.fromInt(0xFFEFF6FF), // Blue 50
+                                  borderRadius: pw.BorderRadius.circular(6),
+                                  border: pw.Border.all(color: PdfColor.fromInt(0xFFBFDBFE), width: 0.5),
+                                ),
+                                child: pw.Text('PhaseGuard AI: ${s['response'] ?? ''}',
+                                    style: codeStyle.copyWith(color: primaryAccent, fontWeight: pw.FontWeight.bold)),
+                              ),
                             ],
                           ),
                         ))
@@ -319,47 +446,35 @@ class OfflineDossierService {
             ),
 
           // Section 7: Legal / Reporting
-          _sectionHeader('7. Report This Crime'),
+          _sectionHeader('7. OFFICIAL REPORTING GUIDELINES'),
           pw.Container(
-            padding: const pw.EdgeInsets.all(8),
+            padding: const pw.EdgeInsets.all(12),
             decoration: pw.BoxDecoration(
-              color: PdfColor.fromInt(0xFFFFEBEB),
-              borderRadius: pw.BorderRadius.circular(4),
+              color: PdfColor.fromInt(0xFFFEF2F2), // Red 50
+              borderRadius: pw.BorderRadius.circular(6),
               border: pw.Border.all(color: redColor, width: 1),
             ),
             child: pw.Column(
               crossAxisAlignment: pw.CrossAxisAlignment.start,
               children: [
                 pw.Text(
-                  'This dossier is formatted for submission to India\'s National Cyber Crime Portal.',
-                  style: pw.TextStyle(fontSize: 9, fontWeight: pw.FontWeight.bold),
+                  'IMPORTANT EVIDENCE INSTRUCTIONS',
+                  style: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold, color: redColor, letterSpacing: 1),
                 ),
-                pw.SizedBox(height: 4),
-                pw.Text('• Portal: https://cybercrime.gov.in', style: valueStyle),
-                pw.Text('• Helpline: 1930 (Toll-free, 24x7)', style: valueStyle),
+                pw.SizedBox(height: 8),
                 pw.Text(
-                  '• This PDF was generated OFFLINE on the victim\'s device for evidence integrity.',
+                  'This dossier is cryptographically hashed and formatted for immediate submission to India\'s National Cyber Crime Portal.',
                   style: valueStyle,
                 ),
+                pw.SizedBox(height: 8),
+                pw.Text('• Portal: https://cybercrime.gov.in', style: valueStyle.copyWith(color: primaryAccent)),
+                pw.Text('• Helpline: 1930 (Toll-free, 24x7)', style: valueStyle.copyWith(color: primaryAccent)),
+                pw.SizedBox(height: 8),
                 pw.Text(
-                  '• Do NOT share this document with the scammer.',
-                  style: pw.TextStyle(
-                    fontSize: 9,
-                    fontWeight: pw.FontWeight.bold,
-                    color: redColor,
-                  ),
+                  'Do NOT share this document with the suspected scammer. This PDF was generated entirely OFFLINE on the victim\'s device to preserve evidence integrity and privacy.',
+                  style: pw.TextStyle(fontSize: 9, fontWeight: pw.FontWeight.bold, color: textMain),
                 ),
               ],
-            ),
-          ),
-
-          // Footer
-          pw.SizedBox(height: 16),
-          pw.Divider(),
-          pw.Center(
-            child: pw.Text(
-              'Generated by PhaseGuard Anti-Scam OS | Offline | $generatedAt',
-              style: pw.TextStyle(fontSize: 8, color: PdfColors.grey500),
             ),
           ),
         ],
@@ -368,7 +483,7 @@ class OfflineDossierService {
 
     // Save to app documents directory
     final dir = await getApplicationDocumentsDirectory();
-    final filename = 'PhaseGuard_Dossier_${callId.substring(0, 8)}.pdf';
+    final filename = 'PhaseGuard_Evidence_${callId.substring(0, 8)}.pdf';
     final file = File('${dir.path}/$filename');
     final pdfBytes = await pdf.save();
     await file.writeAsBytes(pdfBytes);
