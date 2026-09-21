@@ -1,4 +1,4 @@
-﻿import 'dart:convert';
+import 'dart:convert';
 import 'dart:typed_data';
 import 'dart:math';
 import 'package:fftea/fftea.dart';
@@ -29,9 +29,13 @@ class DeepfakeDetectorService {
 
   Future<void> init() async {
     if (_isInitialized) return;
-    try {
+      final options = InterpreterOptions()
+        ..threads = 4
+        ..useNnApiForAndroid = true;
+        
       _interpreter = await Interpreter.fromAsset(
         'assets/models/deepfake_detector.tflite',
+        options: options,
       );
       _isInitialized = true;
       debugPrint('[DeepfakeDetector] TFLite 2D CNN model loaded (PARALLEL PROCESSING)');

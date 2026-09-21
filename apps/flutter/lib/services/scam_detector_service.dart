@@ -27,9 +27,13 @@ class ScamDetectorService {
   Future<void> init() async {
     if (_isModelReady) return;
     try {
-      // Load TFLite model
+      final options = InterpreterOptions()
+        ..threads = 4
+        ..useNnApiForAndroid = true;
+        
       _interpreter = await Interpreter.fromAsset(
         'assets/models/scam_detector.tflite',
+        options: options,
       );
 
       // Load vocabulary + IDF from metadata JSON
