@@ -68,7 +68,7 @@ class Settings(BaseSettings):
     jina_api_key: str = Field(default="", description="Jina AI API key")
 
     # ── TTS Backend ────────────────────────────────────────────────────────────
-    tts_backend: str = Field(default="gtts", description="TTS backend (gtts | mock | xtts | fish)")
+    tts_backend: str = Field(default="api", description="TTS backend (api | gtts | mock | xtts | fish)")
     tts_language: str = Field(default="hi", description="TTS language")
     elevenlabs_api_key: str = Field(default="", description="Optional ElevenLabs API key")
     elevenlabs_voice_id: str = Field(default="", description="Optional ElevenLabs Voice ID")
