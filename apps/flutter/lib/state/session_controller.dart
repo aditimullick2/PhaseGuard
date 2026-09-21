@@ -1793,9 +1793,9 @@ class SessionController extends ChangeNotifier {
     }
   }
 
-  @override
   void dispose() {
     _videoSnapshotTimer?.cancel();
+    _videoSnapshotTimer = null;
     _phoneSub?.cancel();
     _stopHealthCheck();
     _socket.disconnect();
@@ -1804,6 +1804,7 @@ class SessionController extends ChangeNotifier {
 
   Future<void> disconnect() async {
     _videoSnapshotTimer?.cancel();
+    _videoSnapshotTimer = null;
     await _socket.disconnect();
     callId = null;
     token = null;

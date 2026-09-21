@@ -607,6 +607,7 @@ class ConnectCallCallingService extends ChangeNotifier {
     _connectionState = 'Disconnected';
     _networkQuality = 0;
     _isEndingCall = false;
+    onSnapshotTakenCallback = null;
     notifyListeners();
   }
 
