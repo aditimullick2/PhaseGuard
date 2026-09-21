@@ -15,9 +15,11 @@ class AppConfig {
     return const String.fromEnvironment('AGORA_APP_CERT', defaultValue: 'ac4362c5978b473890de8963b5595d68');
   }
 
-  // Backend Configuration
+  // Backend Configuration — Render deployed backend (hardcoded default)
+  // For local dev: flutter run --dart-define=PHASEGUARD_BACKEND_URL=http://192.168.1.10:8000
   static String get backendUrl {
-    return const String.fromEnvironment('PHASEGUARD_BACKEND_URL', defaultValue: 'http://localhost:8000');
+    const override = String.fromEnvironment('PHASEGUARD_BACKEND_URL', defaultValue: 'https://phaseguard.onrender.com');
+    return override;
   }
 
   // Firebase Configuration

@@ -24,8 +24,6 @@ dependencies:
   fftea: ^1.0.0
 
   crypto: ^3.0.0
-  pdf: ^3.11.1
-  printing: ^5.13.2
   share_plus: ^10.0.3
   url_launcher: ^6.3.1
   open_filex: ^4.5.1

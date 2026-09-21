@@ -11,9 +11,9 @@ class IncomingCallOverlay extends StatefulWidget {
   final String registrationCircle;
   final VoidCallback onStartProtection;
   final VoidCallback onIgnore;
-  final VoidCallback onEscalateToCybercell;
-  final VoidCallback onDeployScambaiter;
-  final VoidCallback onDownloadDossier;
+  final Future<void> Function() onEscalateToCybercell;
+  final Future<void> Function() onDeployScambaiter;
+  final Future<void> Function() onDownloadDossier;
   final bool showSimulationControls;
   final double? pdiScore;
   final double? syntheticVoiceScore;
@@ -62,6 +62,10 @@ class _IncomingCallOverlayState extends State<IncomingCallOverlay> {
   String get claimVerificationStatus => _simClaimVerificationStatus ?? widget.claimVerificationStatus ?? 'VERIFYING';
   String get claimText => _simClaimText ?? widget.claimText ?? 'This is the IRS calling about your tax return...';
   bool get isScamDetected => _simIsScamDetected ?? widget.isScamDetected ?? (pdiScore >= 0.70);
+
+  bool _isEscalating = false;
+  bool _isDeployingScambaiter = false;
+  bool _isDownloadingDossier = false;
 
   @override
   Widget build(BuildContext context) {
@@ -537,21 +541,33 @@ class _IncomingCallOverlayState extends State<IncomingCallOverlay> {
           'Escalate to Cybercell',
           Icons.security,
           PgColors.scam,
-          widget.onEscalateToCybercell,
+          _isEscalating,
+          () async {
+            setState(() => _isEscalating = true);
+            try { await widget.onEscalateToCybercell(); } finally { if (mounted) setState(() => _isEscalating = false); }
+          },
         ),
         const SizedBox(height: PgSpace.sm),
         _buildActionButton(
           'Deploy Scambaiter',
           Icons.smart_toy,
           PgColors.accent,
-          widget.onDeployScambaiter,
+          _isDeployingScambaiter,
+          () async {
+            setState(() => _isDeployingScambaiter = true);
+            try { await widget.onDeployScambaiter(); } finally { if (mounted) setState(() => _isDeployingScambaiter = false); }
+          },
         ),
         const SizedBox(height: PgSpace.sm),
         _buildActionButton(
           'Download Dossier PDF',
           Icons.download,
           PgColors.textSecondary,
-          widget.onDownloadDossier,
+          _isDownloadingDossier,
+          () async {
+            setState(() => _isDownloadingDossier = true);
+            try { await widget.onDownloadDossier(); } finally { if (mounted) setState(() => _isDownloadingDossier = false); }
+          },
         ),
       ],
     );
@@ -561,16 +577,21 @@ class _IncomingCallOverlayState extends State<IncomingCallOverlay> {
     String label,
     IconData icon,
     Color color,
+    bool isLoading,
     VoidCallback onPressed,
   ) {
     return ElevatedButton.icon(
-      onPressed: onPressed,
-      icon: Icon(icon, size: 18),
-      label: Text(label),
+      onPressed: isLoading ? null : onPressed,
+      icon: isLoading 
+          ? SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, valueColor: AlwaysStoppedAnimation(color)))
+          : Icon(icon, size: 18),
+      label: Text(isLoading ? 'Processing...' : label),
       style: ElevatedButton.styleFrom(
         backgroundColor: color.withValues(alpha: 0.15),
         foregroundColor: color,
-        side: BorderSide(color: color, width: 1.5),
+        disabledForegroundColor: color.withValues(alpha: 0.5),
+        disabledBackgroundColor: color.withValues(alpha: 0.1),
+        side: BorderSide(color: isLoading ? color.withValues(alpha: 0.5) : color, width: 1.5),
         padding: const EdgeInsets.symmetric(vertical: 12),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(PgRadii.button),

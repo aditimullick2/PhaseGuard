@@ -730,7 +730,15 @@ async def call_websocket(websocket: WebSocket, call_id: str) -> None:
                     ctrl = _json.loads(raw_message["text"])
                     msg_type = ctrl.get("type", "")
 
-                    if msg_type == "set_voice_id":
+                    if msg_type == "ping":
+                        # Keepalive ping from Flutter client — pong back
+                        try:
+                            await manager.send_json(call_id, {"type": "pong", "ts": _ts()})
+                        except Exception:
+                            pass
+                        continue
+
+                    elif msg_type == "set_voice_id":
                         # Flutter enrolled user voice → store voice_id for TTS cloning
                         voice_id = ctrl.get("voice_id", "")
                         if voice_id:

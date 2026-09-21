@@ -819,36 +819,7 @@ class SessionController extends ChangeNotifier {
     }
   }
 
-  /// Generate forensic dossier PDF OFFLINE on device (no internet needed).
-  /// Falls back to server-side PDF only if local generation fails.
-  Future<String> generateOfflineDossier({
-    Uint8List? audioBytes,
-  }) async {
-    final id = callId ?? 'UNKNOWN';
-    return OfflineDossierService.generateAndSave(
-      callId: id,
-      verdict: factcheck?.status ?? (isSynthetic ? 'CRITICAL' : 'UNKNOWN'),
-      transcriptHistory: transcriptHistory.isNotEmpty ? transcriptHistory : (transcript != null ? [transcript!.text] : []),
-      factcheckHistory: factcheck != null
-          ? [
-              {
-                'ts': DateTime.now().toIso8601String(),
-                'status': factcheck!.status,
-                'message': factcheck!.message,
-              }
-            ]
-          : [],
-      scambaiterLog: const [],
-      detectedKeywords: factcheck?.keywords ?? [],
-      upiIds: const [],
-      phoneNumbers: const [],
-      impersonatedEntities: const [],
-      audioBytes: audioBytes,
-      callStartTime: _callStartTime ?? DateTime.now(),
-      callerName: callerNumber,
-      aiVoiceReason: isSynthetic ? 'Local Level 2 Deepfake Model detected synthetic traits in voice' : null,
-    );
-  }
+  // Local PDF generation removed; we rely exclusively on getDossierFromServer()
 
   /// Share the offline PDF via WhatsApp, email etc.
   Future<void> shareOfflineDossier(String pdfPath) async {
@@ -1062,9 +1033,15 @@ class SessionController extends ChangeNotifier {
     // Backend handles: STT, scam detection, deepfake analysis, scambaiter
     if (wsConnected) {
       _socket.sendBytes(chunk);
+      debugPrint('📤 Audio chunk sent to backend: ${chunk.length} bytes');
+    } else {
+      debugPrint('⚠️ wsConnected=FALSE — audio NOT sent (connecting=$connecting). Call startSession first!');
+      // Auto-reconnect if not already connecting
+      if (!connecting) {
+        debugPrint('🔄 Auto-reconnecting to backend...');
+        unawaited(startSession(callerNumber: callerNumber));
+      }
     }
-
-    debugPrint('📤 Audio chunk sent to backend: ${chunk.length} bytes');
   }
 
 

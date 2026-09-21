@@ -12,8 +12,8 @@ import '../config/app_config.dart';
 /// Backend-only architecture - uses local backend URL from config
 class ApiClient {
   ApiClient({
-    this.baseUrl = AppConfig.backendUrl,
-  });
+    String? baseUrl,
+  }) : baseUrl = baseUrl ?? AppConfig.backendUrl;
 
   final String baseUrl;
 

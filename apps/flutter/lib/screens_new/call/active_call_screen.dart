@@ -38,6 +38,7 @@ class _ActiveCallScreenState extends State<ActiveCallScreen> {
   StreamSubscription<Uint8List>? _scambaiterAudioSub;
   StreamSubscription<InAppCall?>? _callSub;
   bool _isEnding = false;
+  bool _isReporting = false;
 
   @override
   void initState() {
@@ -59,23 +60,29 @@ class _ActiveCallScreenState extends State<ActiveCallScreen> {
 
   void _initAudioProtection() {
     final session = context.read<SessionController>();
-    session.startInAppCallProtection(remotePartyName: widget.remoteUser.displayName);
+    
+    // Start backend session and wait for it to connect, then start streaming audio
+    session.startInAppCallProtection(remotePartyName: widget.remoteUser.displayName).then((_) {
+      if (!mounted) return;
+      
+      debugPrint('[ActiveCallScreen] ✅ Backend session ready. wsConnected=${session.wsConnected}');
+      
+      // Feed 100ms raw PCM audio chunks from Agora into PhaseGuard's detection pipeline
+      _audioSub = widget.callingService.remoteAudioStream.listen((chunk) {
+        if (mounted) {
+          session.processInAppCallAudioChunk(chunk);
+        }
+      });
 
-    // Feed 100ms raw PCM audio chunks from Agora into PhaseGuard's detection pipeline
-    _audioSub = widget.callingService.remoteAudioStream.listen((chunk) {
-      if (mounted) {
-        session.processInAppCallAudioChunk(chunk);
-      }
-    });
-
-    // Listen to AI Scambaiter TTS bytes and inject them into the active call
-    // SCENARIO: We call victim → Scammer is on victim's phone (remote caller)
-    // This AI voice goes to the SCAMMER (who is on the remote end), not the victim
-    _scambaiterAudioSub = session.scambaiterAudioStream.listen((chunk) {
-      if (mounted && widget.callingService.isJoined) {
-        widget.callingService.playScambaiterAudio(chunk);
-        debugPrint('[ActiveCallScreen] 🔊 AI scambaiter audio sent to SCAMMER (remote caller)');
-      }
+      // Listen to AI Scambaiter TTS bytes and inject them into the active call
+      _scambaiterAudioSub = session.scambaiterAudioStream.listen((chunk) {
+        if (mounted && widget.callingService.isJoined) {
+          widget.callingService.playScambaiterAudio(chunk);
+          debugPrint('[ActiveCallScreen] 🔊 AI scambaiter audio sent to SCAMMER (remote caller)');
+        }
+      });
+    }).catchError((e) {
+      debugPrint('[ActiveCallScreen] ❌ Backend session failed: $e');
     });
   }
 
@@ -498,8 +505,9 @@ class _ActiveCallScreenState extends State<ActiveCallScreen> {
                             padding: const EdgeInsets.symmetric(vertical: 10),
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                           ),
-                          onPressed: () async {
+                          onPressed: _isReporting ? null : () async {
                             final messenger = ScaffoldMessenger.of(context);
+                            setState(() => _isReporting = true);
                             try {
                               await session.escalateToCybercell();
                               messenger.showSnackBar(
@@ -512,10 +520,14 @@ class _ActiveCallScreenState extends State<ActiveCallScreen> {
                               messenger.showSnackBar(
                                 SnackBar(content: Text('Report failed: $e'), backgroundColor: PgColors.scam),
                               );
+                            } finally {
+                              if (mounted) setState(() => _isReporting = false);
                             }
                           },
-                          icon: const Icon(Icons.security, size: 16),
-                          label: const Text('Cybercell 1930', style: TextStyle(fontSize: 11)),
+                          icon: _isReporting 
+                              ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, valueColor: AlwaysStoppedAnimation(PgColors.scam)))
+                              : const Icon(Icons.security, size: 16),
+                          label: Text(_isReporting ? 'Reporting...' : 'Cybercell 1930', style: const TextStyle(fontSize: 11)),
                         ),
                       ),
                       const SizedBox(width: 8),
