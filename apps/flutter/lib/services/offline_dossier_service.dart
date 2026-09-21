@@ -53,13 +53,14 @@ class OfflineDossierService {
         : 'N/A';
 
     // ── Color palette ────────────────────────────────────────────────────────
-    const redColor = PdfColors.red800;
-    const safeColor = PdfColors.green800;
-    const orangeColor = PdfColors.orange800;
-    const greyLight = PdfColors.grey200;
-    const greyDark = PdfColors.grey700;
-    const headerBg = PdfColor.fromInt(0xFF0D1117);
-    const accentBg = PdfColor.fromInt(0xFF161B22);
+    const redColor = PdfColor.fromInt(0xFFE11D48); // Rose 600
+    const safeColor = PdfColor.fromInt(0xFF10B981); // Emerald 500
+    const orangeColor = PdfColor.fromInt(0xFFF59E0B); // Amber 500
+    const greyLight = PdfColor.fromInt(0xFFF1F5F9); // Slate 100
+    const greyDark = PdfColor.fromInt(0xFF334155); // Slate 700
+    const headerBg = PdfColor.fromInt(0xFF1E40AF); // Blue 800
+    const accentBg = PdfColor.fromInt(0xFF3B82F6); // Blue 500
+    const textColor = PdfColor.fromInt(0xFF0F172A); // Slate 900
 
     final verdictColor = verdict == 'CRITICAL'
         ? redColor
@@ -76,14 +77,14 @@ class OfflineDossierService {
     final headingStyle = pw.TextStyle(
       fontSize: 13,
       fontWeight: pw.FontWeight.bold,
-      color: PdfColors.grey900,
+      color: textColor,
     );
     final labelStyle = pw.TextStyle(
       fontSize: 9,
       fontWeight: pw.FontWeight.bold,
       color: greyDark,
     );
-    final valueStyle = pw.TextStyle(fontSize: 9, color: PdfColors.grey900);
+    final valueStyle = pw.TextStyle(fontSize: 9, color: textColor);
     final codeStyle = pw.TextStyle(
       fontSize: 8,
       color: PdfColors.grey800,
