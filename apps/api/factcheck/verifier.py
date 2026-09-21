@@ -20,7 +20,7 @@ class FactCheckVerifier:
                 self.client = AsyncGroq(api_key=self.api_key)
             except Exception as e:
                 logger.error(f"Error initializing AsyncGroq: {e}")
-        self.model = "openai/gpt-oss-120b"
+        self.model = "llama-3.1-8b-instant"
 
     async def verify_transcript(self, transcript: str) -> dict[str, Any]:
         """

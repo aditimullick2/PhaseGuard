@@ -46,7 +46,7 @@ class Settings(BaseSettings):
     # ── Groq (STT + LLM) ──────────────────────────────────────────────────────
     groq_api_key: str = Field(default="", description="Groq API key")
     groq_stt_model: str = Field(default="whisper-large-v3")
-    groq_llm_model: str = Field(default="openai/gpt-oss-120b")
+    groq_llm_model: str = Field(default="llama-3.1-8b-instant")
 
     # ── NewsAPI (3-tier search Tier 1) ────────────────────────────────────────
     # Get free key (no card) at: https://newsapi.org/register

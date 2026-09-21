@@ -1187,11 +1187,11 @@ class SessionController extends ChangeNotifier {
     }
 
     // LEVEL 2: Deepfake Detection (Local TFLite Model)
-    // Accumulate REMOTE caller audio for local deepfake detection (1 second = 32000 bytes at 16kHz 16-bit)
+    // Accumulate REMOTE caller audio for local deepfake detection (0.5 second = 16000 bytes at 16kHz 16-bit)
     _deepfakeAudioBuffer.addAll(chunk);
-    if (_deepfakeAudioBuffer.length >= 32000) {
-      final analysisChunk = Uint8List.fromList(_deepfakeAudioBuffer.sublist(0, 32000));
-      _deepfakeAudioBuffer.removeRange(0, 32000);
+    if (_deepfakeAudioBuffer.length >= 16000) {
+      final analysisChunk = Uint8List.fromList(_deepfakeAudioBuffer.sublist(0, 16000));
+      _deepfakeAudioBuffer.removeRange(0, 16000);
 
       unawaited(_runLevel2DeepfakeAnalysis(analysisChunk));
     }
