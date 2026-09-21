@@ -29,6 +29,7 @@ class DeepfakeDetectorService {
 
   Future<void> init() async {
     if (_isInitialized) return;
+    try {
       final options = InterpreterOptions()
         ..threads = 4
         ..useNnApiForAndroid = true;
