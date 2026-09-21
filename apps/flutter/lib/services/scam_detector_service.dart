@@ -1,4 +1,4 @@
-﻿import 'dart:convert';
+import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:tflite_flutter/tflite_flutter.dart';
@@ -18,9 +18,9 @@ class ScamDetectorService {
   List<double>? _idfWeights;
   bool _isModelReady = false;
 
-  static const double _highConfidenceThreshold = 0.70;
+  static const double _highConfidenceThreshold = 0.55; // Lowered from 0.70 for faster prediction
   static const double _lowConfidenceThreshold = 0.30;
-  static const int _keywordConfirmedScam = 3;
+  static const int _keywordConfirmedScam = 1; // Lowered from 3 so 1 strong keyword triggers it instantly
 
   ScamDetectorService();
 

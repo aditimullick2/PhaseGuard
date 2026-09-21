@@ -32,7 +32,7 @@ class HomeScreen extends ConsumerStatefulWidget {
 class _HomeScreenState extends ConsumerState<HomeScreen> {
   int _selectedIndex = 0;
   String? _lastShownCallId;
-  bool _isShowingIncomingCall = false;
+  bool ConnectCallCallingService.globalIsShowingIncomingCall = false;
   Timer? _incomingCallTimer;
 
   @override
@@ -74,13 +74,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           (previous, next) {
             final call = next.value;
             if (call == null) {
-              _isShowingIncomingCall = false;
+              ConnectCallCallingService.globalIsShowingIncomingCall = false;
               _incomingCallTimer?.cancel();
               return;
             }
             
             // Prevent duplicate incoming call screens
-            if (_isShowingIncomingCall) {
+            if (ConnectCallCallingService.globalIsShowingIncomingCall) {
               debugPrint('[HomeScreen] Incoming call already showing, skipping duplicate');
               return;
             }
@@ -91,20 +91,20 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               if (!mounted) return;
               
               // Check again if still showing to prevent race conditions
-              if (_isShowingIncomingCall) {
+              if (ConnectCallCallingService.globalIsShowingIncomingCall) {
                 debugPrint('[HomeScreen] Incoming call already showing after debounce, skipping');
                 return;
               }
               
               if (_lastShownCallId == call.callId) return;
               _lastShownCallId = call.callId;
-              _isShowingIncomingCall = true;
+              ConnectCallCallingService.globalIsShowingIncomingCall = true;
 
               debugPrint('[HomeScreen] Showing incoming call screen for call: ${call.callId}');
               
               Navigator.of(context).push(
                 PageRouteBuilder(
-                  pageBuilder: (_, __, ___) => IncomingCallScreen(call: call),
+                  pageBuilder: (_, __, ___) => ConnectCallIncomingCallScreen(call: call),
                   transitionsBuilder: (_, animation, __, child) => SlideTransition(
                     position: Tween<Offset>(
                       begin: const Offset(0, 1),
@@ -117,7 +117,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 ),
               ).then((_) {
                 // Reset flag when incoming call screen is dismissed
-                _isShowingIncomingCall = false;
+                ConnectCallCallingService.globalIsShowingIncomingCall = false;
                 debugPrint('[HomeScreen] Incoming call screen dismissed');
               });
             });
@@ -233,7 +233,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (_) => CallScreen(
+            builder: (_) => ConnectCallCallScreen(
               callId: call.callId,
               remoteUser: callee,
               isCaller: true,
@@ -661,7 +661,7 @@ class _ContactsTabState extends ConsumerState<_ContactsTab> {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (_) => CallScreen(
+            builder: (_) => ConnectCallCallScreen(
               callId: call.callId,
               remoteUser: callee,
               isCaller: true,

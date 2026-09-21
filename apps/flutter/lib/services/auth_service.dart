@@ -3,18 +3,67 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import '../models/user.dart';
+import '../models/app_user.dart';
 
 class AuthService extends ChangeNotifier {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   User? get currentUser => _auth.currentUser;
+  
+  AppUser? get appUser {
+    final user = _auth.currentUser;
+    if (user == null) return null;
+    return AppUser(
+      uid: user.uid,
+      displayName: user.displayName ?? 'Unknown',
+      email: user.email,
+      photoUrl: user.photoURL,
+      isOnline: true,
+      lastSeen: DateTime.now(),
+    );
+  }
+
   bool get isAuthenticated => currentUser != null;
   Stream<User?> get authStateChanges => _auth.authStateChanges();
 
-  Future<void> signInAnonymously() async {
+  Future<String?> signInAnonymously({String? preferredName}) async {
     try {
-      await _auth.signInAnonymously();
+      final userCredential = await _auth.signInAnonymously();
+      final user = userCredential.user;
+      
+      if (user != null && preferredName != null && preferredName.isNotEmpty) {
+        await user.updateDisplayName(preferredName.trim());
+        
+        final userModel = UserModel(
+          uid: user.uid,
+          name: preferredName.trim(),
+          email: '', 
+          isOnline: true,
+          lastSeen: DateTime.now(),
+        );
+
+        await _firestore.collection('users').doc(user.uid).set({
+          ...userModel.toMap(),
+          'uid': user.uid,
+        }, SetOptions(merge: true));
+      }
+      return 'Success';
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Future<void> updateDisplayName(String name) async {
+    try {
+      final User? user = _auth.currentUser;
+      if (user != null) {
+        await user.updateDisplayName(name.trim());
+        
+        await _firestore.collection('users').doc(user.uid).set({
+          'name': name.trim(),
+        }, SetOptions(merge: true));
+      }
     } catch (_) {}
   }
 
@@ -172,6 +221,11 @@ class AuthService extends ChangeNotifier {
             'lastSeen': DateTime.now().millisecondsSinceEpoch,
           }, SetOptions(merge: true));
         } catch (_) {}
+      }
+      try {
+        await GoogleSignIn().signOut();
+      } catch (e) {
+        debugPrint('GoogleSignIn signOut error: $e');
       }
       await _auth.signOut();
       return 'Success';

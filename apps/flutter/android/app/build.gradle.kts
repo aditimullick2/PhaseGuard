@@ -9,7 +9,7 @@ plugins {
 
 android {
     namespace = "com.phaseguard.phaseguard"
-    compileSdk = flutter.compileSdkVersion
+    compileSdk = 36
     // Explicitly set NDK 27 — required for llama_cpp_dart CMake native build
     ndkVersion = "27.0.12077973"
 

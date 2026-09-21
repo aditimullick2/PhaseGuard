@@ -711,14 +711,51 @@ async def call_websocket(websocket: WebSocket, call_id: str) -> None:
 
     try:
         while True:
-            # Idle timeout: terminate connection if no audio received for 300 seconds (to allow XTTS loading)
+            # Idle timeout: terminate connection if no audio received for 300 seconds
             try:
-                message = await asyncio.wait_for(websocket.receive_bytes(), timeout=300.0)
+                raw_message = await asyncio.wait_for(websocket.receive(), timeout=300.0)
             except asyncio.TimeoutError:
                 logger.warning("WebSocket idle timeout: call_id=%r", call_id)
                 break
 
-            # Payload validation: limit frame size to prevent memory abuse (e.g., max 64KB)
+            # ── Handle JSON control messages (text frames) ────────────────────
+            if "text" in raw_message:
+                try:
+                    import json as _json
+                    ctrl = _json.loads(raw_message["text"])
+                    msg_type = ctrl.get("type", "")
+
+                    if msg_type == "set_voice_id":
+                        # Flutter enrolled user voice → store voice_id for TTS cloning
+                        voice_id = ctrl.get("voice_id", "")
+                        if voice_id:
+                            session.user_voice_id = voice_id
+                            logger.info(
+                                "Voice clone: voice_id=%r stored for call_id=%r",
+                                voice_id, call_id,
+                            )
+                        continue
+
+                    elif msg_type == "transcript_analysis_request":
+                        # Level 3 text analysis request from Flutter
+                        text = ctrl.get("text", "")
+                        if text and session.state == CallState.SCAMBAITER_ACTIVE:
+                            session.scambaiter_queue.put_nowait(text)
+                        continue
+
+                    else:
+                        logger.debug("Unhandled JSON message type=%r for call_id=%r", msg_type, call_id)
+                        continue
+                except Exception as json_exc:
+                    logger.warning("Malformed JSON control message (call_id=%r): %s", call_id, json_exc)
+                    continue
+
+            # ── Handle binary audio frames ────────────────────────────────────
+            message = raw_message.get("bytes")
+            if not message:
+                continue
+
+            # Payload validation: limit frame size to prevent memory abuse (max 64KB)
             if len(message) > 65536:
                 logger.error("WebSocket abuse detected: frame size %d > 64KB, call_id=%r", len(message), call_id)
                 break

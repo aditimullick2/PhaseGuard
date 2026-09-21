@@ -7,6 +7,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:record/record.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/protocol.dart';
 import '../services/api_client.dart';
@@ -16,6 +17,7 @@ import '../services/phone_call_monitor.dart';
 import '../services/scam_taxonomy.dart';
 import '../services/scam_detector_service.dart';
 import '../services/deepfake_detector_service.dart';
+import '../services/video_deepfake_detector.dart';
 import '../services/offline_storage.dart';
 import '../services/connectivity_monitor.dart';
 
@@ -61,8 +63,15 @@ class SessionController extends ChangeNotifier {
   final CallSocket _socket;
   final ScamDetectorService _localDetector = ScamDetectorService();
   final DeepfakeDetectorService _deepfakeDetector = DeepfakeDetectorService();
+  final VideoDeepfakeDetector _videoDeepfakeDetector = VideoDeepfakeDetector();
   late OfflineStorage _offlineStorage;
   late ConnectivityMonitor _connectivityMonitor;
+
+  // Video Spoofing states
+  bool isVideoSpoof = false;
+  double videoSpoofScore = 0.0;
+  String? videoSpoofReason;
+  Timer? _videoSnapshotTimer;
 
   // OFFLINE MODE STATE
   bool isOfflineMode = false;
@@ -711,6 +720,9 @@ class SessionController extends ChangeNotifier {
   }
 
   /// Activate AI scambaiter
+  /// Also uploads user's 15-second voice sample for Fish Audio voice cloning.
+  /// If voice enrollment succeeds, the cloned voice is used for TTS.
+  /// Falls back to generic voice if enrollment fails.
   Future<Map<String, dynamic>> activateScambaiter() async {
     if (callId == null || token == null) {
       await startSession(callerNumber: callerNumber);
@@ -721,13 +733,139 @@ class SessionController extends ChangeNotifier {
 
     final id = callId;
     final t = token;
+
+    // ── Step 1: Activate scambaiter mode on backend ──────────────────────────
+    Map<String, dynamic> activationResult = {'status': 'scambaiter_active'};
     if (id != null && t != null) {
       try {
-        final res = await _api.activateScambaiter(callId: id, token: t).timeout(const Duration(seconds: 4));
-        return res;
-      } catch (_) {}
+        activationResult = await _api.activateScambaiter(callId: id, token: t)
+            .timeout(const Duration(seconds: 4));
+        debugPrint('🎭 ScamBaiter: backend activated → $activationResult');
+      } catch (e) {
+        debugPrint('⚠️ ScamBaiter: backend activation failed: $e (continuing with local)');
+      }
     }
-    return {'status': 'scambaiter_active'};
+
+    // ── Step 2: Upload voice sample for cloning (background, non-blocking) ───
+    // Don't await — scambaiter activates immediately, voice cloning is best-effort
+    unawaited(_enrollUserVoiceForCloning(id));
+
+    return activationResult;
+  }
+
+  /// Upload user's recorded voice sample to backend for Fish Audio voice cloning.
+  /// The returned voice_id is forwarded to the backend session via WebSocket
+  /// so future TTS calls use the cloned voice instead of a generic one.
+  Future<void> _enrollUserVoiceForCloning(String? callIdOverride) async {
+    final id = callIdOverride ?? callId;
+    if (id == null) return;
+
+    try {
+      // ── Step 1: Load voice sample bytes ────────────────────────────────────
+      // Priority:
+      //   A) SharedPreferences 'user_voice_id_path' (set by VoiceSetupScreen in settings)
+      //   B) App documents directory common filenames
+      //   C) Flutter assets fallback (pre-bundled sample)
+      List<int>? voiceBytes;
+      String fileName = 'user_voice_sample.m4a';
+
+      // Option A: From VoiceSetupScreen — user ne settings mein record kiya
+      try {
+        final prefs = await SharedPreferences.getInstance();
+        final savedPath = prefs.getString('user_voice_id_path');
+        if (savedPath != null && savedPath.isNotEmpty) {
+          final file = File(savedPath);
+          if (file.existsSync()) {
+            voiceBytes = await file.readAsBytes();
+            fileName = savedPath.split('/').last; // preserve original extension
+            debugPrint('🎤 Voice clone: loaded from settings path → $savedPath (${voiceBytes.length} bytes)');
+          } else {
+            debugPrint('⚠️ Voice clone: saved path not found on disk → $savedPath');
+          }
+        }
+      } catch (e) {
+        debugPrint('⚠️ Voice clone: SharedPreferences read failed: $e');
+      }
+
+      // Option B: Check app documents directory for common voice filenames
+      if (voiceBytes == null || voiceBytes.isEmpty) {
+        try {
+          final docDir = await getApplicationDocumentsDirectory();
+          final candidates = [
+            '${docDir.path}/user_voice_sample.m4a',
+            '${docDir.path}/user_voice_sample.wav',
+            '${docDir.path}/user_voice_sample.aac',
+            '${docDir.path}/voice_sample.m4a',
+            '${docDir.path}/voice_sample.wav',
+          ];
+          for (final path in candidates) {
+            final file = File(path);
+            if (file.existsSync()) {
+              voiceBytes = await file.readAsBytes();
+              fileName = path.split('/').last;
+              debugPrint('🎤 Voice clone: found in documents → $path (${voiceBytes.length} bytes)');
+              break;
+            }
+          }
+        } catch (e) {
+          debugPrint('⚠️ Voice clone: documents scan failed: $e');
+        }
+      }
+
+      // Option C: Flutter assets fallback
+      if (voiceBytes == null || voiceBytes.isEmpty) {
+        try {
+          final ByteData assetData = await rootBundle.load('assets/audio/user_voice_sample.m4a');
+          voiceBytes = assetData.buffer.asUint8List();
+          fileName = 'user_voice_sample.m4a';
+          debugPrint('🎤 Voice clone: loaded from assets (${voiceBytes.length} bytes)');
+        } catch (_) {
+          debugPrint('⚠️ Voice clone: no voice sample found anywhere — skipping enrollment');
+          debugPrint('   → Record your voice in App Settings → Voice Setup');
+          return;
+        }
+      }
+
+      if (voiceBytes.isEmpty) {
+        debugPrint('⚠️ Voice clone: empty voice sample, skipping');
+        return;
+      }
+
+      // ── Step 2: Enroll with Fish Audio ─────────────────────────────────────
+      debugPrint('🎤 Voice clone: enrolling ${voiceBytes.length} bytes with Fish Audio (file=$fileName)...');
+      final enrollResult = await _api.enrollVoice(
+        displayName: 'PhaseGuard User Voice',
+        audioBytes: voiceBytes,
+        fileName: fileName,
+      ).timeout(const Duration(seconds: 15));
+
+      final voiceId = enrollResult['id'] as String? ??
+          (enrollResult['voice_profile'] as Map<String, dynamic>?)?['id'] as String?;
+
+      if (voiceId == null || voiceId.isEmpty) {
+        debugPrint('⚠️ Voice clone: enrollment returned no voice_id');
+        return;
+      }
+
+      debugPrint('✅ Voice clone: enrolled! voice_id=$voiceId');
+
+      // ── Step 3: Tell backend session to use this voice_id for TTS ──────────
+      if (wsConnected) {
+        _socket.sendJson({
+          'type': 'set_voice_id',
+          'call_id': id,
+          'voice_id': voiceId,
+        });
+        debugPrint('📡 Voice clone: sent voice_id=$voiceId to backend session');
+      }
+
+      lastActionMessage = 'Scambaiter active · Voice cloned ✅';
+      notifyListeners();
+
+    } catch (e) {
+      // Non-fatal — scambaiter still works with generic voice
+      debugPrint('⚠️ Voice clone enrollment failed (generic voice will be used): $e');
+    }
   }
 
   /// Generate AI voice response for Scam Batter
@@ -762,8 +900,8 @@ class SessionController extends ChangeNotifier {
     final id = callId ?? 'UNKNOWN';
     return OfflineDossierService.generateAndSave(
       callId: id,
-      verdict: factcheck?.status ?? 'UNKNOWN',
-      transcriptHistory: transcript != null ? [transcript!.text] : [],
+      verdict: factcheck?.status ?? (isSynthetic ? 'CRITICAL' : 'UNKNOWN'),
+      transcriptHistory: transcriptHistory.isNotEmpty ? transcriptHistory : (transcript != null ? [transcript!.text] : []),
       factcheckHistory: factcheck != null
           ? [
               {
@@ -779,7 +917,9 @@ class SessionController extends ChangeNotifier {
       phoneNumbers: const [],
       impersonatedEntities: const [],
       audioBytes: audioBytes,
-      callStartTime: DateTime.now(),
+      callStartTime: _callStartTime ?? DateTime.now(),
+      callerName: callerNumber,
+      aiVoiceReason: isSynthetic ? 'Local Level 2 Deepfake Model detected synthetic traits in voice' : null,
     );
   }
 
@@ -943,6 +1083,55 @@ class SessionController extends ChangeNotifier {
     unawaited(_deepfakeDetector.init());
   }
 
+  /// Starts periodic video snapshots (every 2-3 seconds) to detect 2D photos or deepfakes
+  void startVideoDeepfakeDetection(dynamic callingService) {
+    if (_videoSnapshotTimer != null) return;
+
+    callingService.onSnapshotTakenCallback = (String filePath) async {
+      final file = File(filePath);
+      if (!await file.exists()) return;
+
+      final result = await _videoDeepfakeDetector.processFrame(file);
+      
+      if (result['is_spoof'] == true) {
+        isVideoSpoof = true;
+        videoSpoofReason = result['spoof_reason'];
+        videoSpoofScore = 0.95; // High confidence spoof
+        
+        // Spike overall PDI threat score since video spoof is a critical threat
+        if (pdiScore < 0.9) {
+          pdiScore = 0.95;
+          if (pdiScore > _peakPdiScore) _peakPdiScore = pdiScore;
+          
+          factcheck = FactCheckUpdate(
+            status: 'CRITICAL',
+            message: '🚨 VIDEO SPOOF DETECTED: $videoSpoofReason',
+            category: 'video_deepfake',
+            ts: DateTime.now().toIso8601String(),
+          );
+        }
+      } else {
+        // If it's a real live person, we can gently decay the video spoof score
+        videoSpoofScore = (videoSpoofScore * 0.5).clamp(0.0, 1.0);
+        if (videoSpoofScore < 0.1) isVideoSpoof = false;
+      }
+      
+      notifyListeners();
+      
+      // Cleanup snapshot
+      try {
+        await file.delete();
+      } catch (_) {}
+    };
+
+    // Take snapshot every 3 seconds to avoid battery drain
+    _videoSnapshotTimer = Timer.periodic(const Duration(seconds: 3), (_) {
+      if (callState == 'ACTIVE') {
+        callingService.takeRemoteVideoSnapshot();
+      }
+    });
+  }
+
   /// Process and stream raw 16kHz 16-bit mono PCM chunks from an active in-app call
   /// This processes REMOTE caller's audio (dusre phone ki awaaz), NOT local microphone
   /// LEVEL 1 (Scam Text) aur LEVEL 2 (Deepfake) real-time mein saath mein chalenge
@@ -955,6 +1144,12 @@ class SessionController extends ChangeNotifier {
 
     // LEVEL 2 (Local Deepfake): Process audio (parallel with web in service)
     _runLocalAudioProcessing(chunk);
+
+    // Update transcript to show audio is being detected
+    if (liveTranscript == 'Listening for scammer speech...') {
+      liveTranscript = 'Scammer speaking... (audio detected)';
+      notifyListeners();
+    }
 
     final totalTime = DateTime.now().difference(startTime).inMilliseconds;
     debugPrint('⏱️ Total audio processing: ${totalTime}ms (REAL-TIME: <50ms target)');
@@ -1600,6 +1795,7 @@ class SessionController extends ChangeNotifier {
 
   @override
   void dispose() {
+    _videoSnapshotTimer?.cancel();
     _phoneSub?.cancel();
     _stopHealthCheck();
     _socket.disconnect();
@@ -1607,6 +1803,7 @@ class SessionController extends ChangeNotifier {
   }
 
   Future<void> disconnect() async {
+    _videoSnapshotTimer?.cancel();
     await _socket.disconnect();
     callId = null;
     token = null;

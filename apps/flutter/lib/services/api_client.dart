@@ -194,20 +194,20 @@ class ApiClient {
   }
 
   /// Generate AI voice using backend TTS service
-  /// Returns audio bytes (WAV format) for Agora injection
+  /// Returns audio bytes (MP3/WAV format) for Agora injection
   Future<Uint8List?> textToSpeech(String text) async {
     try {
       debugPrint('[ApiClient] Generating AI voice for: $text');
       
-      // Try Fish first, then fallback to Sonex if Fish fails
+      // Try Fish first, then fallback to Sonex, Sarvam, and finally gTTS
       final res = await http.post(
         Uri.parse('$baseUrl/api/v1/voice/tts'),
         headers: _headers(),
         body: jsonEncode({
           'text': text,
           'voice_id': 'default', // Use default voice or user's voice ID
-          'format': 'wav', // WAV format for Agora
-          'provider': 'auto', // Auto-selects available provider (fish -> sonex -> sarvam)
+          'format': 'mp3', // MP3 format (gTTS fallback uses MP3)
+          'provider': 'auto', // Auto-selects: Fish → Sonex → Sarvam → gTTS
         }),
       );
 

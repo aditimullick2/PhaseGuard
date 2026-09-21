@@ -25,6 +25,14 @@ from voice.models import TTSError, TTSErrorCode, VoiceProfile
 
 logger = logging.getLogger(__name__)
 
+# Import gTTS for the GTTSProvider
+try:
+    from gtts import gTTS
+    GTTS_AVAILABLE = True
+except ImportError:
+    GTTS_AVAILABLE = False
+    logger.warning("gTTS not installed. Run: pip install gtts")
+
 
 class TTSProvider(ABC):
     """
@@ -655,4 +663,109 @@ class SarvamTTSProvider(TTSProvider):
         return False
 
     async def create_voice_reference(self, audio_data: bytes, display_name: str, user_id: Optional[str] = None) -> VoiceProfile:
-        raise TTSError(TTSErrorCode.VOICE_CLONE_FAILED, "Sarvam does not support dynamic voice cloning in current API")
+        raise TTSError(TTSErrorCode.VOICE_CLONE_FAILED, "Sarvam does not support voice cloning")
+
+class GTTSProvider(TTSProvider):
+    """
+    gTTS (Google Text-to-Speech) provider implementation.
+    
+    Free, no API key required. Uses Google's TTS API.
+    Falls back to default male voice if voice_id not specified.
+    """
+    def __init__(self):
+        self.cfg = get_settings()
+        self._client: Optional[httpx.AsyncClient] = None
+
+    @property
+    def client(self) -> httpx.AsyncClient:
+        if self._client is None:
+            self._client = httpx.AsyncClient(
+                timeout=30.0,
+            )
+        return self._client
+
+    async def close(self):
+        if self._client:
+            await self._client.aclose()
+            self._client = None
+
+    async def synthesize(self, text: str, voice_id: Optional[str] = None, format: str = "mp3") -> bytes:
+        """
+        Synthesize text using gTTS (Google Text-to-Speech).
+        
+        gTTS supports: 'en', 'hi', 'bn', 'ta', 'te', 'mr', 'gu', 'kn', 'ml'
+        Default: 'en' (English male voice)
+        """
+        if not GTTS_AVAILABLE:
+            raise TTSError(
+                code=TTSErrorCode.PROVIDER_NOT_CONFIGURED,
+                message="gTTS library not installed. Run: pip install gtts"
+            )
+        
+        try:
+            import io
+            
+            # Determine language from voice_id or default to English
+            lang = 'en'  # Default to English (natural male voice)
+            if voice_id:
+                # Map voice IDs to languages
+                lang_map = {
+                    'hi': 'hi', 'hindi': 'hi',
+                    'bn': 'bn', 'bengali': 'bn',
+                    'ta': 'ta', 'tamil': 'ta',
+                    'te': 'te', 'telugu': 'te',
+                    'mr': 'mr', 'marathi': 'mr',
+                    'gu': 'gu', 'gujarati': 'gu',
+                    'kn': 'kn', 'kannada': 'kn',
+                    'ml': 'ml', 'malayalam': 'ml',
+                }
+                lang = lang_map.get(voice_id.lower(), 'en')
+            
+            # Generate speech using gTTS
+            tts = gTTS(text=text, lang=lang, slow=False)
+            
+            # Save to bytes buffer
+            audio_buffer = io.BytesIO()
+            tts.write_to_fp(audio_buffer)
+            audio_buffer.seek(0)
+            
+            audio_bytes = audio_buffer.read()
+            
+            # Convert to WAV if requested (gTTS outputs MP3 by default)
+            if format == 'wav':
+                # For now, return MP3 as gTTS doesn't support WAV directly
+                # The Agora injection can handle MP3
+                logger.warning("gTTS only supports MP3 format, returning MP3 instead of WAV")
+            
+            return audio_bytes
+            
+        except Exception as e:
+            logger.error(f"gTTS synthesis error: {e}")
+            raise TTSError(
+                code=TTSErrorCode.TTS_PROVIDER_UNAVAILABLE,
+                message="gTTS synthesis failed",
+                provider_detail=str(e)
+            )
+
+    async def stream(self, text: str, voice_id: Optional[str] = None, format: str = "mp3"):
+        audio_bytes = await self.synthesize(text, voice_id, format)
+        yield audio_bytes
+
+    async def health_check(self) -> bool:
+        try:
+            await self.synthesize("test", format="mp3")
+            return True
+        except:
+            return False
+
+
+    def supports_voice_cloning(self) -> bool:
+        return False  # gTTS does not support voice cloning
+
+    async def create_voice_reference(
+        self,
+        audio_data: bytes,
+        display_name: str,
+        user_id: Optional[str] = None,
+    ) -> VoiceProfile:
+        raise TTSError(TTSErrorCode.VOICE_CLONE_FAILED, "gTTS does not support voice cloning")

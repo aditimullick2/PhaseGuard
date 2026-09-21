@@ -1,5 +1,7 @@
 import 'dart:async';
 import 'dart:math';
+import 'dart:io';
+import 'package:path_provider/path_provider.dart';
 import 'package:agora_rtc_engine/agora_rtc_engine.dart';
 import 'package:agora_token_service/agora_token_service.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -59,6 +61,27 @@ class ConnectCallCallingService extends ChangeNotifier {
   int? get remoteUid => _remoteUid;
   int get callDuration => _callDuration;
   String get connectionState => _connectionState;
+
+  // Global flag to prevent multiple incoming call screens from opening simultaneously across different navigation states
+  static bool globalIsShowingIncomingCall = false;
+
+  Function(String filePath)? onSnapshotTakenCallback;
+
+  Future<void> takeRemoteVideoSnapshot() async {
+    if (_engine == null || _currentCallId == null || _remoteUid == null) return;
+    try {
+      final tempDir = await getTemporaryDirectory();
+      final tempFile = File('${tempDir.path}/remote_snapshot_${DateTime.now().millisecondsSinceEpoch}.jpg');
+      await _engine!.takeSnapshot(
+        channel: _currentCallId!,
+        uid: _remoteUid!,
+        filePath: tempFile.path,
+      );
+    } catch (e) {
+      debugPrint('[ConnectCallCallingService] Failed to request snapshot: $e');
+    }
+  }
+
   int get networkQuality => _networkQuality;
   String? get currentCallId => _currentCallId;
 
@@ -137,6 +160,14 @@ class ConnectCallCallingService extends ChangeNotifier {
               break;
           }
           notifyListeners();
+        },
+
+        onSnapshotTaken: (RtcConnection connection, int uid, String filePath, int width, int height, int errCode) {
+          if (errCode == 0 && onSnapshotTakenCallback != null) {
+            onSnapshotTakenCallback!(filePath);
+          } else if (errCode != 0) {
+            debugPrint('[ConnectCallCallingService] Snapshot failed with errCode: $errCode');
+          }
         },
 
         onNetworkQuality: (RtcConnection connection, int uid,
@@ -382,7 +413,17 @@ class ConnectCallCallingService extends ChangeNotifier {
         .map((snapshot) {
       if (snapshot.docs.isEmpty) return null;
       final doc = snapshot.docs.first;
-      return CallModel.fromMap(doc.data(), doc.id);
+      final call = CallModel.fromMap(doc.data(), doc.id);
+      
+      // Filter out stale/ghost calls (older than 60 seconds)
+      final now = DateTime.now();
+      if (now.difference(call.startTime).inSeconds > 60) {
+        try {
+          _firestore.collection('calls').doc(call.callId).update({'status': 'missed'});
+        } catch (_) {}
+        return null;
+      }
+      return call;
     }).handleError((error) => null);
   }
 
@@ -567,6 +608,75 @@ class ConnectCallCallingService extends ChangeNotifier {
     _networkQuality = 0;
     _isEndingCall = false;
     notifyListeners();
+  }
+
+  // ==== SCAMBAITER AUDIO INJECTION ====
+  int _effectIdCounter = 1;
+
+  Uint8List _addWavHeader(Uint8List pcmBytes) {
+    int channels = 1;
+    int sampleRate = 16000;
+    int byteRate = sampleRate * channels * 2; // 16-bit
+    
+    var header = ByteData(44);
+    header.setUint8(0, 0x52); header.setUint8(1, 0x49); header.setUint8(2, 0x46); header.setUint8(3, 0x46); // 'RIFF'
+    header.setUint32(4, 36 + pcmBytes.length, Endian.little);
+    header.setUint8(8, 0x57); header.setUint8(9, 0x41); header.setUint8(10, 0x56); header.setUint8(11, 0x45); // 'WAVE'
+    header.setUint8(12, 0x66); header.setUint8(13, 0x6D); header.setUint8(14, 0x74); header.setUint8(15, 0x20); // 'fmt '
+    header.setUint32(16, 16, Endian.little);
+    header.setUint16(20, 1, Endian.little);
+    header.setUint16(22, channels, Endian.little);
+    header.setUint32(24, sampleRate, Endian.little);
+    header.setUint32(28, byteRate, Endian.little);
+    header.setUint16(32, channels * 2, Endian.little);
+    header.setUint16(34, 16, Endian.little);
+    header.setUint8(36, 0x64); header.setUint8(37, 0x61); header.setUint8(38, 0x74); header.setUint8(39, 0x61); // 'data'
+    header.setUint32(40, pcmBytes.length, Endian.little);
+
+    final wavBytes = Uint8List(44 + pcmBytes.length);
+    wavBytes.setRange(0, 44, header.buffer.asUint8List());
+    wavBytes.setRange(44, 44 + pcmBytes.length, pcmBytes);
+    return wavBytes;
+  }
+
+  Future<void> playScambaiterAudio(Uint8List pcmBytes) async {
+    if (_engine == null || pcmBytes.isEmpty) return;
+
+    try {
+      final wavBytes = _addWavHeader(pcmBytes);
+      final tempDir = await getTemporaryDirectory();
+      final file = File('${tempDir.path}/scam_audio_$_effectIdCounter.wav');
+      await file.writeAsBytes(wavBytes);
+
+      await _engine!.playEffect(
+        soundId: _effectIdCounter,
+        filePath: file.path,
+        loopCount: 1,
+        pitch: 1.0,
+        pan: 0.0,
+        gain: 100,
+        publish: true, 
+      );
+
+      _effectIdCounter++;
+      if (_effectIdCounter > 50) _effectIdCounter = 1;
+      
+      _cleanupOldAudioFiles(tempDir);
+    } catch (e) {
+      debugPrint('[ConnectCallCallingService] Failed to play scambaiter audio: $e');
+    }
+  }
+
+  void _cleanupOldAudioFiles(Directory tempDir) {
+    try {
+      final files = tempDir.listSync().where((f) => f.path.contains('scam_audio_')).toList();
+      if (files.length > 20) {
+        files.sort((a, b) => a.statSync().modified.compareTo(b.statSync().modified));
+        for (var i = 0; i < files.length - 20; i++) {
+          files[i].deleteSync();
+        }
+      }
+    } catch (_) {}
   }
 
   String _randomString(int length) {

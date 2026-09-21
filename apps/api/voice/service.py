@@ -13,7 +13,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import VoiceProfileDB
 from voice.models import TTSError, TTSErrorCode, VoiceProfile
-from voice.provider import FishTTSProvider, SonexTTSProvider, SarvamTTSProvider, TTSProvider
+from voice.provider import FishTTSProvider, SonexTTSProvider, SarvamTTSProvider, GTTSProvider, TTSProvider
 from core.config import get_settings
 
 logger = logging.getLogger(__name__)
@@ -29,7 +29,8 @@ class VoiceService:
         self._providers = {
             "fish": FishTTSProvider(),
             "sonex": SonexTTSProvider(),
-            "sarvam": SarvamTTSProvider()
+            "sarvam": SarvamTTSProvider(),
+            "gtts": GTTSProvider()  # Add GTTS as fallback
         }
 
     def get_provider(self, name: str) -> TTSProvider:
@@ -136,7 +137,7 @@ class VoiceService:
             return profiles
 
     async def _execute_with_fallback(self, method_name: str, text: str, voice_id: Optional[str], format: str, initial_provider: str = "auto"):
-        providers_to_try = ["fish", "sonex", "sarvam"] if initial_provider == "auto" else [initial_provider]
+        providers_to_try = ["fish", "sonex", "sarvam", "gtts"] if initial_provider == "auto" else [initial_provider]
         
         last_error = None
         for i, provider_name in enumerate(providers_to_try):

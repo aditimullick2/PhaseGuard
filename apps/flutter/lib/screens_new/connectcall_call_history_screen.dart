@@ -121,7 +121,7 @@ class _HistoryList extends ConsumerWidget {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (_) => CallScreen(
+            builder: (_) => ConnectCallCallScreen(
               callId: newCall.callId,
               remoteUser: callee,
               isCaller: true,

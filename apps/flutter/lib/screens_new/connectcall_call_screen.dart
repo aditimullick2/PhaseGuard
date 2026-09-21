@@ -40,6 +40,7 @@ class _ConnectCallCallScreenState extends State<ConnectCallCallScreen>
   late AnimationController _pulseCtrl;
   late Animation<double> _pulseAnim;
   bool _isPopping = false;
+  StreamSubscription? _scambaiterSub;
 
   @override
   void initState() {
@@ -56,10 +57,20 @@ class _ConnectCallCallScreenState extends State<ConnectCallCallScreen>
     _pulseAnim = Tween<double>(begin: 0.95, end: 1.05).animate(
       CurvedAnimation(parent: _pulseCtrl, curve: Curves.easeInOut),
     );
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final session = context.read<SessionController>();
+      final callingService = context.read<ConnectCallCallingService>();
+      _scambaiterSub = session.scambaiterAudioStream.listen((chunk) {
+        callingService.playScambaiterAudio(chunk);
+      });
+      session.startVideoDeepfakeDetection(callingService);
+    });
   }
 
   @override
   void dispose() {
+    _scambaiterSub?.cancel();
     _pulseCtrl.dispose();
     SystemChrome.setPreferredOrientations([
       DeviceOrientation.portraitUp,

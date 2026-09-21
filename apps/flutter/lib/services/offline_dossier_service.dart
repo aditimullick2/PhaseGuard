@@ -26,6 +26,8 @@ class OfflineDossierService {
     required List<String> impersonatedEntities,
     required Uint8List? audioBytes,
     DateTime? callStartTime,
+    String? callerName,
+    String? aiVoiceReason,
   }) async {
     // Compute SHA-256 of audio if available
     String audioHash = 'N/A';
@@ -179,6 +181,8 @@ class OfflineDossierService {
             child: pw.Column(
               children: [
                 _kv('Call ID:', callId),
+                _kv('Caller Name:', callerName ?? 'Unknown'),
+                _kv('Phone Number(s):', phoneNumbers.isNotEmpty ? phoneNumbers.join(', ') : 'Unknown'),
                 _kv('Call Start:', callStart),
                 _kv('Generated At:', generatedAt),
                 _kv('Audio Duration:', '$audioDurationSec seconds'),
@@ -186,6 +190,19 @@ class OfflineDossierService {
               ],
             ),
           ),
+
+          // Section 1.5: AI Voice Analysis
+          if (aiVoiceReason != null && aiVoiceReason.isNotEmpty) ...[
+            _sectionHeader('1.5 AI Voice Generation Analysis'),
+            pw.Container(
+              padding: const pw.EdgeInsets.all(8),
+              decoration: pw.BoxDecoration(color: greyLight, borderRadius: pw.BorderRadius.circular(4)),
+              child: pw.Text(
+                'AI/Deepfake Detection Reason:\n$aiVoiceReason',
+                style: codeStyle.copyWith(color: redColor, fontWeight: pw.FontWeight.bold),
+              ),
+            ),
+          ],
 
           // Section 2: Forensic Hash
           _sectionHeader('2. Forensic Audio Integrity (Chain of Custody)'),
@@ -209,14 +226,13 @@ class OfflineDossierService {
             child: pw.Column(
               children: [
                 _kv('UPI IDs Found:', upiIds.isEmpty ? 'None detected' : upiIds.join(', ')),
-                _kv('Phone Numbers Found:', phoneNumbers.isEmpty ? 'None detected' : phoneNumbers.join(', ')),
                 _kv('Impersonated Entities:', impersonatedEntities.isEmpty ? 'None' : impersonatedEntities.join(', ')),
                 _kv('Scam Keywords:', detectedKeywords.isEmpty ? 'None' : detectedKeywords.take(20).join(', ')),
               ],
             ),
           ),
 
-          // Section 4: Transcript
+          // Section 4: Transcript with Highlighted Scam Terms
           _sectionHeader('4. Call Transcript'),
           if (transcriptHistory.isEmpty)
             pw.Text('No transcript captured.', style: codeStyle)
@@ -226,12 +242,25 @@ class OfflineDossierService {
               decoration: pw.BoxDecoration(color: greyLight, borderRadius: pw.BorderRadius.circular(4)),
               child: pw.Column(
                 crossAxisAlignment: pw.CrossAxisAlignment.start,
-                children: transcriptHistory
-                    .map((t) => pw.Padding(
-                          padding: const pw.EdgeInsets.only(bottom: 3),
-                          child: pw.Text(t, style: codeStyle),
-                        ))
-                    .toList(),
+                children: transcriptHistory.map((t) {
+                  // Basic highlighting: split text by keywords if found
+                  final spans = <pw.TextSpan>[];
+                  String remaining = t;
+                  
+                  // Simple approach: just check if the sentence contains any keywords and make the whole line bold if it does
+                  bool containsKeyword = detectedKeywords.any((kw) => t.toLowerCase().contains(kw.toLowerCase()));
+                  
+                  return pw.Padding(
+                    padding: const pw.EdgeInsets.only(bottom: 3),
+                    child: pw.Text(
+                      t, 
+                      style: codeStyle.copyWith(
+                        color: containsKeyword ? redColor : PdfColors.grey800,
+                        fontWeight: containsKeyword ? pw.FontWeight.bold : pw.FontWeight.normal,
+                      ),
+                    ),
+                  );
+                }).toList(),
               ),
             ),
 

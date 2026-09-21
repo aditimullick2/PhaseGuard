@@ -43,10 +43,10 @@ async def synthesize_speech(text: str, call_id: str = "") -> bytes | None:
     Returns
     -------
     bytes or None
-        PCM16LE audio at 16kHz mono, or None on failure.
+        Audio bytes (MP3 or PCM16LE), or None on failure.
         
     Fallback Strategy:
-    1. Try configured backend (xtts, elevenlabs, google, gtts)
+    1. Try configured backend (fish, xtts, elevenlabs, google, gtts)
     2. If primary backend fails, automatically fall back to gTTS
     3. If gTTS fails, return mock silence
     """
@@ -54,14 +54,46 @@ async def synthesize_speech(text: str, call_id: str = "") -> bytes | None:
     logger.info("TTS[%s]: backend=%r text=%r", call_id, backend, text[:60])
 
     result = None
-    
+
+    # ── Helper: get voice_id from session for cloning ────────────────────────
+    def _get_session_voice_id() -> str | None:
+        try:
+            from core.connection_manager import manager
+            session = manager.get_session(call_id)
+            if session:
+                # Try user_voice_id first (Fish reference_id), then voice_sample_path
+                return getattr(session, "user_voice_id", None)
+        except Exception:
+            pass
+        return None
+
     # Try primary backend
     if backend == "gtts":
         result = await _gtts_synthesize(text)
+
     elif backend == "elevenlabs":
         result = await _elevenlabs_synthesize(text)
+
     elif backend == "google":
         result = await _gcloud_tts_synthesize(text)
+
+    elif backend == "fish":
+        # Fish Audio TTS — uses voice clone reference_id if available
+        from voice.service import get_voice_service
+        try:
+            svc = get_voice_service()
+            voice_id = _get_session_voice_id()
+            res = await svc.synthesize(text, voice_id=voice_id, format="mp3", provider="fish")
+            result = res.get("data")
+            if result:
+                logger.info(
+                    "TTS[%s]: Fish synthesis successful (voice_id=%r, %d bytes)",
+                    call_id, voice_id, len(result),
+                )
+        except Exception as exc:
+            logger.error("TTS[%s]: Fish failed: %s, falling back to gTTS", call_id, exc)
+            result = await _gtts_synthesize(text)
+
     elif backend == "xtts":
         from core.connection_manager import manager
         session = manager.get_session(call_id)
@@ -83,35 +115,44 @@ async def synthesize_speech(text: str, call_id: str = "") -> bytes | None:
         else:
             logger.warning("TTS[xtts]: missing user_voice_sample_path for call_id=%r, falling back to gTTS", call_id)
             result = await _gtts_synthesize(text)
+
     elif backend == "mock":
         return _mock_silence(duration_seconds=2.0)
+
     elif backend == "api":
+        # Generic VoiceService routing (Fish → Sonex → Sarvam → gTTS)
         from voice.service import get_voice_service
         try:
             svc = get_voice_service()
-            # Request WAV format specifically so it natively injects into Agora
-            res = await svc.synthesize(text, format="wav")
+            voice_id = _get_session_voice_id()
+            res = await svc.synthesize(text, voice_id=voice_id, format="mp3")
             result = res.get("data")
             if result:
-                logger.info("TTS[%s]: VoiceService (api) synthesis successful using %s", call_id, res.get("provider"))
+                logger.info(
+                    "TTS[%s]: VoiceService (api) synthesis successful using %s (voice_id=%r)",
+                    call_id, res.get("provider"), voice_id,
+                )
         except Exception as exc:
             logger.error("TTS[%s]: VoiceService (api) failed: %s, falling back to gTTS", call_id, exc)
             result = await _gtts_synthesize(text)
+
     else:
         logger.warning("TTS: unknown backend %r — falling back to gTTS", backend)
         result = await _gtts_synthesize(text)
-    
+
     # If primary backend failed, try gTTS as fallback
-    if result is None and backend != "gtts":
-        logger.warning("TTS[%s]: primary backend failed, falling back to gTTS", call_id)
+    if result is None and backend not in ("gtts", "mock"):
+        logger.warning("TTS[%s]: primary backend %r failed, falling back to gTTS", call_id, backend)
         result = await _gtts_synthesize(text)
-    
+
     # If gTTS also failed, return mock silence
     if result is None:
         logger.error("TTS[%s]: all backends failed, returning mock silence", call_id)
         result = _mock_silence(duration_seconds=2.0)
-    
+
     return result
+
+
 
 
 async def _gtts_synthesize(text: str) -> bytes | None:

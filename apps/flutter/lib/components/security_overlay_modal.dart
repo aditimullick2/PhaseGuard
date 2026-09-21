@@ -1,6 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:pdf/pdf.dart';
+import 'package:pdf/widgets.dart' as pw;
+import 'package:printing/printing.dart';
+import 'package:path_provider/path_provider.dart';
+import 'dart:io';
 import '../state/session_controller.dart';
 import '../providers/providers.dart';
 import 'app_theme.dart';
@@ -441,9 +446,46 @@ class SecurityOverlayModal extends ConsumerWidget {
                   backgroundColor: AppColors.success,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                 ),
-                onPressed: () {
-                  // PDF report button action
-                  Navigator.pop(context);
+                onPressed: () async {
+                  // Generate PDF report with scam details and transcript
+                  try {
+                    debugPrint('[SecurityOverlay] Generating PDF report...');
+                    
+                    // Show loading
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Generating PDF report...'),
+                          backgroundColor: AppColors.primary,
+                          duration: Duration(seconds: 2),
+                        ),
+                      );
+                    }
+                    
+                    // Generate PDF with current data
+                    await _generatePDFReport(session);
+                    
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('PDF report generated successfully!'),
+                          backgroundColor: AppColors.success,
+                          duration: Duration(seconds: 2),
+                        ),
+                      );
+                      Navigator.pop(context);
+                    }
+                  } catch (e) {
+                    debugPrint('[SecurityOverlay] Error generating PDF: $e');
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('Failed to generate PDF: $e'),
+                          backgroundColor: AppColors.error,
+                        ),
+                      );
+                    }
+                  }
                 },
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -495,6 +537,72 @@ class SecurityOverlayModal extends ConsumerWidget {
       case 'SAFE':     return 'Verified ✓';
       case 'VERIFYING':return 'Checking...';
       default:         return status;
+    }
+  }
+
+  Future<void> _generatePDFReport(SessionController session) async {
+    try {
+      // Create PDF document
+      final pdf = pw.Document();
+      
+      // Add page with security report
+      pdf.addPage(
+        pw.Page(
+          pageFormat: PdfPageFormat.a4,
+          build: (pw.Context context) {
+            return pw.Column(
+              crossAxisAlignment: pw.CrossAxisAlignment.start,
+              children: [
+                pw.Header(
+                  level: 0,
+                  child: pw.Text('PhaseGuard Security Report', style: pw.TextStyle(fontSize: 24, fontWeight: pw.FontWeight.bold)),
+                ),
+                pw.SizedBox(height: 20),
+                pw.Text('Call Date: ${DateTime.now()}'),
+                pw.SizedBox(height: 10),
+                pw.Text('Caller: ${session.callerNumber ?? "Unknown"}'),
+                pw.SizedBox(height: 20),
+                pw.Header(level: 1, child: pw.Text('Security Analysis')),
+                pw.SizedBox(height: 10),
+                pw.Text('Scam Probability: ${(session.pdiScore * 100).toInt()}%'),
+                pw.Text('Voice Authenticity: ${_synthLabel(session.syntheticVoiceScore)}'),
+                pw.Text('Scam Text Analysis: ${_scamLabel(session.pdiScore)}'),
+                pw.SizedBox(height: 20),
+                pw.Header(level: 1, child: pw.Text('Transcript')),
+                pw.SizedBox(height: 10),
+                pw.Text(
+                  session.liveTranscript.isNotEmpty 
+                      ? session.liveTranscript 
+                      : 'No transcript available',
+                  style: pw.TextStyle(fontSize: 10),
+                ),
+                pw.SizedBox(height: 20),
+                pw.Header(level: 1, child: pw.Text('Recommendations')),
+                pw.SizedBox(height: 10),
+                pw.Text('• Do NOT share OTP, bank details, or password'),
+                pw.Text('• Verify caller identity before sharing information'),
+                pw.Text('• Report suspicious calls to authorities'),
+              ],
+            );
+          },
+        ),
+      );
+      
+      // Save PDF to file
+      final directory = await getTemporaryDirectory();
+      final timestamp = DateTime.now().millisecondsSinceEpoch;
+      final path = '${directory.path}/phaseguard_report_$timestamp.pdf';
+      final file = File(path);
+      await file.writeAsBytes(await pdf.save());
+      
+      debugPrint('[SecurityOverlay] PDF saved to: $path');
+      
+      // Share the PDF using printing package
+      await Printing.sharePdf(bytes: await pdf.save(), filename: 'phaseguard_report_$timestamp.pdf');
+      
+    } catch (e) {
+      debugPrint('[SecurityOverlay] Error in PDF generation: $e');
+      rethrow;
     }
   }
 }

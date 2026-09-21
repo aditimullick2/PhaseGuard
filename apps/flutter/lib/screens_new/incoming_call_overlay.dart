@@ -17,9 +17,11 @@ class IncomingCallOverlay extends StatefulWidget {
   final bool showSimulationControls;
   final double? pdiScore;
   final double? syntheticVoiceScore;
+  final bool? isVideoSpoof;
   final String? claimVerificationStatus;
   final String? claimText;
   final bool? isScamDetected;
+  final String? liveTranscript;
 
   const IncomingCallOverlay({
     super.key,
@@ -35,6 +37,7 @@ class IncomingCallOverlay extends StatefulWidget {
     this.showSimulationControls = true,
     this.pdiScore,
     this.syntheticVoiceScore,
+    this.isVideoSpoof,
     this.claimVerificationStatus,
     this.claimText,
     this.isScamDetected,
@@ -48,12 +51,14 @@ class _IncomingCallOverlayState extends State<IncomingCallOverlay> {
   // Local overrides for simulation controls
   double? _simPdiScore;
   double? _simSyntheticVoiceScore;
+  bool? _simIsVideoSpoof;
   String? _simClaimVerificationStatus;
   String? _simClaimText;
   bool? _simIsScamDetected;
 
   double get pdiScore => _simPdiScore ?? widget.pdiScore ?? 0.84;
   double get syntheticVoiceScore => _simSyntheticVoiceScore ?? widget.syntheticVoiceScore ?? 0.78;
+  bool get isVideoSpoof => _simIsVideoSpoof ?? widget.isVideoSpoof ?? false;
   String get claimVerificationStatus => _simClaimVerificationStatus ?? widget.claimVerificationStatus ?? 'VERIFYING';
   String get claimText => _simClaimText ?? widget.claimText ?? 'This is the IRS calling about your tax return...';
   bool get isScamDetected => _simIsScamDetected ?? widget.isScamDetected ?? (pdiScore >= 0.70);
@@ -134,8 +139,14 @@ class _IncomingCallOverlayState extends State<IncomingCallOverlay> {
                 const SizedBox(height: PgSpace.xl),
                 _buildIntelligenceCard(),
                 const SizedBox(height: PgSpace.lg),
-                // Voice Analysis Meters
-                _buildVoiceAnalysisMeters(),
+                if (widget.showVoiceAnalysis) ...[
+                  const SizedBox(height: PgSpace.md),
+                  _buildVoiceAnalysisMeters(),
+                ],
+                if (widget.liveTranscript != null && widget.liveTranscript!.isNotEmpty) ...[
+                  const SizedBox(height: PgSpace.md),
+                  _buildLiveTranscript(),
+                ],
                 const SizedBox(height: PgSpace.lg),
                 // Claim Verification Box
                 _buildClaimVerification(),
@@ -259,6 +270,39 @@ class _IncomingCallOverlayState extends State<IncomingCallOverlay> {
     );
   }
 
+  Widget _buildLiveTranscript() {
+    return Container(
+      padding: const EdgeInsets.all(PgSpace.md),
+      decoration: BoxDecoration(
+        color: PgColors.bgSecondary,
+        border: Border.all(color: PgColors.border),
+        borderRadius: BorderRadius.circular(PgRadii.card),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Live Transcript',
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: PgColors.textSecondary,
+            ),
+          ),
+          const SizedBox(height: PgSpace.sm),
+          Text(
+            widget.liveTranscript ?? '',
+            style: const TextStyle(
+              fontSize: 13,
+              color: PgColors.textPrimary,
+              fontStyle: FontStyle.italic,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildVoiceAnalysisMeters() {
     return Container(
       padding: const EdgeInsets.all(PgSpace.lg),
@@ -333,6 +377,46 @@ class _IncomingCallOverlayState extends State<IncomingCallOverlay> {
             label: 'SYNTHETIC VOICE ANALYSIS',
             isSynthetic: syntheticVoiceScore >= 0.50,
           ),
+          // Video Liveness Badge
+          if (isVideoSpoof) ...[
+            const SizedBox(height: PgSpace.md),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: PgSpace.md, vertical: PgSpace.sm),
+              decoration: BoxDecoration(
+                color: PgColors.error.withValues(alpha: 0.15),
+                border: Border.all(color: PgColors.error.withValues(alpha: 0.5)),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.videocam_off, color: PgColors.error, size: 20),
+                  const SizedBox(width: PgSpace.sm),
+                  const Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'VIDEO LIVENESS: SPOOF DETECTED',
+                          style: TextStyle(
+                            color: PgColors.error,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 13,
+                          ),
+                        ),
+                        Text(
+                          'Static photo or screen detected. Real human presence not found.',
+                          style: TextStyle(
+                            color: PgColors.textSecondary,
+                            fontSize: 11,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ],
       ),
     );
@@ -548,6 +632,16 @@ class _IncomingCallOverlayState extends State<IncomingCallOverlay> {
             (value) {
               setState(() {
                 _simSyntheticVoiceScore = value ? 0.78 : 0.35;
+              });
+            },
+          ),
+          const SizedBox(height: PgSpace.sm),
+          _buildSimulationToggle(
+            'Video Spoof',
+            isVideoSpoof,
+            (value) {
+              setState(() {
+                _simIsVideoSpoof = value;
               });
             },
           ),

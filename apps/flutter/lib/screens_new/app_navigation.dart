@@ -103,9 +103,11 @@ class _AppNavigationState extends State<AppNavigation> {
                 registrationCircle: session.callerLocation ?? 'Delhi NCR',
                 pdiScore: session.pdiScore,
                 syntheticVoiceScore: session.syntheticVoiceScore,
-                claimVerificationStatus: session.claimVerificationStatus,
-                claimText: session.claimText,
-                isScamDetected: session.isScamDetected,
+                isVideoSpoof: session.isVideoSpoof,
+                claimVerificationStatus: session.factcheck?.status ?? 'IDLE',
+                claimText: session.factcheck?.message ?? 'Awaiting conversational analysis...',
+                isScamDetected: session.isPotentialScam,
+                liveTranscript: session.liveTranscript,
                 onStartProtection: () {
                   session.startLiveVerify();
                   Navigator.push(

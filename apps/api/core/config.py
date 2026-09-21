@@ -303,6 +303,8 @@ class Settings(BaseSettings):
             else:
                 print("[WARN] Sarvam Bulbul V3 TTS: NOT CONFIGURED (add SARVAM_API_KEY)")
 
+            print("[OK] gTTS (Google TTS): ACTIVE (fallback, no API key required)")
+
         print("[OK] Company Verification (WHOIS + MCA link + public-presence check): ACTIVE")
 
         if self.whatsapp_access_token and self.whatsapp_phone_number_id:

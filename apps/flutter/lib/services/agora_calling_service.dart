@@ -508,25 +508,40 @@ class AgoraCallingService extends ChangeNotifier {
   /// This AI voice goes to the SCAMMER (who is on the remote end), not the victim
   /// publish: true sends audio to the remote caller (scammer)
   /// REAL-TIME: Optimized for minimal latency (<500ms total)
-  Future<void> playScambaiterAudio(Uint8List pcmBytes) async {
-    if (_engine == null || pcmBytes.isEmpty) return;
+  ///
+  /// Supports both raw PCM16LE (wrapped in WAV) and MP3 bytes (used directly).
+  /// Backend (Fish API / gTTS) returns MP3 — do NOT wrap MP3 in WAV header!
+  Future<void> playScambaiterAudio(Uint8List audioBytes) async {
+    if (_engine == null || audioBytes.isEmpty) return;
 
     final startTime = DateTime.now();
 
     try {
-      // Step 1: Convert PCM to WAV (fast operation)
+      // ── Step 1: Detect audio format ───────────────────────────────────────
+      // MP3 magic bytes: MPEG sync word starts with 0xFF 0xEx/0xFx
+      // ID3 tag (common MP3 header): 0x49 0x44 0x33 ("ID3")
+      final isMp3 = audioBytes.length > 3 &&
+          ((audioBytes[0] == 0xFF && (audioBytes[1] & 0xE0) == 0xE0) ||
+           (audioBytes[0] == 0x49 && audioBytes[1] == 0x44 && audioBytes[2] == 0x33));
+
+      final String ext = isMp3 ? 'mp3' : 'wav';
+      debugPrint('🔊 ScamBaiter audio: ${audioBytes.length} bytes, format=${isMp3 ? "MP3" : "PCM→WAV"}');
+
+      // ── Step 2: Build final audio bytes ───────────────────────────────────
       final convertStart = DateTime.now();
-      final wavBytes = _addWavHeader(pcmBytes);
+      final Uint8List fileBytes = isMp3
+          ? audioBytes                  // MP3: use directly, no header needed
+          : _addWavHeader(audioBytes);  // PCM: wrap with RIFF/WAV header
       final convertTime = DateTime.now().difference(convertStart).inMilliseconds;
 
-      // Step 2: Write to temp file (fast on modern devices)
+      // ── Step 3: Write to temp file ────────────────────────────────────────
       final writeStart = DateTime.now();
       final tempDir = await getTemporaryDirectory();
-      final file = File('${tempDir.path}/scam_audio_$_effectIdCounter.wav');
-      await file.writeAsBytes(wavBytes);
+      final file = File('${tempDir.path}/scam_audio_$_effectIdCounter.$ext');
+      await file.writeAsBytes(fileBytes);
       final writeTime = DateTime.now().difference(writeStart).inMilliseconds;
 
-      // Step 3: Play via Agora (network latency depends on connection)
+      // ── Step 4: Play via Agora (publish=true → sent to remote scammer) ────
       final playStart = DateTime.now();
       await _engine!.playEffect(
         soundId: _effectIdCounter,
@@ -543,7 +558,7 @@ class AgoraCallingService extends ChangeNotifier {
       if (_effectIdCounter > 50) _effectIdCounter = 1;
 
       final totalTime = DateTime.now().difference(startTime).inMilliseconds;
-      debugPrint('🔊 AI scambaiter to SCAMMER: convert=${convertTime}ms, write=${writeTime}ms, play=${playTime}ms, total=${totalTime}ms (REAL-TIME target: <500ms)');
+      debugPrint('🔊 AI scambaiter to SCAMMER: format=$ext, convert=${convertTime}ms, write=${writeTime}ms, play=${playTime}ms, total=${totalTime}ms');
 
       // Cleanup old files to prevent storage bloat
       _cleanupOldAudioFiles(tempDir);
@@ -552,6 +567,7 @@ class AgoraCallingService extends ChangeNotifier {
       debugPrint('❌ Scambaiter audio play error: $e');
     }
   }
+
 
   void _cleanupOldAudioFiles(Directory tempDir) {
     // Keep only recent audio files to prevent storage issues

@@ -95,6 +95,9 @@ class CallSession:
     # User voice sample for XTTS voice cloning
     user_voice_sample_path: str | None = None
 
+    # Fish Audio reference_id after voice enrollment (set via 'set_voice_id' WS message)
+    user_voice_id: str | None = None
+
 
 class ConnectionManager:
     """

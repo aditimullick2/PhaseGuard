@@ -215,7 +215,7 @@ class _ConnectCallIncomingCallScreenState extends ConsumerState<ConnectCallIncom
                                 Navigator.pushReplacement(
                                   context,
                                   MaterialPageRoute(
-                                    builder: (_) => CallScreen(
+                                    builder: (_) => ConnectCallCallScreen(
                                       callId: widget.call.callId,
                                       remoteUser: UserModel(
                                         uid: widget.call.callerId,
