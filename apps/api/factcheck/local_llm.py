@@ -137,7 +137,7 @@ class LocalScamClassifier:
             "screen share karo", "anydesk app download karo", "phone hack ho gaya hai", "virus nikal dunga",
             "shaadi dot com", "nri ladka", "gift customs", "flight miss", "airport pe fasa hu",
             "pension fas gayi hai", "pf ka paisa nikalna hai", "mseb bill", "account freeze ho gaya",
-            \1\n
+            
             # EXTENDED HINDI KEYWORDS (500+ match English parity)
             "cbi warrant", "digital arrest", "police case", "fir darj ho chuki hai", "cbi officer bol raha hu",
             "customs mein parcel fasa hai", "illegal saman", "parcel block ho gaya", "fine pay karna hoga",
