@@ -557,6 +557,7 @@ async def _fire_scambaiter_turn(call_id: str, caller_speech: str, turn_id: str) 
             # Mark playback as active
             session.is_ai_playing = True
             session.current_playback_turn_id = turn_id
+            logger.info("[SCAMBAITER][%s] AI_PLAYBACK_GATE_ON", call_id)
             logger.info("[SCAMBAITER][%s][%s] PLAYBACK_START", call_id, turn_id)
             
             await session.websocket.send_bytes(audio_bytes)
@@ -568,6 +569,7 @@ async def _fire_scambaiter_turn(call_id: str, caller_speech: str, turn_id: str) 
             session.is_ai_playing = False
             session.current_playback_turn_id = None
             logger.info("[SCAMBAITER][%s][%s] PLAYBACK_END", call_id, turn_id)
+            logger.info("[SCAMBAITER][%s] AI_PLAYBACK_GATE_OFF", call_id)
             
         except Exception as exc:
             logger.error("[SCAMBAITER][%s][%s] AUDIO_SEND_FAILED: %s", call_id, turn_id, exc)
@@ -601,6 +603,7 @@ async def _scambaiter_loop(call_id: str) -> None:
         return
 
     logger.info("[SCAMBAITER][%s] LOOP_STARTED", call_id)
+    logger.info("[SCAMBAITER][%s] SCAMBAITER_STATE=LISTENING", call_id)
     turn_counter = 0
 
     while session.state not in (CallState.ENDED,):
@@ -609,6 +612,7 @@ async def _scambaiter_loop(call_id: str) -> None:
                 # Use a timeout so we can periodically check session.state
                 transcript_window = await asyncio.wait_for(session.scambaiter_queue.get(), timeout=1.0)
             except asyncio.TimeoutError:
+                # Continue listening - no transcript this cycle
                 continue
 
             # Increment turn counter
@@ -655,6 +659,7 @@ async def _scambaiter_loop(call_id: str) -> None:
                 session.is_processing_turn = True
                 session.current_turn_id = turn_id
                 
+                logger.info("[SCAMBAITER][%s] SCAMBAITER_STATE old=LISTENING new=PROCESSING", call_id)
                 logger.info("[SCAMBAITER][%s][TURN_%d] TURN_START: transcript=%r, context_size=%d", 
                            call_id, turn_counter, transcript_window[:80], len(session.scambaiter_log))
                 
@@ -666,17 +671,24 @@ async def _scambaiter_loop(call_id: str) -> None:
                         session.last_processed_turn_id = turn_id
                     
                     logger.info("[SCAMBAITER][%s][TURN_%d] TURN_COMPLETE", call_id, turn_counter)
+                    logger.info("[SCAMBAITER][%s] SCAMBAITER_STATE old=PROCESSING new=LISTENING", call_id)
+                    logger.info("[SCAMBAITER][%s] SCAMBAITER_LISTENING_READY", call_id)
                 finally:
                     session.is_processing_turn = False
                     session.current_turn_id = None
 
         except asyncio.CancelledError:
             logger.info("[SCAMBAITER][%s] LOOP_CANCELLED", call_id)
+            logger.info("[SCAMBAITER][%s] SCAMBAITER_LOOP_EXIT reason=CANCELLED", call_id)
             break
         except Exception as exc:
             logger.error("[SCAMBAITER][%s] LOOP_ERROR: %s", call_id, exc)
+            logger.info("[SCAMBAITER][%s] SCAMBAITER_LOOP_EXIT reason=ERROR error=%s", call_id, str(exc))
             session.is_processing_turn = False
             await asyncio.sleep(1.0)
+    
+    # Log when loop exits naturally (call ended)
+    logger.info("[SCAMBAITER][%s] SCAMBAITER_LOOP_EXIT reason=CALL_ENDED", call_id)
 
 
 # ── STT + Fact-Check loop ──────────────────────────────────────────────────────
@@ -713,6 +725,7 @@ async def _stt_loop(call_id: str) -> None:
     full_transcript = ""
 
     logger.debug("stt_loop started: call_id=%r", call_id)
+    logger.info("[STT][%s] REMOTE_AUDIO_CAPTURE_START", call_id)
 
     while session.state not in (CallState.ENDED,):
         try:
@@ -722,10 +735,12 @@ async def _stt_loop(call_id: str) -> None:
                 continue
 
             stt_acc.add(chunk)
+            logger.info("[STT][%s] REMOTE_AUDIO_FRAME_RECEIVED", call_id)
 
             # AI PLAYBACK GATE: Skip STT processing while AI is playing
             if session.is_ai_playing:
                 logger.info("[STT][%s] AI_PLAYBACK_GATE_ON: skipping audio during AI playback", call_id)
+                logger.info("[STT][%s] AI_AUDIO_CAPTURE_DROPPED: reason=AI_PLAYBACK", call_id)
                 # Reset accumulator to drop buffered AI audio
                 stt_acc = STTAccumulator(fs=16000)
                 await asyncio.sleep(0.1)
@@ -812,6 +827,8 @@ async def _stt_loop(call_id: str) -> None:
                 # Bypass fact-checking and queue the transcript directly for the scambaiter loop
                 # We do this immediately instead of waiting for claim_extractor to accumulate 50 chars
                 session.scambaiter_queue.put_nowait(transcript)
+                logger.info("[STT][%s] TRANSCRIPT_QUEUED_FOR_SCAMBAITER: %r", call_id, transcript[:50])
+                # Continue to next audio chunk - DO NOT break the loop
                 continue
 
             # --- LOCAL LLM TRAPDOOR (Layers 1 & 2) ---
@@ -895,6 +912,7 @@ async def _stt_loop(call_id: str) -> None:
 
         except asyncio.CancelledError:
             logger.debug("stt_loop cancelled: call_id=%r", call_id)
+            logger.info("[STT][%s] REMOTE_AUDIO_CAPTURE_STOP", call_id)
             break
         except (httpx.ConnectError, httpx.ReadTimeout, httpx.ConnectTimeout) as exc:
             logger.warning("Network failure in STT loop [%s]: %s. Falling back to LIMITED mode.", call_id, exc)
@@ -917,6 +935,7 @@ async def _stt_loop(call_id: str) -> None:
             await asyncio.sleep(2.0)
         except Exception as exc:
             logger.error("stt_loop error [%s]: %s", call_id, exc)
+            logger.info("[STT][%s] REMOTE_AUDIO_CAPTURE_STOP", call_id)
             await asyncio.sleep(1.0)
 
 

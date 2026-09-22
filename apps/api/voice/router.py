@@ -153,34 +153,40 @@ async def enroll_voice(
     if len(audio_data) > 10 * 1024 * 1024 or len(audio_data) < 1024:
         raise HTTPException(status_code=400, detail="Invalid file size.")
 
-    service = get_voice_service(db_session=db)
+    # Create a new session for voice enrollment to avoid concurrency issues
+    from database import get_engine
+    from sqlalchemy.ext.asyncio import AsyncSession
     
-    providers_to_try = ["fish", "sonex"]
-    last_error = None
-    voice_profile = None
+    engine = get_engine()
+    async with AsyncSession(engine) as enrollment_db:
+        service = get_voice_service(db_session=enrollment_db)
+        
+        providers_to_try = ["fish", "sonex"]
+        last_error = None
+        voice_profile = None
 
-    for provider_name in providers_to_try:
-        try:
-            provider = service.get_provider(provider_name)
-            if not provider.supports_voice_cloning():
-                continue
-                
-            voice_profile = await provider.create_voice_reference(
-                audio_data=audio_data,
-                display_name=display_name,
-                user_id=current_user.get("id") if current_user else None,
-            )
-            break
-        except TTSError as e:
-            logger.warning(f"Failed to clone voice with {provider_name}: {e}")
-            last_error = e
+        for provider_name in providers_to_try:
+            try:
+                provider = service.get_provider(provider_name)
+                if not provider.supports_voice_cloning():
+                    continue
+                    
+                voice_profile = await provider.create_voice_reference(
+                    audio_data=audio_data,
+                    display_name=display_name,
+                    user_id=current_user.get("id") if current_user else None,
+                )
+                break
+            except TTSError as e:
+                logger.warning(f"Failed to clone voice with {provider_name}: {e}")
+                last_error = e
 
-    if not voice_profile:
-        if last_error:
-            raise HTTPException(status_code=500, detail=str(last_error))
-        raise HTTPException(status_code=500, detail="All cloning providers failed.")
+        if not voice_profile:
+            if last_error:
+                raise HTTPException(status_code=500, detail=str(last_error))
+            raise HTTPException(status_code=500, detail="All cloning providers failed.")
 
-    await service.create_voice_profile(voice_profile)
+        await service.create_voice_profile(voice_profile)
 
     return VoiceEnrollResponse(
         voice_profile=voice_profile,
