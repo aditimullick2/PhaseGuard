@@ -41,7 +41,7 @@ class Settings(BaseSettings):
         description="HS256 signing secret for call tokens",
     )
     jwt_algorithm: str = Field(default="HS256")
-    jwt_ttl_minutes: int = Field(default=15, description="Token TTL in minutes")
+    jwt_ttl_minutes: int = Field(default=60, description="Token TTL in minutes")
 
     # ── Groq (STT + LLM) ──────────────────────────────────────────────────────
     groq_api_key: str = Field(default="", description="Groq API key")
