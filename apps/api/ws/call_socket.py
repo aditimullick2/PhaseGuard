@@ -448,6 +448,7 @@ async def _fire_scambaiter_turn(call_id: str, caller_speech: str, turn_id: str) 
         call_id=call_id
     ):
         if not sentence.strip():
+            logger.warning("[SCAMBAITER][%s][%s] EMPTY_SENTENCE from stream", call_id, turn_id)
             continue
             
         full_response_text += sentence + " "
@@ -477,17 +478,18 @@ async def _fire_scambaiter_turn(call_id: str, caller_speech: str, turn_id: str) 
         response_hash = hashlib.md5(full_response_text.strip().encode()).hexdigest()
         
         # Check if this response was already played
+        # Only warn but still send audio - natural repetition is OK
         if response_hash in session.recent_response_hashes:
-            logger.warning("[SCAMBAITER][%s][%s] DUPLICATE_RESPONSE_IGNORED: hash=%s", 
+            logger.warning("[SCAMBAITER][%s][%s] DUPLICATE_RESPONSE_DETECTED: hash=%s but sending anyway", 
                          call_id, turn_id, response_hash[:8])
-            # Continue to next sentence but skip audio for this one
-            continue
+            # Continue with TTS instead of skipping
         
         # Check if response is too similar to recent responses
+        # Only warn but still send audio - we want natural repetition not silence
         if _is_similar_response(full_response_text.strip(), session.recent_ai_responses):
-            logger.warning("[SCAMBAITER][%s][%s] SIMILAR_RESPONSE_IGNORED: too similar to recent", 
+            logger.warning("[SCAMBAITER][%s][%s] SIMILAR_RESPONSE_DETECTED: but sending anyway for natural flow", 
                          call_id, turn_id)
-            continue
+            # Continue with TTS instead of skipping
         
         session.recent_response_hashes.add(response_hash)
         # Keep only last 10 hashes to prevent unbounded growth
