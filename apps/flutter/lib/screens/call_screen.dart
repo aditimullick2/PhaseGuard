@@ -81,7 +81,17 @@ class _CallScreenState extends ConsumerState<CallScreen>
           } else {
             debugPrint('⚠️ PhaseGuard: Audio capture stream not available');
           }
-          
+
+          // Listen to AI Scambaiter TTS bytes and inject them into the active call
+          session.scambaiterAudioStream.listen((chunk) {
+            if (mounted && callingService.isJoined) {
+              callingService.playScambaiterAudio(chunk);
+              debugPrint('[CallScreen] 🔊 AI scambaiter audio sent to SCAMMER (remote caller)');
+            } else {
+              debugPrint('[CallScreen] ❌ Scambaiter audio NOT sent - mounted=$mounted, isJoined=${callingService.isJoined}');
+            }
+          });
+
           debugPrint('🛡 PhaseGuard: AI security engine started for call with ${widget.remoteUser.name}');
         } catch (e) {
           debugPrint('⚠️ PhaseGuard: Could not start AI engine: $e');
