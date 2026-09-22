@@ -84,11 +84,11 @@ class _CallScreenState extends ConsumerState<CallScreen>
 
           // Listen to AI Scambaiter TTS bytes and inject them into the active call
           session.scambaiterAudioStream.listen((chunk) {
-            if (mounted && callingService.isJoined) {
+            if (callingService.isJoined) {
               callingService.playScambaiterAudio(chunk);
               debugPrint('[CallScreen] 🔊 AI scambaiter audio sent to SCAMMER (remote caller)');
             } else {
-              debugPrint('[CallScreen] ❌ Scambaiter audio NOT sent - mounted=$mounted, isJoined=${callingService.isJoined}');
+              debugPrint('[CallScreen] ❌ Scambaiter audio NOT sent - isJoined=${callingService.isJoined}');
             }
           });
 
