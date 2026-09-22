@@ -1,7 +1,7 @@
 import 'dart:async';
+import 'dart:collection';
 import 'dart:io';
 import 'dart:math';
-import 'dart:typed_data';
 import 'package:agora_rtc_engine/agora_rtc_engine.dart';
 import 'package:agora_token_service/agora_token_service.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -51,6 +51,10 @@ class CallingService extends ChangeNotifier {
   List<int> _audioBuffer = [];
   bool _scamDetected = false;
   int _effectIdCounter = 1; // Counter for Agora playEffect sound IDs
+
+  // AI Scambaiter Audio Queue
+  final Queue<Uint8List> _scambaiterAudioQueue = Queue<Uint8List>();
+  bool _isPlayingScambaiter = false;
 
   // ── Getters ──────────────────────────────────────────────────────────────
 
@@ -442,6 +446,117 @@ class CallingService extends ChangeNotifier {
   // ── AI Voice Injection for Scambaiter ───────────────────────────────────────
 
   /// Inject AI voice into Agora call for Scambaiter
+  Future<void> playScambaiterAudio(Uint8List pcmBytes) async {
+    if (pcmBytes.isEmpty) return;
+    _scambaiterAudioQueue.add(pcmBytes);
+    _processScambaiterQueue();
+  }
+
+  Future<void> _processScambaiterQueue() async {
+    if (_isPlayingScambaiter || _scambaiterAudioQueue.isEmpty || _engine == null) return;
+
+    _isPlayingScambaiter = true;
+    final audioBytes = _scambaiterAudioQueue.removeFirst();
+    final startTime = DateTime.now();
+
+    try {
+      // Detect audio format
+      bool isMp3 = false;
+      for (int i = 0; i < audioBytes.length - 2 && i < 100; i++) {
+        if (audioBytes[i] == 0x49 && audioBytes[i+1] == 0x44 && audioBytes[i+2] == 0x33) {
+          isMp3 = true;
+          break;
+        }
+        if (audioBytes[i] == 0xFF && (audioBytes[i+1] & 0xE0) == 0xE0) {
+          isMp3 = true;
+          break;
+        }
+      }
+
+      final isWav = audioBytes.length > 3 &&
+          (audioBytes[0] == 0x52 && audioBytes[1] == 0x49 && audioBytes[2] == 0x46 && audioBytes[3] == 0x46);
+
+      final String ext = isMp3 ? 'mp3' : 'wav';
+      debugPrint('🔊 ScamBaiter audio chunk: ${audioBytes.length} bytes, format=${isMp3 ? "MP3" : isWav ? "WAV" : "PCM→WAV"}');
+
+      // Build final audio bytes
+      final fileBytes = (isMp3 || isWav)
+          ? audioBytes
+          : _addWavHeader(audioBytes);
+
+      // Write to temp file
+      final tempDir = await getTemporaryDirectory();
+      final file = File('${tempDir.path}/scam_audio_$_effectIdCounter.$ext');
+      await file.writeAsBytes(fileBytes);
+
+      // Play via Agora (publish=true → sent to remote scammer)
+      await _engine!.playEffect(
+        soundId: _effectIdCounter,
+        filePath: file.path,
+        loopCount: 1,
+        pitch: 1.0,
+        pan: 0.0,
+        gain: 100,
+        publish: true,
+      );
+
+      _effectIdCounter++;
+      if (_effectIdCounter > 50) _effectIdCounter = 1;
+
+      final totalTime = DateTime.now().difference(startTime).inMilliseconds;
+      debugPrint('🔊 AI scambaiter to SCAMMER: format=$ext, total=${totalTime}ms');
+
+      // Cleanup old files
+      _cleanupOldAudioFiles(tempDir);
+
+    } catch (e) {
+      debugPrint('❌ Scambaiter audio play error: $e');
+      _isPlayingScambaiter = false;
+      _processScambaiterQueue();
+    }
+  }
+
+  Uint8List _addWavHeader(Uint8List pcmBytes) {
+    int channels = 1;
+    int sampleRate = 16000;
+    int byteRate = sampleRate * channels * 2;
+    
+    var header = ByteData(44);
+    header.setUint8(0, 0x52); header.setUint8(1, 0x49); header.setUint8(2, 0x46); header.setUint8(3, 0x46); // 'RIFF'
+    header.setUint32(4, 36 + pcmBytes.length, Endian.little);
+    header.setUint8(8, 0x57); header.setUint8(9, 0x41); header.setUint8(10, 0x56); header.setUint8(11, 0x45); // 'WAVE'
+    header.setUint8(12, 0x66); header.setUint8(13, 0x6D); header.setUint8(14, 0x74); header.setUint8(15, 0x20); // 'fmt '
+    header.setUint32(16, 16, Endian.little);
+    header.setUint16(20, 1, Endian.little);
+    header.setUint16(22, channels, Endian.little);
+    header.setUint32(24, sampleRate, Endian.little);
+    header.setUint32(28, byteRate, Endian.little);
+    header.setUint16(32, channels * 2, Endian.little);
+    header.setUint16(34, 16, Endian.little);
+    header.setUint8(36, 0x64); header.setUint8(37, 0x61); header.setUint8(38, 0x74); header.setUint8(39, 0x61); // 'data'
+    header.setUint32(40, pcmBytes.length, Endian.little);
+
+    final wavBytes = Uint8List(44 + pcmBytes.length);
+    wavBytes.setRange(0, 44, header.buffer.asUint8List());
+    wavBytes.setRange(44, 44 + pcmBytes.length, pcmBytes);
+    return wavBytes;
+  }
+
+  void _cleanupOldAudioFiles(Directory tempDir) {
+    try {
+      final files = tempDir.listSync().where((f) => f.path.contains('scam_audio_')).toList();
+      if (files.length > 10) {
+        files.sort((a, b) => a.path.compareTo(b.path));
+        for (var i = 0; i < files.length - 10; i++) {
+          if (files[i] is File) {
+            (files[i] as File).deleteSync();
+          }
+        }
+      }
+    } catch (e) {
+      debugPrint('[CallingService] Cleanup error: $e');
+    }
+  }
   /// Converts audio bytes to WAV format and plays to remote user (scammer)
   Future<void> injectAIVoice(Uint8List audioBytes) async {
     if (_engine == null) {
