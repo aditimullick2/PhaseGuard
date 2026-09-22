@@ -57,26 +57,30 @@ _MARATHI_KEYWORDS = [
 ]
 
 # Common Indian scam keywords in Roman script (Hinglish + regional Romanization)
+# NOTE: Only include words that are DISTINCTLY Indian/Hinglish.
+# Do NOT add common English words (account, block, police, otp etc.) as they
+# cause false-positives when detecting pure English text.
 _INDIAN_SCAM_KEYWORDS = [
-    # Hindi/Hinglish
-    "aadhaar", "aadhar", "paisa", "paise", "otp", "upi", "pin", "account",
-    "police", "arrested", "CBI", "court", "warrant", "digital arrest",
-    "giraftaar", "rupees", "rupaye", "payment", "fake", "fraud", "scam",
-    "cyber", "crime", "band", "block", "cancel", "nahin", "nahi", "kyunki",
-    "aap", "aapka", "aapko", "hamare", "sarkar", "sarkari", "yojana",
-    "pradhan mantri", "pm modi", "income tax", "cbdt", "enforcement",
-    # Tamil Romanized
+    # Distinctly Hindi/Hinglish (these won't appear in pure English)
+    "aadhaar", "aadhar", "paisa", "paise", "rupaye", "rupaya",
+    "giraftaar", "nahin", "nahi", "kyunki",
+    "aap", "aapka", "aapko", "hamare",
+    "sarkar", "sarkari", "yojana",
+    "pradhan mantri", "pm modi",
+    "digital arrest", "cbdt", "enforcement directorate",
+    "band karo", "band ho", "pakad",
+    # Tamil Romanized (distinctly Tamil)
     "vanakkam", "annai", "amma", "panam", "kaasu", "vazhangu",
-    # Telugu Romanized
-    "meeru", "mee", "account", "bayam", "jagratha",
-    # Bengali Romanized
-    "taka", "bank", "police", "court", "jomi", "bari",
-    # Gujarati Romanized
-    "tamara", "paisa", "challan", "notice",
-    # Marathi Romanized
-    "tumhi", "aple", "paise", "police",
-    # Punjabi Romanized
-    "tussi", "paisa", "police", "case",
+    # Telugu Romanized (distinctly Telugu)
+    "meeru", "bayam", "jagratha",
+    # Bengali Romanized (distinctly Bengali)
+    "taka", "jomi", "bari",
+    # Gujarati Romanized (distinctly Gujarati)
+    "tamara", "challan vikri",
+    # Punjabi Romanized (distinctly Punjabi)
+    "tussi", "kinne",
+    # Marathi Romanized (distinctly Marathi)
+    "tumhi", "aple",
 ]
 
 # langdetect → Whisper language code mapping for Indian languages
@@ -148,16 +152,27 @@ def detect_language(text: str) -> LanguageDetectionResult:
     if marathi_hits >= 2 and detected_script == "hi":
         script_lang = "mr"  # Likely Marathi not Hindi
 
-    # ── Step 3: langdetect for Romanized text (when no script detected) ────────
+    # ── Step 3: langdetect + English heuristic ──────────────────────────────
     detected_lang = "hi"  # Default to Hindi for India market
+    is_pure_english = False
+
     if not has_indian_script:
-        try:
-            from langdetect import detect  # type: ignore[import]
-            raw_lang = detect(text) if len(text.strip()) > 20 else "hi"
-            # Map langdetect code to Whisper code (default 'hi' for unknown/English)
-            detected_lang = _LANGDETECT_TO_WHISPER.get(raw_lang, "hi")
-        except Exception:
-            detected_lang = "hi"  # Fallback to Hindi for India market
+        # Check if the text is purely ASCII (strong English signal)
+        printable_chars = [c for c in text if c.strip()]
+        if printable_chars:
+            ascii_ratio = sum(1 for c in printable_chars if ord(c) < 128) / len(printable_chars)
+            # If >95% ASCII AND no Indian keywords -> likely pure English
+            if ascii_ratio > 0.95 and hinglish_confidence == 0.0:
+                is_pure_english = True
+                detected_lang = "en"
+
+        if not is_pure_english:
+            try:
+                from langdetect import detect  # type: ignore[import]
+                raw_lang = detect(text) if len(text.strip()) > 20 else "hi"
+                detected_lang = _LANGDETECT_TO_WHISPER.get(raw_lang, "hi")
+            except Exception:
+                detected_lang = "hi"
     else:
         detected_lang = script_lang or "hi"
 
@@ -170,10 +185,13 @@ def detect_language(text: str) -> LanguageDetectionResult:
         # Romanized Indian text detected → Hindi/Hinglish mode
         stt_hint = "hi"
         recommended_llm_lang = "hinglish"
+    elif is_pure_english:
+        # Pure English (>95% ASCII, no Indian keywords) → let Whisper auto-detect
+        stt_hint = None  # None = Whisper auto-detect (best for English)
+        recommended_llm_lang = "en"
     else:
-        # No clear Indian signal → default to 'hi' for India market
-        # Whisper-large-v3 transcribes English accurately even with language='hi'
-        # This prevents hallucination (Spanish/Korean) on short/silent segments
+        # Ambiguous / no clear signal → default 'hi' for India market
+        # Prevents hallucination (Spanish/Korean) on short/silent segments
         stt_hint = "hi"
         recommended_llm_lang = detected_lang
 
