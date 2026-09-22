@@ -22,8 +22,10 @@ dependencies:
   record: ^7.1.1
   google_mlkit_face_detection: ^0.13.0
   fftea: ^1.0.0
-
+  tflite_flutter: ^0.12.1
   crypto: ^3.0.0
+  pdf: ^3.11.1
+  printing: ^5.13.2
   share_plus: ^10.0.3
   url_launcher: ^6.3.1
   open_filex: ^4.5.1
@@ -66,7 +68,9 @@ flutter:
     - assets/
     - assets/background/
     - assets/logo.png
-
+    - assets/models/scam_detector.tflite
+    - assets/models/tflite_metadata.json
+    - assets/models/deepfake_detector.tflite
     - assets/service_account.json
     - connectcall_assets/
     - connectcall_assets/background/

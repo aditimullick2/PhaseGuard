@@ -76,6 +76,10 @@ flutter {
 }
 
 dependencies {
+    implementation("io.agora.rtc:full-sdk:4.4.0")
+}
+
+dependencies {
     val shizukuVersion = "13.1.5"
     implementation("dev.rikka.shizuku:api:$shizukuVersion")
     implementation("dev.rikka.shizuku:provider:$shizukuVersion")

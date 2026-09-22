@@ -107,6 +107,19 @@ class SessionController extends ChangeNotifier {
   DateTime? _callStartTime;
   double _peakPdiScore = 0.0;
 
+  // UI Properties
+  bool get isOnline => wsConnected;
+
+  String get highRiskWarningText {
+    if (factcheck?.category == 'FINANCIAL_SCAM' || liveTranscript.toLowerCase().contains('money')) {
+      return 'Do NOT share OTP, UPI PIN, or banking details.';
+    }
+    if (factcheck?.category == 'IMPERSONATION' || liveTranscript.toLowerCase().contains('police')) {
+      return 'Do NOT trust caller identity. Verify through official channels.';
+    }
+    return 'Do NOT share sensitive information or passwords.';
+  }
+
   // Speakerphone routing state
   bool isSpeakerphoneOn = false;
 
@@ -445,6 +458,7 @@ class SessionController extends ChangeNotifier {
              transcriptHistory.removeAt(0);
           }
           liveTranscript = transcriptHistory.join(' ');
+          notifyListeners(); // Force UI to rebuild with new transcript
           // Backend handles all scam detection - no local processing
         }
         break;
@@ -1150,8 +1164,6 @@ class SessionController extends ChangeNotifier {
       final backendAnalysis = await _api.analyzeScamText(text);
       if (backendAnalysis['is_scam'] == true) {
         isPotentialScam = true;
-        pdiScore = (pdiScore < 0.8) ? 0.8 : pdiScore;
-        if (pdiScore > _peakPdiScore) _peakPdiScore = pdiScore;
         factcheck = FactCheckUpdate(
           status: 'CRITICAL',
           message: '🚨 Backend AI: ${backendAnalysis['reasoning'] ?? text}',

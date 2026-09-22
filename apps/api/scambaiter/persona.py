@@ -136,17 +136,17 @@ async def generate_scambaiter_response(
     messages.extend(exchange_history[-10:])  # Keep last 5 exchanges (10 messages)
     
     # Dynamic anti-loop injection based on recent history
+    anti_loop_text = ""
     recent_assistant_msgs = [msg["content"] for msg in exchange_history[-6:] if msg["role"] == "assistant"]
     if recent_assistant_msgs:
         recent_text = " | ".join(recent_assistant_msgs).replace("\n", " ")
-        anti_loop_prompt = (
-            "CRITICAL REMINDER: You have recently used the following phrases/excuses: "
+        anti_loop_text = (
+            "\n\n[SYSTEM DIRECTIVE: You have recently used the following phrases/excuses: "
             f"'{recent_text}'. "
-            "DO NOT mention these again. Invent a COMPLETELY NEW excuse or tangent now."
+            "DO NOT mention these again. Invent a COMPLETELY NEW excuse or tangent now.]"
         )
-        messages.append({"role": "system", "content": anti_loop_prompt})
 
-    messages.append({"role": "user", "content": f"Scammer said: {safe_caller_speech}"})
+    messages.append({"role": "user", "content": f"Scammer said: {safe_caller_speech}{anti_loop_text}"})
 
     from groq import AsyncGroq
 

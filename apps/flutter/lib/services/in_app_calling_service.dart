@@ -73,6 +73,13 @@ class InAppCallingService extends ChangeNotifier {
         samplesPerCall: 320,
       );
 
+      // CRITICAL FIX: Also set BeforeMixing parameters, otherwise onPlaybackAudioFrameBeforeMixing returns stereo!
+      await _engine!.setPlaybackAudioFrameBeforeMixingParameters(
+        sampleRate: 16000,
+        channel: 1,
+        samplesPerCall: 320,
+      );
+
       // Register raw audio frame observer on MediaEngine
       final mediaEngine = _engine!.getMediaEngine();
       mediaEngine.registerAudioFrameObserver(

@@ -64,12 +64,17 @@ String _levelTitle(_SecurityLevel lvl) {
   }
 }
 
-String _levelBody(_SecurityLevel lvl) {
+String _levelBody(_SecurityLevel lvl, SessionController s) {
   switch (lvl) {
     case _SecurityLevel.scanning:  return 'Checking the call...\nProtection is active.';
     case _SecurityLevel.safe:      return 'Voice appears normal.\nProtection active.';
     case _SecurityLevel.suspicious:return 'Something looks unusual.\nPlease be careful with this call.';
-    case _SecurityLevel.highRisk:  return 'Possible AI-generated voice detected!\nDo NOT share sensitive information.';
+    case _SecurityLevel.highRisk:  
+      if (s.syntheticVoiceScore >= 0.50) {
+        return 'Possible AI-generated voice detected!\nDo NOT share sensitive information.';
+      } else {
+        return 'High Risk Call detected!\nDo NOT share sensitive information.';
+      }
     case _SecurityLevel.unknown:   return 'Unable to verify voice.\nStay cautious with this call.';
   }
 }
@@ -138,7 +143,7 @@ class SecurityOverlayModal extends ConsumerWidget {
 
             // ── Human-readable body ──
             Text(
-              _levelBody(level),
+              _levelBody(level, session),
               textAlign: TextAlign.center,
               style: AppTextStyles.bodyLarge.copyWith(
                 color: Colors.white.withValues(alpha: 0.88),
@@ -148,7 +153,7 @@ class SecurityOverlayModal extends ConsumerWidget {
             ),
             const SizedBox(height: 28),
 
-            // ── Caller Scam Meter ──
+            // ── AI Voice Meter ──
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(16),
@@ -162,10 +167,10 @@ class SecurityOverlayModal extends ConsumerWidget {
                 children: [
                   Row(
                     children: [
-                      const Icon(Icons.person_rounded, color: AppColors.primary, size: 16),
+                      const Icon(Icons.psychology_rounded, color: AppColors.primary, size: 16),
                       const SizedBox(width: 8),
                       Text(
-                        'Caller Scam Meter',
+                        'AI Voice Meter (Deepfake)',
                         style: AppTextStyles.labelMedium.copyWith(
                           color: AppColors.primary,
                           fontWeight: FontWeight.bold,
@@ -182,7 +187,7 @@ class SecurityOverlayModal extends ConsumerWidget {
                       color: Colors.white12,
                     ),
                     child: FractionallySizedBox(
-                      widthFactor: session.pdiScore,
+                      widthFactor: session.pdiScore.clamp(0.0, 1.0),
                       alignment: Alignment.centerLeft,
                       child: Container(
                         decoration: BoxDecoration(
@@ -201,7 +206,7 @@ class SecurityOverlayModal extends ConsumerWidget {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        '${(session.pdiScore * 100).toInt()}% Scam Probability',
+                        '${(session.pdiScore * 100).toInt()}% AI Voice Probability',
                         style: AppTextStyles.bodySmall.copyWith(
                           color: Colors.white70,
                         ),
@@ -220,6 +225,93 @@ class SecurityOverlayModal extends ConsumerWidget {
                       ),
                     ],
                   ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+            
+            // ── Scam Content Meter ──
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.05),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: Colors.white12),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      const Icon(Icons.warning_rounded, color: AppColors.primary, size: 16),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Scam Text Meter (Content)',
+                        style: AppTextStyles.labelMedium.copyWith(
+                          color: AppColors.primary,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  // Scam probability bar
+                  Builder(builder: (context) {
+                    double scamScore = session.isPotentialScam ? 0.85 : 
+                                       (session.factcheck?.status == 'CRITICAL' ? 0.9 : 
+                                       (session.factcheck?.status == 'WARNING' ? 0.5 : 0.05));
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Container(
+                          height: 8,
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(8),
+                            color: Colors.white12,
+                          ),
+                          child: FractionallySizedBox(
+                            widthFactor: scamScore,
+                            alignment: Alignment.centerLeft,
+                            child: Container(
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(8),
+                                color: scamScore >= 0.8
+                                    ? AppColors.error
+                                    : scamScore >= 0.4
+                                        ? Colors.orangeAccent
+                                        : AppColors.success,
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              '${(scamScore * 100).toInt()}% Scam Probability',
+                              style: AppTextStyles.bodySmall.copyWith(
+                                color: Colors.white70,
+                              ),
+                            ),
+                            Text(
+                              scamScore >= 0.8 ? 'CRITICAL' : 
+                              scamScore >= 0.4 ? 'WARNING' : 'SAFE',
+                              style: AppTextStyles.labelSmall.copyWith(
+                                color: scamScore >= 0.8
+                                    ? AppColors.error
+                                    : scamScore >= 0.4
+                                        ? Colors.orangeAccent
+                                        : AppColors.success,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    );
+                  }),
                 ],
               ),
             ),
@@ -320,7 +412,7 @@ class SecurityOverlayModal extends ConsumerWidget {
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text(
-                      'Do NOT share:\nOTP, bank details, password or Aadhaar.',
+                      session.highRiskWarningText,
                       style: AppTextStyles.bodyMedium.copyWith(
                         color: Colors.redAccent,
                         fontWeight: FontWeight.w600,
@@ -344,11 +436,10 @@ class SecurityOverlayModal extends ConsumerWidget {
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                 ),
                 onPressed: () async {
-                  // Activate AI scambaiter with voice injection
+                  // Activate AI scambaiter
                   try {
-                    debugPrint('[SecurityOverlay] Activating Deploy Scambaiter with AI voice');
+                    debugPrint('[SecurityOverlay] Activating Deploy Scambaiter mode');
                     
-                    // Show loading indicator
                     if (context.mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
@@ -359,63 +450,28 @@ class SecurityOverlayModal extends ConsumerWidget {
                       );
                     }
                     
-                    // Activate scambaiter (this works regardless of scam detection)
+                    // Tell backend to activate scambaiter. The backend will now
+                    // automatically generate AI voice responses based on the caller's transcript
+                    // and stream binary PCM frames back via WebSocket to the app.
                     await session.activateScambaiter();
-                    debugPrint('[SecurityOverlay] Deploy Scambaiter activated');
+                    debugPrint('[SecurityOverlay] Deploy Scambaiter activated - waiting for backend stream');
                     
-                    // Generate AI voice response
-                    String responseText = 'Arey bhai, main confused hoon. Zara slowly bolo na...';
-                    
-                    // Generate personalized response based on scammer's transcript
-                    if (session.liveTranscript.isNotEmpty) {
-                      final transcript = session.liveTranscript.toLowerCase();
-                      if (transcript.contains('money') || transcript.contains('paisa') || transcript.contains('rupees')) {
-                        responseText = 'Arre paisa ki baat? Main toh retired hoon, savings thodi bahut hain. Aap zara detail mein batao kya hua?';
-                      } else if (transcript.contains('police') || transcript.contains('arrest') || transcript.contains('case')) {
-                        responseText = 'Police? Main toh kabhi jail gaya nahi. Main seedha insaan hoon. Aap confusion hain na?';
-                      } else if (transcript.contains('bank') || transcript.contains('account') || transcript.contains('freeze')) {
-                        responseText = 'Bank account freeze? Main toh abhi abhi pension nikala tha. Kya kuch gadbad ho gaya?';
-                      }
-                    }
-                    
-                    final aiVoice = await session.generateAIVoiceResponse(responseText);
-                    
-                    if (aiVoice != null) {
-                      debugPrint('[SecurityOverlay] AI voice generated (${aiVoice.length} bytes), injecting into call');
-                      
-                      // Inject AI voice into Agora call
-                      final callingService = ref.read(callingServiceProvider);
-                      await callingService.injectAIVoice(aiVoice);
-                      
-                      if (context.mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Deploy Scambaiter AI activated - Voice injected to scammer!'),
-                            backgroundColor: AppColors.success,
-                            duration: Duration(seconds: 3),
-                          ),
-                        );
-                        Navigator.pop(context);
-                      }
-                    } else {
-                      debugPrint('[SecurityOverlay] AI voice generation failed');
-                      if (context.mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Deploy Scambaiter activated but AI voice generation failed - using local response'),
-                            backgroundColor: Colors.orangeAccent,
-                            duration: Duration(seconds: 3),
-                          ),
-                        );
-                        Navigator.pop(context);
-                      }
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Deploy Scambaiter AI active! Scammer will hear AI voice when they speak.'),
+                          backgroundColor: AppColors.success,
+                          duration: Duration(seconds: 4),
+                        ),
+                      );
+                      Navigator.pop(context);
                     }
                   } catch (e) {
                     debugPrint('[SecurityOverlay] Error activating Deploy Scambaiter: $e');
                     if (context.mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
-                          content: Text('Deploy Scambaiter activated: $e'),
+                          content: Text('Failed to activate Scambaiter: $e'),
                           backgroundColor: AppColors.primary,
                         ),
                       );
@@ -748,7 +804,7 @@ class PhaseGuardHomeCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    _levelBody(level).split('\n').first,
+                    _levelBody(level, session).split('\n').first,
                     style: AppTextStyles.bodySmall.copyWith(
                       color: Colors.white60,
                     ),
