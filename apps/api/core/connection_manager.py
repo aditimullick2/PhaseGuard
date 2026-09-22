@@ -63,6 +63,11 @@ class CallSession:
     is_processing_turn: bool = False
     current_turn_id: str | None = None
     recent_response_hashes: set[str] = field(default_factory=set)  # For deduplication
+    processed_turn_ids: set[str] = field(default_factory=set)  # Idempotency guard
+    
+    # AI playback gating
+    is_ai_playing: bool = False  # True when AI audio is being played to caller
+    current_playback_turn_id: str | None = None  # Track which turn is currently playing
     
     # Conversation memory for context-aware responses
     recent_scammer_utterances: list[str] = field(default_factory=list)  # Last 5 scammer transcripts

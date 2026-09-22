@@ -764,9 +764,11 @@ class SessionController extends ChangeNotifier {
       }
     }
 
-    // ── Step 2: Upload voice sample for cloning (background, non-blocking) ───
-    // Don't await — scambaiter activates immediately, voice cloning is best-effort
-    unawaited(_enrollUserVoiceForCloning(id));
+    // ── Step 2: Upload voice sample for cloning (SYNCHRONOUS) ───
+    // Voice MUST be resolved before Scambaiter can process turns
+    debugPrint('🎭 ScamBaiter: VOICE_RESOLUTION_START');
+    await _enrollUserVoiceForCloning(id);
+    debugPrint('🎭 ScamBaiter: VOICE_RESOLUTION_COMPLETE');
 
     return activationResult;
   }
@@ -861,16 +863,23 @@ class SessionController extends ChangeNotifier {
           (enrollResult['voice_profile'] as Map<String, dynamic>?)?['id'] as String?;
 
       if (voiceId == null || voiceId.isEmpty) {
-        debugPrint('⚠️ Voice clone: enrollment returned no voice_id');
+        debugPrint('⚠️ Voice clone: VOICE_RESOLUTION_FAILED: enrollment returned no voice_id');
         return;
       }
 
-      debugPrint('✅ Voice clone: enrolled! voice_id=$voiceId');
+      debugPrint('✅ Voice clone: VOICE_RESOLUTION_SUCCESS voice_id=$voiceId');
 
       // ── Step 3: Tell backend session to use this voice_id for TTS ──────────
       if (wsConnected) {
         _socket.sendJson({
           'type': 'set_voice_id',
+          'call_id': id,
+          'voice_id': voiceId,
+        });
+        debugPrint('🎤 Voice clone: sent voice_id to backend session');
+      } else {
+        debugPrint('⚠️ Voice clone: WS not connected, cannot send voice_id');
+      }
           'call_id': id,
           'voice_id': voiceId,
         });

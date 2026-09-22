@@ -64,15 +64,21 @@ def _is_valid_transcript(transcript: str) -> bool:
     Validate transcript before processing as a Scambaiter turn.
     
     Rejects:
-    - Extremely short (< 2 chars)
+    - Extremely short (< 5 chars - more strict to avoid garbage)
     - Gibberish (high special char ratio)
     - Single punctuation only
+    - Common meaningless single words
     """
-    if not transcript or len(transcript.strip()) < 2:
+    if not transcript or len(transcript.strip()) < 5:
         return False
     
     # Reject single punctuation only
     if transcript.strip() in {'.', ',', '!', '?', '...'}:
+        return False
+    
+    # Reject common meaningless single words
+    meaningless_words = {"yes", "no", "ok", "yeah", "uh", "oh", "hm", "hmm", "ah", "is", "my", "the", "a", "an"}
+    if transcript.strip().lower() in meaningless_words:
         return False
     
     # Check for excessive special characters (gibberish indicator)
@@ -81,6 +87,35 @@ def _is_valid_transcript(transcript: str) -> bool:
         return False
     
     return True
+
+
+def _is_self_echo(transcript: str, recent_ai_responses: list[str]) -> bool:
+    """
+    Check if STT transcript is too similar to recent AI responses (self-feedback).
+    
+    This prevents Scambaiter's own audio from triggering a new turn.
+    """
+    if not recent_ai_responses:
+        return False
+    
+    transcript_normalized = transcript.lower().strip()
+    
+    for ai_response in recent_ai_responses[-3:]:  # Check last 3 AI responses
+        ai_normalized = ai_response.lower().strip()
+        
+        # Check for high similarity (normalized, removing punctuation)
+        import re
+        transcript_clean = re.sub(r'[^\w\s]', '', transcript_normalized)
+        ai_clean = re.sub(r'[^\w\s]', '', ai_normalized)
+        
+        # If STT contains > 50% of AI response text, it's likely self-echo
+        overlap = sum(1 for word in transcript_clean.split() if word in ai_clean.split())
+        if overlap > 0 and len(transcript_clean.split()) > 0:
+            overlap_ratio = overlap / len(transcript_clean.split())
+            if overlap_ratio > 0.5:
+                return True
+    
+    return False
 
 
 def _is_duplicate_utterance(transcript: str, recent_utterances: list[str]) -> bool:
@@ -420,6 +455,8 @@ async def _fire_scambaiter_turn(call_id: str, caller_speech: str, turn_id: str) 
     Generate and synthesize a scambaiter response, then stream binary audio 
     directly back over the WebSocket.
     
+    CRITICAL INVARIANT: ONE turn produces ONE complete response → ONE TTS → ONE audio payload
+    
     Args:
         call_id: Call identifier
         caller_speech: Transcribed scammer speech
@@ -432,91 +469,123 @@ async def _fire_scambaiter_turn(call_id: str, caller_speech: str, turn_id: str) 
     if not session or not caller_speech.strip():
         return ""
         
-    from scambaiter.persona import generate_scambaiter_response_stream
+    from scambaiter.persona import generate_scambaiter_response
     from scambaiter.tts import synthesize_speech
     
     logger.info("[SCAMBAITER][%s][%s] LLM_START: input=%r, context=%d", 
                call_id, turn_id, caller_speech[:60], len(session.scambaiter_log))
     
-    full_response_text = ""
-    response_hash = None
-    
-    # 1. Generate text response as a stream of sentences
-    async for sentence in generate_scambaiter_response_stream(
+    # 1. Generate COMPLETE text response first (no streaming per sentence)
+    full_response_text = await generate_scambaiter_response(
         caller_speech=caller_speech,
         exchange_history=session.scambaiter_log,
         call_id=call_id
-    ):
-        if not sentence.strip():
-            logger.warning("[SCAMBAITER][%s][%s] EMPTY_SENTENCE from stream", call_id, turn_id)
-            continue
-            
-        full_response_text += sentence + " "
-        
-        # Broadcast the text exchange chunk to frontend so UI updates incrementally
-        try:
-            await manager.send_json(call_id, {
-                "type": "scambaiter_turn",
-                "caller_text": caller_speech,
-                "ai_text": full_response_text.strip(),
-                "ts": _ts(),
-            })
-        except Exception as exc:
-            logger.warning("[SCAMBAITER][%s][%s] JSON_SEND_FAILED: %s", call_id, turn_id, exc)
-
-        # 2. Synthesize audio for this specific sentence chunk
-        logger.info("[SCAMBAITER][%s][%s] TTS_START: sentence=%r, voice_id=%r", 
-                   call_id, turn_id, sentence[:40], session.user_voice_id)
-        audio_bytes = await synthesize_speech(sentence, call_id=call_id)
-        
-        if not audio_bytes:
-            logger.warning("[SCAMBAITER][%s][%s] TTS_FAILED: no audio generated", call_id, turn_id)
-            continue
-            
-        # Calculate response hash for deduplication
-        import hashlib
-        response_hash = hashlib.md5(full_response_text.strip().encode()).hexdigest()
-        
-        # Check if this response was already played
-        # Only warn but still send audio - natural repetition is OK
-        if response_hash in session.recent_response_hashes:
-            logger.warning("[SCAMBAITER][%s][%s] DUPLICATE_RESPONSE_DETECTED: hash=%s but sending anyway", 
-                         call_id, turn_id, response_hash[:8])
-            # Continue with TTS instead of skipping
-        
-        # Check if response is too similar to recent responses
-        # Only warn but still send audio - we want natural repetition not silence
-        if _is_similar_response(full_response_text.strip(), session.recent_ai_responses):
-            logger.warning("[SCAMBAITER][%s][%s] SIMILAR_RESPONSE_DETECTED: but sending anyway for natural flow", 
-                         call_id, turn_id)
-            # Continue with TTS instead of skipping
-        
-        session.recent_response_hashes.add(response_hash)
-        # Keep only last 10 hashes to prevent unbounded growth
-        if len(session.recent_response_hashes) > 10:
-            session.recent_response_hashes.pop()
-            
-        # 3. Send binary audio chunk to frontend IMMEDIATELY
-        if session.websocket and session.state not in (CallState.ENDED,):
-            try:
-                await session.websocket.send_bytes(audio_bytes)
-                logger.info("[SCAMBAITER][%s][%s] AUDIO_SENT: %d bytes, voice_id=%s", 
-                           call_id, turn_id, len(audio_bytes), session.user_voice_id)
-            except Exception as exc:
-                logger.error("[SCAMBAITER][%s][%s] AUDIO_SEND_FAILED: %s", call_id, turn_id, exc)
-                break
-        else:
-            logger.warning("[SCAMBAITER][%s][%s] NO_WEBSOCKET: cannot send audio", call_id, turn_id)
-            break
-                
-    # Append the full response to history once the stream is complete
-    if full_response_text.strip():
-        session.scambaiter_log.append({"role": "user", "content": caller_speech})
-        session.scambaiter_log.append({"role": "assistant", "content": full_response_text.strip()})
-        logger.info("[SCAMBAITER][%s][%s] TURN_COMPLETE: response=%r, voice_id=%s", 
-                   call_id, turn_id, full_response_text[:60], session.user_voice_id)
+    )
     
-    return full_response_text.strip()
+    if not full_response_text or not full_response_text.strip():
+        logger.warning("[SCAMBAITER][%s][%s] LLM_EMPTY_RESPONSE", call_id, turn_id)
+        return ""
+    
+    logger.info("[SCAMBAITER][%s][%s] LLM_COMPLETE: response_chars=%d", 
+               call_id, turn_id, len(full_response_text))
+    
+    # Broadcast the complete text exchange to frontend
+    try:
+        await manager.send_json(call_id, {
+            "type": "scambaiter_turn",
+            "caller_text": caller_speech,
+            "ai_text": full_response_text.strip(),
+            "ts": _ts(),
+        })
+    except Exception as exc:
+        logger.warning("[SCAMBAITER][%s][%s] JSON_SEND_FAILED: %s", call_id, turn_id, exc)
+
+    # 2. Check for self-echo: if STT transcript is similar to our own recent AI response
+    if _is_self_echo(caller_speech, session.recent_ai_responses):
+        logger.warning("[SCAMBAITER][%s][%s] SELF_ECHO_DROPPED: transcript too similar to AI response", 
+                     call_id, turn_id)
+        return full_response_text  # Still return text but don't TTS
+    
+    # 3. Check if this response was already played (deduplication)
+    import hashlib
+    response_hash = hashlib.md5(full_response_text.strip().encode()).hexdigest()
+    
+    if response_hash in session.recent_response_hashes:
+        logger.warning("[SCAMBAITER][%s][%s] DUPLICATE_TURN_IGNORED: hash=%s", 
+                     call_id, turn_id, response_hash[:8])
+        return full_response_text  # Still return text but don't TTS
+    
+    # 4. Synthesize audio ONCE for the COMPLETE response
+    logger.info("[SCAMBAITER][%s][%s] TTS_START: voice_id=%r, response_len=%d", 
+               call_id, turn_id, session.user_voice_id, len(full_response_text))
+    
+    # Voice assertion: if user has configured voice, voice_id must NOT be None
+    if session.user_voice_id is None:
+        logger.error("[SCAMBAITER][%s][%s] TTS_BLOCKED_NO_CONFIGURED_VOICE: voice_id=None", 
+                    call_id, turn_id)
+        return full_response_text  # Return text but don't TTS without configured voice
+    
+    audio_bytes = await synthesize_speech(full_response_text, call_id=call_id)
+    
+    if not audio_bytes:
+        logger.warning("[SCAMBAITER][%s][%s] TTS_FAILED: no audio generated", call_id, turn_id)
+        return full_response_text
+    
+    logger.info("[SCAMBAITER][%s][%s] TTS_REQUEST_SENT: voice_id=%r", 
+               call_id, turn_id, session.user_voice_id)
+    logger.info("[SCAMBAITER][%s][%s] TTS_COMPLETE: bytes=%d", 
+               call_id, turn_id, len(audio_bytes))
+    
+    # 5. Add to response hashes and recent responses
+    session.recent_response_hashes.add(response_hash)
+    if len(session.recent_response_hashes) > 10:
+        session.recent_response_hashes.pop()
+    
+    session.recent_ai_responses.append(full_response_text.strip())
+    if len(session.recent_ai_responses) > 5:
+        session.recent_ai_responses.pop(0)
+            
+    # 6. Send binary audio ONCE to frontend with playback gating
+    if session.websocket and session.state not in (CallState.ENDED,):
+        try:
+            # Check if another playback is already in progress
+            if session.is_ai_playing:
+                logger.warning("[SCAMBAITER][%s][%s] PLAYBACK_BLOCKED: already playing audio", 
+                             call_id, turn_id)
+                return full_response_text
+            
+            # Mark playback as active
+            session.is_ai_playing = True
+            session.current_playback_turn_id = turn_id
+            logger.info("[SCAMBAITER][%s][%s] PLAYBACK_START", call_id, turn_id)
+            
+            await session.websocket.send_bytes(audio_bytes)
+            logger.info("[SCAMBAITER][%s][%s] AUDIO_SENT: %d bytes, voice_id=%s", 
+                       call_id, turn_id, len(audio_bytes), session.user_voice_id)
+            
+            # Mark playback as complete after a short delay to ensure audio is fully sent
+            await asyncio.sleep(0.5)  # 500ms safety delay
+            session.is_ai_playing = False
+            session.current_playback_turn_id = None
+            logger.info("[SCAMBAITER][%s][%s] PLAYBACK_END", call_id, turn_id)
+            
+        except Exception as exc:
+            logger.error("[SCAMBAITER][%s][%s] AUDIO_SEND_FAILED: %s", call_id, turn_id, exc)
+            session.is_ai_playing = False
+            session.current_playback_turn_id = None
+            return full_response_text
+    else:
+        logger.warning("[SCAMBAITER][%s][%s] NO_WEBSOCKET: cannot send audio", call_id, turn_id)
+        return full_response_text
+                
+    # 7. Append the full response to history
+    session.scambaiter_log.append({"role": "user", "content": caller_speech})
+    session.scambaiter_log.append({"role": "assistant", "content": full_response_text.strip()})
+    
+    logger.info("[SCAMBAITER][%s][%s] TURN_COMPLETE: response=%r, voice_id=%s", 
+               call_id, turn_id, full_response_text[:60], session.user_voice_id)
+    
+    return full_response_text
 
 
 async def _scambaiter_loop(call_id: str) -> None:
@@ -558,6 +627,12 @@ async def _scambaiter_loop(call_id: str) -> None:
                               call_id, turn_counter, transcript_window[:50])
                 # Still process but with awareness it's a repeat
             
+            # AI PLAYBACK GATE: Do not process STT while AI is playing
+            if session.is_ai_playing:
+                logger.warning("[SCAMBAITER][%s][TURN_%d] AI_PLAYBACK_GATE_ON: dropping transcript during AI playback", 
+                             call_id, turn_counter)
+                continue
+            
             # Add to conversation memory
             session.recent_scammer_utterances.append(transcript_window)
             if len(session.recent_scammer_utterances) > 5:
@@ -570,6 +645,13 @@ async def _scambaiter_loop(call_id: str) -> None:
                                   call_id, turn_counter)
                     continue
                 
+                # Idempotency guard: reject if this turn was already processed
+                if turn_id in session.processed_turn_ids:
+                    logger.warning("[SCAMBAITER][%s][TURN_%d] DUPLICATE_TURN_DROPPED: turn_id already processed", 
+                                 call_id, turn_counter)
+                    continue
+                
+                session.processed_turn_ids.add(turn_id)
                 session.is_processing_turn = True
                 session.current_turn_id = turn_id
                 
@@ -581,11 +663,6 @@ async def _scambaiter_loop(call_id: str) -> None:
                     ai_response = await _fire_scambaiter_turn(call_id, transcript_window, turn_id)
                     
                     if ai_response:
-                        # Add to conversation memory
-                        session.recent_ai_responses.append(ai_response)
-                        if len(session.recent_ai_responses) > 5:
-                            session.recent_ai_responses.pop(0)
-                        
                         session.last_processed_turn_id = turn_id
                     
                     logger.info("[SCAMBAITER][%s][TURN_%d] TURN_COMPLETE", call_id, turn_counter)
@@ -645,6 +722,14 @@ async def _stt_loop(call_id: str) -> None:
                 continue
 
             stt_acc.add(chunk)
+
+            # AI PLAYBACK GATE: Skip STT processing while AI is playing
+            if session.is_ai_playing:
+                logger.info("[STT][%s] AI_PLAYBACK_GATE_ON: skipping audio during AI playback", call_id)
+                # Reset accumulator to drop buffered AI audio
+                stt_acc = STTAccumulator(fs=16000)
+                await asyncio.sleep(0.1)
+                continue
 
             if not stt_acc.ready():
                 await asyncio.sleep(0.1)
