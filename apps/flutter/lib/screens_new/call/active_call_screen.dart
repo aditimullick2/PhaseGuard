@@ -76,9 +76,12 @@ class _ActiveCallScreenState extends State<ActiveCallScreen> {
 
       // Listen to AI Scambaiter TTS bytes and inject them into the active call
       _scambaiterAudioSub = session.scambaiterAudioStream.listen((chunk) {
+        debugPrint('[ActiveCallScreen] 🔊 Scambaiter audio received: ${chunk.length} bytes, mounted=$mounted, isJoined=${widget.callingService.isJoined}');
         if (mounted && widget.callingService.isJoined) {
           widget.callingService.playScambaiterAudio(chunk);
           debugPrint('[ActiveCallScreen] 🔊 AI scambaiter audio sent to SCAMMER (remote caller)');
+        } else {
+          debugPrint('[ActiveCallScreen] ❌ Scambaiter audio NOT sent - mounted=$mounted, isJoined=${widget.callingService.isJoined}');
         }
       });
     }).catchError((e) {
