@@ -32,9 +32,9 @@ import numpy as np
 logger = logging.getLogger(__name__)
 
 # Minimum audio length before sending to Whisper (seconds)
-_MIN_CHUNK_SECONDS = 2.0
+_MIN_CHUNK_SECONDS = 1.0
 # Maximum (send anyway to avoid unbounded accumulation)
-_MAX_CHUNK_SECONDS = 5.0
+_MAX_CHUNK_SECONDS = 3.0
 # Silence threshold: RMS below this -> skip Whisper call
 _SILENCE_RMS_THRESHOLD = 0.005
 

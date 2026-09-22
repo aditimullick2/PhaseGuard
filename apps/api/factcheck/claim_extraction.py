@@ -708,7 +708,7 @@ class ClaimExtractor:
     richer context for the LLM.
     """
 
-    def __init__(self, debounce_chars: int = 200) -> None:
+    def __init__(self, debounce_chars: int = 50) -> None:
         self._pending_transcript = ""
         self._debounce_chars = debounce_chars
         self._last_extract_time = 0.0

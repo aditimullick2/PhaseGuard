@@ -167,7 +167,7 @@ async def _gtts_synthesize(text: str) -> bytes | None:
         from gtts import gTTS  # type: ignore[import]
 
         def _sync_gtts() -> bytes:
-            tts = gTTS(text=text, lang=_TTS_LANGUAGE, slow=True)
+            tts = gTTS(text=text, lang=_TTS_LANGUAGE, slow=False)
             mp3_buf = _io.BytesIO()
             tts.write_to_fp(mp3_buf)
             return mp3_buf.getvalue()
