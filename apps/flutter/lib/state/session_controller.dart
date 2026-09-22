@@ -734,7 +734,9 @@ class SessionController extends ChangeNotifier {
   /// If voice enrollment succeeds, the cloned voice is used for TTS.
   /// Falls back to generic voice if enrollment fails.
   Future<Map<String, dynamic>> activateScambaiter() async {
-    if (callId == null || token == null) {
+    // Check if WebSocket is actually connected, not just if we have old credentials
+    if (callId == null || token == null || !wsConnected) {
+      debugPrint('🎭 ScamBaiter: No active session (callId=$callId, wsConnected=$wsConnected) - starting new session');
       await startSession(callerNumber: callerNumber);
     }
     isScambaiterActive = true;
