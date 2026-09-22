@@ -512,6 +512,12 @@ async def _stt_loop(call_id: str) -> None:
                 "ts": _ts(),
             })
 
+            if session.state == CallState.SCAMBAITER_ACTIVE:
+                # Bypass fact-checking and queue the transcript directly for the scambaiter loop
+                # We do this immediately instead of waiting for claim_extractor to accumulate 50 chars
+                session.scambaiter_queue.put_nowait(transcript)
+                continue
+
             # --- LOCAL LLM TRAPDOOR (Layers 1 & 2) ---
             from factcheck.local_llm import LocalScamClassifier
             local_classifier = LocalScamClassifier()
@@ -540,12 +546,6 @@ async def _stt_loop(call_id: str) -> None:
                     # Bypass Layer 3 fact-checking
                     continue
             # ---------------------------------------
-
-            if session.state == CallState.SCAMBAITER_ACTIVE:
-                # Bypass fact-checking and queue the transcript directly for the scambaiter loop
-                # We do this immediately instead of waiting for claim_extractor to accumulate 50 chars
-                session.scambaiter_queue.put_nowait(transcript)
-                continue
 
             # Accumulate in claim extractor (debounced)
             claim_extractor.add_transcript(transcript)
