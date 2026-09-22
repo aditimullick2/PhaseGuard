@@ -672,8 +672,11 @@ async def init_call(request: Request, body: CallInitRequest = Body(...)) -> Call
     # Create session in connection manager
     manager.create_session(call_id, ingestion_mode=body.ingestion_mode, caller_number=body.caller_number)
 
-    ws_url = f"ws://{cfg.ws_host}:{cfg.ws_port}/ws/call/{call_id}?token={token}"
-    logger.info("Call initialized: call_id=%r mode=%r", call_id, body.ingestion_mode)
+    # Use request host for WebSocket URL (works for both local and Render)
+    scheme = "wss" if request.url.scheme == "https" else "ws"
+    host = request.headers.get("host", f"{cfg.ws_host}:{cfg.ws_port}")
+    ws_url = f"{scheme}://{host}/ws/call/{call_id}?token={token}"
+    logger.info("Call initialized: call_id=%r mode=%r ws_url=%s", call_id, body.ingestion_mode, ws_url)
 
     return CallInitResponse(
         call_id=call_id,
