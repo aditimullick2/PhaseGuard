@@ -59,6 +59,31 @@ def _ts() -> str:
     return datetime.now(timezone.utc).isoformat()
 
 
+def _is_valid_transcript(transcript: str) -> bool:
+    """
+    Validate transcript before processing as a Scambaiter turn.
+    
+    Rejects:
+    - Extremely short (< 3 chars)
+    - Gibberish (high special char ratio)
+    - Single common words that are likely noise
+    """
+    if not transcript or len(transcript.strip()) < 3:
+        return False
+    
+    # Reject common noise words (in multiple languages)
+    noise_words = {"hi", "hello", "yeah", "ok", "yes", "no", "hmm", "aha", "oh", "अरे", "हाँ", "नहीं", "ठीक", "ok"}
+    if transcript.strip().lower() in noise_words:
+        return False
+    
+    # Check for excessive special characters (gibberish indicator)
+    special_char_ratio = sum(1 for c in transcript if not c.isalnum() and not c.isspace()) / max(len(transcript), 1)
+    if special_char_ratio > 0.3:
+        return False
+    
+    return True
+
+
 # ── Bispectrum loop ────────────────────────────────────────────────────────────
 
 async def _bispectrum_loop(call_id: str) -> None:
@@ -336,10 +361,15 @@ async def _evidence_capture_loop(call_id: str) -> None:
 
 # ── Scambaiter Turn Execution ──────────────────────────────────────────────────
 
-async def _fire_scambaiter_turn(call_id: str, caller_speech: str) -> None:
+async def _fire_scambaiter_turn(call_id: str, caller_speech: str, turn_id: str) -> None:
     """
     Generate and synthesize a scambaiter response, then stream binary audio 
     directly back over the WebSocket.
+    
+    Args:
+        call_id: Call identifier
+        caller_speech: Transcribed scammer speech
+        turn_id: Unique turn identifier for deduplication
     """
     session = manager.get_session(call_id)
     if not session or not caller_speech.strip():
@@ -348,9 +378,10 @@ async def _fire_scambaiter_turn(call_id: str, caller_speech: str) -> None:
     from scambaiter.persona import generate_scambaiter_response_stream
     from scambaiter.tts import synthesize_speech
     
-    logger.info("Scambaiter Turn Started (STREAMING) for call_id=%r with input: %r", call_id, caller_speech)
+    logger.info("[SCAMBAITER][%s][%s] LLM_START: input=%r", call_id, turn_id, caller_speech[:60])
     
     full_response_text = ""
+    response_hash = None
     
     # 1. Generate text response as a stream of sentences
     async for sentence in generate_scambaiter_response_stream(
@@ -372,38 +403,65 @@ async def _fire_scambaiter_turn(call_id: str, caller_speech: str) -> None:
                 "ts": _ts(),
             })
         except Exception as exc:
-            logger.warning("Failed to send scambaiter_turn JSON: %s", exc)
+            logger.warning("[SCAMBAITER][%s][%s] JSON_SEND_FAILED: %s", call_id, turn_id, exc)
 
         # 2. Synthesize audio for this specific sentence chunk
+        logger.info("[SCAMBAITER][%s][%s] TTS_START: sentence=%r", call_id, turn_id, sentence[:40])
         audio_bytes = await synthesize_speech(sentence, call_id=call_id)
+        
         if not audio_bytes:
+            logger.warning("[SCAMBAITER][%s][%s] TTS_FAILED: no audio generated", call_id, turn_id)
             continue
+            
+        # Calculate response hash for deduplication
+        import hashlib
+        response_hash = hashlib.md5(full_response_text.strip().encode()).hexdigest()
+        
+        # Check if this response was already played
+        if response_hash in session.recent_response_hashes:
+            logger.warning("[SCAMBAITER][%s][%s] DUPLICATE_RESPONSE_IGNORED: hash=%s", 
+                         call_id, turn_id, response_hash[:8])
+            continue
+        
+        session.recent_response_hashes.add(response_hash)
+        # Keep only last 10 hashes to prevent unbounded growth
+        if len(session.recent_response_hashes) > 10:
+            session.recent_response_hashes.pop()
             
         # 3. Send binary audio chunk to frontend IMMEDIATELY
         if session.websocket and session.state not in (CallState.ENDED,):
             try:
                 await session.websocket.send_bytes(audio_bytes)
-                logger.info("[Scambaiter] Streamed chunk audio for: %r | Audio bytes: %d", sentence, len(audio_bytes))
+                logger.info("[SCAMBAITER][%s][%s] AUDIO_SENT: %d bytes", 
+                           call_id, turn_id, len(audio_bytes))
             except Exception as exc:
-                logger.error("Scambaiter failed to send audio chunk: %s", exc)
+                logger.error("[SCAMBAITER][%s][%s] AUDIO_SEND_FAILED: %s", call_id, turn_id, exc)
                 break
+        else:
+            logger.warning("[SCAMBAITER][%s][%s] NO_WEBSOCKET: cannot send audio", call_id, turn_id)
+            break
                 
     # Append the full response to history once the stream is complete
     if full_response_text.strip():
         session.scambaiter_log.append({"role": "user", "content": caller_speech})
         session.scambaiter_log.append({"role": "assistant", "content": full_response_text.strip()})
+        logger.info("[SCAMBAITER][%s][%s] TURN_COMPLETE: response=%r", 
+                   call_id, turn_id, full_response_text[:60])
 
 
 async def _scambaiter_loop(call_id: str) -> None:
     """
     Independent asyncio task: waits for transcribed caller speech,
     then executes the Scambaiter persona loop sequentially.
+    
+    HARD TURN LOCK: Only one turn processes at a time to prevent overlapping LLM/TTS calls.
     """
     session = manager.get_session(call_id)
     if not session:
         return
 
-    logger.debug("scambaiter_loop started: call_id=%r", call_id)
+    logger.info("[SCAMBAITER][%s] LOOP_STARTED", call_id)
+    turn_counter = 0
 
     while session.state not in (CallState.ENDED,):
         try:
@@ -413,14 +471,43 @@ async def _scambaiter_loop(call_id: str) -> None:
             except asyncio.TimeoutError:
                 continue
 
-            # Process the turn
-            await _fire_scambaiter_turn(call_id, transcript_window)
+            # Increment turn counter
+            turn_counter += 1
+            turn_id = f"{call_id}_{turn_counter}"
+            
+            # Validate transcript before processing
+            if not _is_valid_transcript(transcript_window):
+                logger.warning("[SCAMBAITER][%s][TURN_%d] TRANSCRIPT_REJECTED: %r (too short/invalid)", 
+                              call_id, turn_counter, transcript_window[:50])
+                continue
+            
+            # Acquire turn lock to prevent overlapping processing
+            async with session.scambaiter_turn_lock:
+                if session.is_processing_turn:
+                    logger.warning("[SCAMBAITER][%s][TURN_%d] DUPLICATE_IGNORED: already processing turn", 
+                                  call_id, turn_counter)
+                    continue
+                
+                session.is_processing_turn = True
+                session.current_turn_id = turn_id
+                
+                logger.info("[SCAMBAITER][%s][TURN_%d] TURN_START: transcript=%r", 
+                           call_id, turn_counter, transcript_window[:80])
+                
+                try:
+                    # Process the turn
+                    await _fire_scambaiter_turn(call_id, transcript_window, turn_id)
+                    logger.info("[SCAMBAITER][%s][TURN_%d] TURN_COMPLETE", call_id, turn_counter)
+                finally:
+                    session.is_processing_turn = False
+                    session.current_turn_id = None
 
         except asyncio.CancelledError:
-            logger.debug("scambaiter_loop cancelled: call_id=%r", call_id)
+            logger.info("[SCAMBAITER][%s] LOOP_CANCELLED", call_id)
             break
         except Exception as exc:
-            logger.error("scambaiter_loop error [%s]: %s", call_id, exc)
+            logger.error("[SCAMBAITER][%s] LOOP_ERROR: %s", call_id, exc)
+            session.is_processing_turn = False
             await asyncio.sleep(1.0)
 
 

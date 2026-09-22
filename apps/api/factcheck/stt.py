@@ -146,27 +146,56 @@ async def transcribe_chunk(
 
 class STTAccumulator:
     """
-    Manages utterance-level audio accumulation for STT.
-
-    The STT task calls get_utterance_chunk() periodically; it returns audio
-    only when enough has accumulated (avoiding spamming Whisper with 100ms chunks).
+    Manages utterance-level audio accumulation for STT with proper speech-end detection.
+    
+    Instead of fixed time windows, uses silence detection to determine when
+    the speaker has finished speaking, then transcribes the complete utterance.
     """
 
     def __init__(self, fs: int = 16_000) -> None:
         self._fs = fs
-        self._min_samples = int(_MIN_CHUNK_SECONDS * fs)
-        self._max_samples = int(_MAX_CHUNK_SECONDS * fs)
+        self._min_samples = int(_MIN_CHUNK_SECONDS * fs)  # Minimum 2 seconds
+        self._max_samples = int(_MAX_CHUNK_SECONDS * fs)  # Maximum 5 seconds
         self._accumulated: list[np.ndarray] = []
         self._total_samples: int = 0
+        self._silence_samples: int = 0  # Track consecutive silent samples
+        self._silence_threshold_samples = int(0.5 * fs)  # 500ms silence to trigger end-of-speech
+        self._has_spoken: bool = False  # Track if we've detected actual speech
 
     def add(self, chunk: np.ndarray) -> None:
         """Add an audio chunk to the accumulator."""
+        rms = float(np.sqrt(np.mean(chunk ** 2)))
+        is_silent = rms < _SILENCE_RMS_THRESHOLD
+        
+        if not is_silent:
+            self._has_spoken = True
+            self._silence_samples = 0  # Reset silence counter on speech
+        else:
+            self._silence_samples += len(chunk)
+        
         self._accumulated.append(chunk)
         self._total_samples += len(chunk)
 
     def ready(self) -> bool:
-        """Return True if enough audio has accumulated for a Whisper call."""
-        return self._total_samples >= self._min_samples
+        """
+        Return True if we have enough audio AND end-of-speech detected.
+        
+        Conditions:
+        1. Minimum duration met (2s)
+        2. Speech has been detected (not just silence)
+        3. Silence threshold reached (500ms) OR max duration reached (5s)
+        """
+        if not self._has_spoken:
+            return False
+            
+        if self._total_samples < self._min_samples:
+            return False
+            
+        # Ready if we have enough silence OR hit max duration
+        silence_detected = self._silence_samples >= self._silence_threshold_samples
+        max_duration_reached = self._total_samples >= self._max_samples
+        
+        return silence_detected or max_duration_reached
 
     def get_chunk(self) -> np.ndarray | None:
         """
@@ -175,12 +204,18 @@ class STTAccumulator:
         """
         if not self.ready():
             return None
+        
         audio = np.concatenate(self._accumulated)
         # Trim to max length to avoid very long segments
         if len(audio) > self._max_samples:
             audio = audio[: self._max_samples]
+        
+        # Reset for next utterance
         self._accumulated = []
         self._total_samples = 0
+        self._silence_samples = 0
+        self._has_spoken = False
+        
         return audio
 
     def force_get(self) -> np.ndarray | None:
@@ -190,4 +225,6 @@ class STTAccumulator:
         audio = np.concatenate(self._accumulated)
         self._accumulated = []
         self._total_samples = 0
+        self._silence_samples = 0
+        self._has_spoken = False
         return audio

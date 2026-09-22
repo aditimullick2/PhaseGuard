@@ -62,9 +62,14 @@ async def synthesize_speech(text: str, call_id: str = "") -> bytes | None:
             session = manager.get_session(call_id)
             if session:
                 # Try user_voice_id first (Fish reference_id), then voice_sample_path
-                return getattr(session, "user_voice_id", None)
-        except Exception:
-            pass
+                voice_id = getattr(session, "user_voice_id", None)
+                if voice_id:
+                    logger.info("TTS[%s]: Using configured voice_id=%r", call_id, voice_id)
+                else:
+                    logger.warning("TTS[%s]: No voice_id configured, using default Fish voice", call_id)
+                return voice_id
+        except Exception as exc:
+            logger.error("TTS[%s]: Error getting session voice_id: %s", call_id, exc)
         return None
 
     # Try primary backend

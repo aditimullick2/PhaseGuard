@@ -57,6 +57,12 @@ class CallSession:
     evidence_task: asyncio.Task | None = None   # video evidence capture loop
     scambaiter_task: asyncio.Task | None = None # dedicated scambaiter audio loop
     scambaiter_queue: asyncio.Queue = field(default_factory=asyncio.Queue) # queue for caller transcripts
+    
+    # Scambaiter turn state machine
+    scambaiter_turn_lock: asyncio.Lock = field(default_factory=asyncio.Lock)
+    is_processing_turn: bool = False
+    current_turn_id: str | None = None
+    recent_response_hashes: set[str] = field(default_factory=set)  # For deduplication
 
     # Latest DSP results (for dossier)
     latest_pdi: float = 0.0
