@@ -670,14 +670,18 @@ class ConnectCallCallingService extends ChangeNotifier {
           ((audioBytes[0] == 0xFF && (audioBytes[1] & 0xE0) == 0xE0) ||
            (audioBytes[0] == 0x49 && audioBytes[1] == 0x44 && audioBytes[2] == 0x33));
 
-      final String ext = isMp3 ? 'mp3' : 'wav';
-      debugPrint('🔊 ScamBaiter audio chunk: ${audioBytes.length} bytes, format=${isMp3 ? "MP3" : "PCM→WAV"}');
+      // WAV magic bytes: RIFF (0x52 0x49 0x46 0x46)
+      final isWav = audioBytes.length > 3 &&
+          (audioBytes[0] == 0x52 && audioBytes[1] == 0x49 && audioBytes[2] == 0x46 && audioBytes[3] == 0x46);
 
-      // ── Step 2: Build final audio bytes ───────────────────────────────────
+      final String ext = isMp3 ? 'mp3' : 'wav';
+      debugPrint('🔊 ScamBaiter audio chunk: ${audioBytes.length} bytes, format=${isMp3 ? "MP3" : isWav ? "WAV" : "PCM→WAV"}');
+
+      // ── Step 2: Build final audio bytes ────────────────────────────────
       final convertStart = DateTime.now();
-      final Uint8List fileBytes = isMp3
-          ? audioBytes                  // MP3: use directly, no header needed
-          : _addWavHeader(audioBytes);  // PCM: wrap with RIFF/WAV header
+      final Uint8List fileBytes = (isMp3 || isWav)
+          ? audioBytes                  // MP3 or already WAV: use directly, no header needed
+          : _addWavHeader(audioBytes);  // Raw PCM: wrap with RIFF/WAV header
       final convertTime = DateTime.now().difference(convertStart).inMilliseconds;
 
       // ── Step 3: Write to temp file ────────────────────────────────────────
