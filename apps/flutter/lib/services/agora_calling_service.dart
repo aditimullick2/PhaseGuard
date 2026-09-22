@@ -91,13 +91,16 @@ class AgoraCallingService extends ChangeNotifier {
           AudioFrameObserver(
             // This captures REMOTE caller's audio BEFORE mixing (dusre phone ki awaaz)
             onPlaybackAudioFrameBeforeMixing: (String channelId, int uid, AudioFrame frame) {
-              debugPrint('🎤 Remote audio frame from user $uid (${frame.buffer?.length ?? 0} bytes)');
+              if (uid == _localUid) {
+                return;
+              }
+              // debugPrint('🎤 Remote audio frame from user $uid (${frame.buffer?.length ?? 0} bytes)');
               _handleIncomingAudioFrame(frame);
             },
             // Fallback: captures mixed playback audio if before mixing not available
             onPlaybackAudioFrame: (String channelId, AudioFrame frame) {
-              debugPrint('🎤 Playback audio frame (mixed) (${frame.buffer?.length ?? 0} bytes)');
-              _handleIncomingAudioFrame(frame);
+              // Do NOT capture mixed audio as it contains the local scambaiter AI voice!
+              // Capturing this causes the infinite STT echo loop.
             },
           ),
         );
@@ -540,9 +543,17 @@ class AgoraCallingService extends ChangeNotifier {
       // ── Step 1: Detect audio format ───────────────────────────────────────
       // MP3 magic bytes: MPEG sync word starts with 0xFF 0xEx/0xFx
       // ID3 tag (common MP3 header): 0x49 0x44 0x33 ("ID3")
-      final isMp3 = audioBytes.length > 3 &&
-          ((audioBytes[0] == 0xFF && (audioBytes[1] & 0xE0) == 0xE0) ||
-           (audioBytes[0] == 0x49 && audioBytes[1] == 0x44 && audioBytes[2] == 0x33));
+      bool isMp3 = false;
+      for (int i = 0; i < audioBytes.length - 2 && i < 100; i++) {
+        if (audioBytes[i] == 0x49 && audioBytes[i+1] == 0x44 && audioBytes[i+2] == 0x33) {
+          isMp3 = true;
+          break;
+        }
+        if (audioBytes[i] == 0xFF && (audioBytes[i+1] & 0xE0) == 0xE0) {
+          isMp3 = true;
+          break;
+        }
+      }
 
       // WAV magic bytes: RIFF (0x52 0x49 0x46 0x46)
       final isWav = audioBytes.length > 3 &&

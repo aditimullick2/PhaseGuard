@@ -7,6 +7,7 @@ Design:
     FAR more reliable than asking the LLM to improvise category names each time.
   - Transcripts are batched/debounced before sending (avoid calling per sentence).
   - ALL transcript content is injection-guarded before LLM submission.
+  - P1: Added multilingual keyword detection as preliminary step before LLM.
 
 Global + India Scam Taxonomy:
   PhaseGuard's detection generalises globally. Categories marked [IN] are
@@ -70,6 +71,14 @@ import logging
 import re
 from enum import Enum
 from typing import TypedDict
+
+# P1: Import multilingual taxonomy for keyword-based detection
+from factcheck.multilingual_taxonomy import (
+    detect_scam_category,
+    get_category_description,
+    ScamCategory as MultilingualScamCategory,
+    Language,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -331,6 +340,7 @@ class ExtractedClaim(TypedDict):
     confidence: float                      # 0–1 LLM confidence
     hardcoded_critical: bool               # True if deterministic rule fired
     hardcoded_category: str | None      # Category hint from hardcoded rule, if fired
+    multilingual_result: dict | None      # P1: Multilingual keyword detection result
 
 
 # ── Deterministic Instant-CRITICAL pattern groups ─────────────────────────────
@@ -759,6 +769,92 @@ class ClaimExtractor:
         # Step 2: Extract identifiers deterministically (regex, not LLM)
         upi_ids = _extract_upi_ids(transcript_window)
         phone_numbers = _extract_phone_numbers(transcript_window)
+        
+        # P1: Step 2.5 - Multilingual keyword detection
+        # Run semantic category detection using multilingual keywords
+        # This provides a preliminary category before LLM analysis
+        from i18n.language_router import detect_language
+        
+        # Detect language from transcript
+        lang_result = detect_language(transcript_window)
+        detected_lang_code = lang_result["detected_lang"]
+        confidence = lang_result.get("confidence", 0.0)
+        support_level = lang_result.get("support_level", "UNVERIFIED")
+        is_code_switched = lang_result.get("is_code_switched", False)
+        primary_language = lang_result.get("primary_language")
+        secondary_languages = lang_result.get("secondary_languages", [])
+        
+        # Map language code to Language enum
+        lang_map = {
+            "en": Language.EN,
+            "hi": Language.HI,
+            "ur": Language.UR,
+            "bn": Language.BN,
+            "as": Language.AS,
+            "ta": Language.TA,
+            "te": Language.TE,
+            "mr": Language.MR,
+            "gu": Language.GU,
+            "kn": Language.KN,
+            "ml": Language.ML,
+            "pa": Language.PA,
+            "or": Language.OR,
+            "ne": Language.NE,
+            "sd": Language.SD,
+            "sa": Language.SA,
+            "bho": Language.BHO,
+            "kok": Language.KOK,
+            "ks": Language.KS,
+            "mai": Language.MAI,
+            "doi": Language.DOI,
+            "mni": Language.MNI,
+            "brx": Language.BRX,
+            "sat": Language.SAT,
+        }
+        detected_language = lang_map.get(detected_lang_code, Language.EN)
+        
+        # If Hinglish detected (from language router), use HINGLISH
+        if lang_result.get("hinglish_confidence", 0) > 0.15:
+            detected_language = Language.HINGLISH
+        
+        # For UNKNOWN or low confidence, don't force detection
+        if detected_lang_code == "UNKNOWN" or confidence < 0.3:
+            detected_language = Language.EN  # Default to English for safety
+            logger.info(
+                "ClaimExtractor[%s]: Language confidence too low (%.2f) or UNKNOWN, defaulting to English",
+                call_id, confidence
+            )
+        
+        # Run multilingual category detection
+        ml_category, ml_confidence, ml_matches = detect_scam_category(
+            transcript_window,
+            detected_language
+        )
+        
+        if ml_category != MultilingualScamCategory.UNKNOWN and ml_confidence > 0.5:
+            logger.info(
+                "ClaimExtractor[%s]: Multilingual keyword detection: category=%s confidence=%.2f language=%s support=%s code_switched=%s matches=%s",
+                call_id,
+                ml_category.value,
+                ml_confidence,
+                detected_language.value,
+                support_level,
+                is_code_switched,
+                ml_matches[:3] if ml_matches else []
+            )
+            # Store multilingual result for potential use in verdict
+            multilingual_result = {
+                "category": ml_category.value,
+                "confidence": ml_confidence,
+                "language": detected_language.value,
+                "support_level": support_level,
+                "is_code_switched": is_code_switched,
+                "primary_language": primary_language,
+                "secondary_languages": secondary_languages,
+                "matches": ml_matches,
+            }
+        else:
+            multilingual_result = None
 
         # Step 3: Injection guard — wrap transcript for safe LLM submission
         wrapped_transcript, injection_detected = safe_transcript_for_prompt(transcript_window)
@@ -777,6 +873,7 @@ class ClaimExtractor:
                 confidence=0.0,
                 hardcoded_critical=hardcoded_critical,
                 hardcoded_category=hardcoded_category,
+                multilingual_result=multilingual_result,
             )
 
         # Step 4: LLM extraction
@@ -824,13 +921,15 @@ class ClaimExtractor:
                 )
                 data["hardcoded_critical"] = hardcoded_critical
                 data["hardcoded_category"] = hardcoded_category
+                data["multilingual_result"] = multilingual_result
 
                 logger.info(
-                    "ClaimExtractor[%s]: category=%s confidence=%.2f critical=%s",
+                    "ClaimExtractor[%s]: category=%s confidence=%.2f critical=%s multilingual=%s",
                     call_id,
                     data.get("category", "?"),
                     data.get("confidence", 0),
                     hardcoded_critical,
+                    multilingual_result["category"] if multilingual_result else None,
                 )
                 return ExtractedClaim(**{k: data.get(k, v) for k, v in ExtractedClaim.__annotations__.items()})  # type: ignore
 
@@ -865,4 +964,5 @@ class ClaimExtractor:
             confidence=0.0,
             hardcoded_critical=hardcoded_critical,
             hardcoded_category=hardcoded_category,
+            multilingual_result=multilingual_result,
         )

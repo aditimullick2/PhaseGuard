@@ -74,7 +74,7 @@ class _CallScreenState extends ConsumerState<CallScreen>
           final audioStream = callingService.audioCaptureStream;
           if (audioStream != null) {
             audioStream.listen((audioData) {
-              debugPrint('🎤 Audio chunk received: ${audioData.length} bytes');
+              // debugPrint('🎤 Audio chunk received: ${audioData.length} bytes');
               // Send audio to SessionController for LEVEL 2 deepfake analysis
               session.processInAppCallAudioChunk(audioData);
             });

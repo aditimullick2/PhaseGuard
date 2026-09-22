@@ -88,17 +88,17 @@ class InAppCallingService extends ChangeNotifier {
           onPlaybackAudioFrameBeforeMixing: (String channelId, int uid, AudioFrame frame) {
             // ONLY capture REMOTE caller audio, skip local user's audio
             // The caller (who made the call) should NOT be analyzed
-            debugPrint('[InAppCallingService] 🎤 Audio frame from user $uid (LOCAL=$_localUid REMOTE=$_remoteUid)');
+            // debugPrint('[InAppCallingService] 🎤 Audio frame from user $uid (LOCAL=$_localUid REMOTE=$_remoteUid)');
             if (uid == _localUid) {
-              debugPrint('[InAppCallingService] ⏭️ Skipping LOCAL user audio - only analyzing REMOTE caller');
+              // debugPrint('[InAppCallingService] ⏭️ Skipping LOCAL user audio - only analyzing REMOTE caller');
               return;
             }
-            debugPrint('[InAppCallingService] 🎤 REMOTE audio frame from user $uid (${frame.buffer?.length ?? 0} bytes)');
+            // debugPrint('[InAppCallingService] 🎤 REMOTE audio frame from user $uid (${frame.buffer?.length ?? 0} bytes)');
             _handleIncomingAudioFrame(frame);
           },
           // Fallback: captures mixed playback audio if before mixing not available
           onPlaybackAudioFrame: (String channelId, AudioFrame frame) {
-            debugPrint('[InAppCallingService] 🎤 Playback audio frame (mixed) - SKIPPING to avoid local audio contamination');
+            // debugPrint('[InAppCallingService] 🎤 Playback audio frame (mixed) - SKIPPING to avoid local audio contamination');
             // Don't capture mixed audio as it contains local user's voice
           },
         ),
@@ -179,7 +179,7 @@ class InAppCallingService extends ChangeNotifier {
       _remoteAudioController.add(chunk);
 
       final chunkTime = DateTime.now().difference(chunkStartTime).inMilliseconds;
-      debugPrint('[InAppCallingService] 📤 Audio chunk: ${chunk.length} bytes (${chunkTime}ms, REAL-TIME 100ms chunks)');
+      // debugPrint('[InAppCallingService] 📤 Audio chunk: ${chunk.length} bytes (${chunkTime}ms, REAL-TIME 100ms chunks)');
     }
 
     final totalTime = DateTime.now().difference(startTime).inMilliseconds;
@@ -353,9 +353,17 @@ class InAppCallingService extends ChangeNotifier {
       // ── Step 1: Detect audio format ───────────────────────────────────────
       // MP3 magic bytes: MPEG sync word starts with 0xFF 0xEx/0xFx
       // ID3 tag (common MP3 header): 0x49 0x44 0x33 ("ID3")
-      final isMp3 = audioBytes.length > 3 &&
-          ((audioBytes[0] == 0xFF && (audioBytes[1] & 0xE0) == 0xE0) ||
-           (audioBytes[0] == 0x49 && audioBytes[1] == 0x44 && audioBytes[2] == 0x33));
+      bool isMp3 = false;
+      for (int i = 0; i < audioBytes.length - 2 && i < 100; i++) {
+        if (audioBytes[i] == 0x49 && audioBytes[i+1] == 0x44 && audioBytes[i+2] == 0x33) {
+          isMp3 = true;
+          break;
+        }
+        if (audioBytes[i] == 0xFF && (audioBytes[i+1] & 0xE0) == 0xE0) {
+          isMp3 = true;
+          break;
+        }
+      }
 
       // WAV magic bytes: RIFF (0x52 0x49 0x46 0x46)
       final isWav = audioBytes.length > 3 &&

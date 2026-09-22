@@ -48,6 +48,9 @@ class ApiClient {
       Uri.parse('$baseUrl/call/init'),
       headers: _headers(),
       body: jsonEncode(body),
+    ).timeout(
+      const Duration(seconds: 15),
+      onTimeout: () => http.Response('Timeout', 408),
     );
     if (res.statusCode < 200 || res.statusCode >= 300) {
       throw ApiException('Call init failed (${res.statusCode})');

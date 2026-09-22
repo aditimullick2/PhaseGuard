@@ -67,6 +67,15 @@ class CallSession:
 
     # Fact-check results
     factcheck_history: list[dict[str, Any]] = field(default_factory=list)
+    
+    # Language detection state (per-call only, not inherited from previous calls)
+    detected_language: str | None = None
+    language_confidence: float = 0.0
+    language_evidence_count: int = 0
+    is_code_switched: bool = False
+    support_level: str = "UNVERIFIED"
+    primary_language: str | None = None
+    secondary_languages: list[str] = field(default_factory=list)
 
     # Scambaiter exchange log
     scambaiter_log: list[dict[str, Any]] = field(default_factory=list)

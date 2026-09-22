@@ -666,9 +666,17 @@ class ConnectCallCallingService extends ChangeNotifier {
       // ── Step 1: Detect audio format ───────────────────────────────────────
       // MP3 magic bytes: MPEG sync word starts with 0xFF 0xEx/0xFx
       // ID3 tag (common MP3 header): 0x49 0x44 0x33 ("ID3")
-      final isMp3 = audioBytes.length > 3 &&
-          ((audioBytes[0] == 0xFF && (audioBytes[1] & 0xE0) == 0xE0) ||
-           (audioBytes[0] == 0x49 && audioBytes[1] == 0x44 && audioBytes[2] == 0x33));
+      bool isMp3 = false;
+      for (int i = 0; i < audioBytes.length - 2 && i < 100; i++) {
+        if (audioBytes[i] == 0x49 && audioBytes[i+1] == 0x44 && audioBytes[i+2] == 0x33) {
+          isMp3 = true;
+          break;
+        }
+        if (audioBytes[i] == 0xFF && (audioBytes[i+1] & 0xE0) == 0xE0) {
+          isMp3 = true;
+          break;
+        }
+      }
 
       // WAV magic bytes: RIFF (0x52 0x49 0x46 0x46)
       final isWav = audioBytes.length > 3 &&

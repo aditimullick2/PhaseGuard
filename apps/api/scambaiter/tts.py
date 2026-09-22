@@ -83,7 +83,7 @@ async def synthesize_speech(text: str, call_id: str = "") -> bytes | None:
         try:
             svc = get_voice_service()
             voice_id = _get_session_voice_id()
-            res = await svc.synthesize(text, voice_id=voice_id, format="mp3", provider="fish")
+            res = await svc.synthesize(text, voice_id=voice_id, format="wav", provider="fish")
             result = res.get("data")
             if result:
                 logger.info(
@@ -125,7 +125,7 @@ async def synthesize_speech(text: str, call_id: str = "") -> bytes | None:
         try:
             svc = get_voice_service()
             voice_id = _get_session_voice_id()
-            res = await svc.synthesize(text, voice_id=voice_id, format="mp3")
+            res = await svc.synthesize(text, voice_id=voice_id, format="wav")
             result = res.get("data")
             if result:
                 logger.info(
@@ -177,9 +177,17 @@ async def _gtts_synthesize(text: str) -> bytes | None:
         from workers.executor import run_in_dsp_executor
         mp3_bytes = await run_in_dsp_executor(_sync_gtts)
 
-        # Just return MP3 directly. The browser's AudioContext.decodeAudioData
-        # handles MP3 perfectly, and avoids any ffmpeg WAV header issues.
-        return mp3_bytes
+        # Convert to 16kHz WAV for Flutter Agora SDK (which might fail on 24kHz MP3)
+        try:
+            import io as _io
+            from pydub import AudioSegment
+            segment = AudioSegment.from_mp3(_io.BytesIO(mp3_bytes))
+            segment = segment.set_frame_rate(16000).set_channels(1).set_sample_width(2)
+            out_buf = _io.BytesIO()
+            segment.export(out_buf, format="wav")
+            return out_buf.getvalue()
+        except ImportError:
+            return mp3_bytes
 
     except Exception as exc:
         logger.error("gTTS synthesis failed: %s", exc)

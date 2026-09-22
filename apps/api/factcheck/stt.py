@@ -110,11 +110,17 @@ async def transcribe_chunk(
                 model=cfg.groq_stt_model,
                 response_format="text",
                 language=language,  # None = auto-detect, dynamically updated by language_router
-                prompt="This is a phone call conversation in Indian languages (Hindi, English, Bengali, Tamil, Telugu, Marathi, Gujarati, etc). Please transcribe accurately.",
                 temperature=0.0,    # Deterministic for forensic reliability
             )
             text = transcription.strip() if transcription else ""
-            logger.info("STT[%s]: %r (attempt %d)", call_id, text[:80], attempt + 1)
+            # P0: Enhanced logging for language detection debugging
+            logger.info(
+                "STT[%s]: lang_param=%s transcript=%r (attempt %d)", 
+                call_id, 
+                language if language else "AUTO", 
+                text[:80], 
+                attempt + 1
+            )
             return text if text else None
 
         except RateLimitError:

@@ -452,9 +452,9 @@ async def _stt_loop(call_id: str) -> None:
     read_n = cfg.sample_rate // 2
 
     # Track language for adaptive prompting
-    # India market: start with 'hi' so Whisper doesn't hallucinate on initial chunks
-    # Whisper-large-v3 handles English well even with language='hi'
-    detected_lang_hint: str | None = "hi"
+    # Start with None (auto-detect) - do NOT assume Hindi for India market
+    # Let Whisper auto-detect from actual audio
+    detected_lang_hint: str | None = None
     full_transcript = ""
 
     logger.debug("stt_loop started: call_id=%r", call_id)
@@ -477,9 +477,36 @@ async def _stt_loop(call_id: str) -> None:
                 continue
 
             # Language detection for adaptive prompting
+            # Only update language hint after we have enough transcript and with stability
             if len(full_transcript) > 50:
                 lang_result = detect_language(full_transcript[-200:])
-                detected_lang_hint = lang_result["stt_language_hint"]
+                candidate_lang = lang_result["stt_language_hint"]
+                confidence = lang_result.get("confidence", 0.0)
+                support_level = lang_result.get("support_level", "UNVERIFIED")
+                is_code_switched = lang_result.get("is_code_switched", False)
+                
+                # Language stability: only switch if we have consistent evidence
+                # Prevent flipping between languages on single chunk anomalies
+                if candidate_lang != session.detected_language:
+                    session.language_evidence_count += 1
+                    # Require 3 consistent chunks OR high confidence before switching language
+                    if session.language_evidence_count >= 3 or confidence > 0.7:
+                        session.detected_language = candidate_lang
+                        session.language_confidence = confidence
+                        session.is_code_switched = is_code_switched
+                        session.support_level = support_level
+                        session.primary_language = lang_result.get("primary_language")
+                        session.secondary_languages = lang_result.get("secondary_languages", [])
+                        session.language_evidence_count = 0
+                        detected_lang_hint = candidate_lang
+                        logger.info(
+                            "Language stabilized to %s (confidence=%.2f, support=%s, code_switched=%s) for call_id=%r",
+                            candidate_lang, confidence, support_level, is_code_switched, call_id
+                        )
+                else:
+                    # Language already stable, keep using it
+                    session.language_evidence_count = 0
+                    detected_lang_hint = session.detected_language
 
             # Signal "verifying" to client
             await manager.send_json(call_id, {
@@ -509,6 +536,12 @@ async def _stt_loop(call_id: str) -> None:
                 "type": "transcript_update",
                 "text": transcript,
                 "is_final": True,
+                "language": session.detected_language,
+                "language_confidence": session.language_confidence,
+                "is_code_switched": session.is_code_switched,
+                "support_level": session.support_level,
+                "primary_language": session.primary_language,
+                "secondary_languages": session.secondary_languages,
                 "ts": _ts(),
             })
 

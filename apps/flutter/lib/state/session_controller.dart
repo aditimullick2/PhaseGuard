@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
-import 'dart:typed_data';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:record/record.dart';
@@ -19,6 +18,8 @@ class SessionController extends ChangeNotifier {
   SessionController({ApiClient? api, CallSocket? socket})
       : _api = api ?? ApiClient(),
         _socket = socket ?? CallSocket() {
+    // Proactively wake up Render backend as soon as the app starts
+    unawaited(_api.healthCheck());
   }
 
   /// BACKEND-ONLY ARCHITECTURE:
@@ -71,6 +72,14 @@ class SessionController extends ChangeNotifier {
   final List<String> transcriptHistory = [];
   int timesReported = 0;
   String operationalMode = 'full';
+  
+  // P0: Language detection state (per-call only)
+  String? detectedLanguage;
+  double languageConfidence = 0.0;
+  bool isCodeSwitched = false;
+  String? supportLevel;
+  String? primaryLanguage;
+  List<String> secondaryLanguages = [];
 
   // Scambaiter conversation starts empty — populated only during an active call session
   final List<Map<String, String>> scambaiterConversation = [];
@@ -317,15 +326,10 @@ class SessionController extends ChangeNotifier {
     });
     debugPrint('📋 Call saved to history: $callerNumber → $verdict (PDI: ${pdiScore.toStringAsFixed(2)})');
 
-    // Reset for next call
+    // Note: Security state is reset at start of NEXT call via _resetSecurityState()
+    // This save only records historical data, does NOT reset active state
     _callStartTime = null;
     _peakPdiScore = 0.0;
-    transcriptHistory.clear();
-    liveTranscript = '';
-    isPotentialScam = false;
-    pdiScore = 0.0;
-    syntheticVoiceScore = 0.0;
-    factcheck = null;
   }
 
   void showOverlay() {
@@ -350,6 +354,55 @@ class SessionController extends ChangeNotifier {
     callerLocation ??= 'Demo';
     showOverlay();
     await startSession(callerNumber: callerNumber);
+  }
+
+  /// P0: Reset all security state for a NEW call - do NOT inherit from previous call
+  /// This ensures every call starts fresh with UNKNOWN/SCANNING state
+  void _resetSecurityState() {
+    // Reset transcript state
+    liveTranscript = 'Listening for scammer speech...';
+    transcriptHistory.clear();
+    
+    // Reset language detection state (per-call only)
+    detectedLanguage = null;
+    languageConfidence = 0.0;
+    isCodeSwitched = false;
+    supportLevel = null;
+    primaryLanguage = null;
+    secondaryLanguages = [];
+    
+    // Reset risk/detection state
+    pdiScore = 0.0;
+    isSynthetic = false;
+    syntheticVoiceScore = 0.0;
+    tremorEnergy = 0.0;
+    hasTremor = false;
+    peakTremorHz = 0.0;
+    isPotentialScam = false;
+    
+    // Reset analysis state
+    factcheck = null;
+    ensemble = null;
+    transcript = null;
+    
+    // Reset call timing
+    _callStartTime = null;
+    _peakPdiScore = 0.0;
+    
+    // Reset UI state
+    callState = 'IDLE';
+    overlayVisible = false;
+    _overlayDismissed = false;
+    
+    // Reset scammer conversation
+    scambaiterConversation.clear();
+    
+    // Reset evidence
+    lastDossierBytes = null;
+    lastSavedPdfPath = null;
+    lastScambaiterAudioBytes = null;
+    
+    debugPrint('🔄 Security state reset for new call');
   }
 
   void _startHealthCheck() {
@@ -378,6 +431,10 @@ class SessionController extends ChangeNotifier {
       notifyListeners();
       return;
     }
+    
+    // P0: Reset all security state for NEW call - do NOT inherit from previous call
+    _resetSecurityState();
+    
     connecting = true;
     error = null;
     liveTranscript = 'Connecting to AI server... (may take 60s)';
@@ -458,6 +515,15 @@ class SessionController extends ChangeNotifier {
              transcriptHistory.removeAt(0);
           }
           liveTranscript = transcriptHistory.join(' ');
+          
+          // P0: Update language detection state from backend
+          detectedLanguage = json['language'] as String?;
+          languageConfidence = (json['language_confidence'] as num?)?.toDouble() ?? 0.0;
+          isCodeSwitched = json['is_code_switched'] as bool? ?? false;
+          supportLevel = json['support_level'] as String?;
+          primaryLanguage = json['primary_language'] as String?;
+          secondaryLanguages = (json['secondary_languages'] as List?)?.cast<String>() ?? [];
+          
           notifyListeners(); // Force UI to rebuild with new transcript
           // Backend handles all scam detection - no local processing
         }
@@ -545,6 +611,7 @@ class SessionController extends ChangeNotifier {
     // Backend sends scambaiter_turn JSON followed by audio bytes for playback
     if (bytes.isEmpty) return;
     debugPrint('🔊 Received binary audio frame: ${bytes.length} bytes from scambaiter');
+
     scambaiterAudioStreamController.add(Uint8List.fromList(bytes));
   }
 
@@ -1037,6 +1104,22 @@ class SessionController extends ChangeNotifier {
   void processInAppCallAudioChunk(Uint8List chunk) {
     if (chunk.isEmpty) return;
 
+    // Silence detection (VAD): compute RMS amplitude
+    double sumSq = 0.0;
+    final int16List = chunk.buffer.asInt16List(chunk.offsetInBytes, chunk.lengthInBytes ~/ 2);
+    for (int i = 0; i < int16List.length; i++) {
+      // Normalize sample to [-1.0, 1.0]
+      double sample = int16List[i] / 32768.0;
+      sumSq += sample * sample;
+    }
+    final rms = sumSq / int16List.length;
+    
+    // Threshold for background noise/silence
+    // 0.0001 is a very quiet room. Anything less is pure silence (or muted mic).
+    if (rms < 0.0001) {
+      return; // Skip sending pure silence to prevent STT hallucinations (e.g. 'Please transcribe')
+    }
+
     // Update transcript to show audio is being detected
     if (liveTranscript == 'Listening for scammer speech...') {
       liveTranscript = 'Scammer speaking... (audio detected)';
@@ -1047,7 +1130,7 @@ class SessionController extends ChangeNotifier {
     // Backend handles: STT, scam detection, deepfake analysis, scambaiter
     if (wsConnected) {
       _socket.sendBytes(chunk);
-      debugPrint('📤 Audio chunk sent to backend: ${chunk.length} bytes');
+      // debugPrint('📤 Audio chunk sent to backend: ${chunk.length} bytes');
     } else {
       debugPrint('⚠️ wsConnected=FALSE — audio NOT sent (connecting=$connecting). Call startSession first!');
       // Auto-reconnect if not already connecting
@@ -1289,6 +1372,7 @@ class SessionController extends ChangeNotifier {
 
 
 
+  @override
   void dispose() {
     _videoSnapshotTimer?.cancel();
     _videoSnapshotTimer = null;

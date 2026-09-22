@@ -225,6 +225,13 @@ class Settings(BaseSettings):
     family_contact_number: str = Field(
         default="", description="Default family/emergency SMS contact"
     )
+    
+    # ── Caller Reputation System ─────────────────────────────────────────────
+    # P0: Disabled for testing - do NOT use phone number/history for automatic risk
+    caller_reputation_enabled: bool = Field(
+        default=False,
+        description="Enable caller reputation system (disabled for testing)"
+    )
 
     @field_validator("jwt_secret")
     @classmethod
