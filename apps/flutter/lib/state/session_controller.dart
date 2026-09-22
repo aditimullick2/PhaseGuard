@@ -452,14 +452,16 @@ class SessionController extends ChangeNotifier {
         onBytes: _onBinaryAudio,
         onError: (msg) {
           error = msg;
+          debugPrint('⚠️ WebSocket error: $msg');
           notifyListeners();
         },
         onClose: () {
+          debugPrint('⚠️ WebSocket closed');
           _stopHealthCheck();
           notifyListeners();
         },
       ).timeout(
-        const Duration(seconds: 30),
+        const Duration(seconds: 60), // Increased from 30s to 60s for Render latency
       );
       wsConnected = true;
       callState = 'ACTIVE';
