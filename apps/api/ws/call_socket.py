@@ -64,21 +64,20 @@ def _is_valid_transcript(transcript: str) -> bool:
     Validate transcript before processing as a Scambaiter turn.
     
     Rejects:
-    - Extremely short (< 3 chars)
+    - Extremely short (< 2 chars)
     - Gibberish (high special char ratio)
-    - Single common words that are likely noise
+    - Single punctuation only
     """
-    if not transcript or len(transcript.strip()) < 3:
+    if not transcript or len(transcript.strip()) < 2:
         return False
     
-    # Reject common noise words (in multiple languages)
-    noise_words = {"hi", "hello", "yeah", "ok", "yes", "no", "hmm", "aha", "oh", "अरे", "हाँ", "नहीं", "ठीक", "ok"}
-    if transcript.strip().lower() in noise_words:
+    # Reject single punctuation only
+    if transcript.strip() in {'.', ',', '!', '?', '...'}:
         return False
     
     # Check for excessive special characters (gibberish indicator)
     special_char_ratio = sum(1 for c in transcript if not c.isalnum() and not c.isspace()) / max(len(transcript), 1)
-    if special_char_ratio > 0.3:
+    if special_char_ratio > 0.5:
         return False
     
     return True
