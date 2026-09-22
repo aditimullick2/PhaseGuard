@@ -509,6 +509,10 @@ class CallingService extends ChangeNotifier {
       // Cleanup old files
       _cleanupOldAudioFiles(tempDir);
 
+      // Process next chunk in queue
+      _isPlayingScambaiter = false;
+      _processScambaiterQueue();
+
     } catch (e) {
       debugPrint('❌ Scambaiter audio play error: $e');
       _isPlayingScambaiter = false;
