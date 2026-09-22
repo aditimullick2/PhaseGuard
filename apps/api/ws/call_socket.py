@@ -452,7 +452,9 @@ async def _stt_loop(call_id: str) -> None:
     read_n = cfg.sample_rate // 2
 
     # Track language for adaptive prompting
-    detected_lang_hint: str | None = None
+    # India market: start with 'hi' so Whisper doesn't hallucinate on initial chunks
+    # Whisper-large-v3 handles English well even with language='hi'
+    detected_lang_hint: str | None = "hi"
     full_transcript = ""
 
     logger.debug("stt_loop started: call_id=%r", call_id)

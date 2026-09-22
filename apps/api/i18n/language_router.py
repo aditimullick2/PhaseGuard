@@ -91,7 +91,10 @@ def detect_language(text: str) -> LanguageDetectionResult:
         stt_hint = "hi"  # Whisper handles Hinglish better when prompted with 'hi'
     else:
         recommended_llm_lang = "en"
-        stt_hint = None  # None = auto-detect in Whisper
+        # India market: default to 'hi' so Whisper doesn't hallucinate Spanish/Korean
+        # on short/silent segments. Whisper-large-v3 handles English fine even when
+        # language='hi' — it simply transcribes whatever language is actually spoken.
+        stt_hint = "hi"  # Changed from None to 'hi' to prevent hallucination
 
     logger.debug(
         "Language detection: lang=%r devanagari=%s hinglish_conf=%.2f recommended=%r",
