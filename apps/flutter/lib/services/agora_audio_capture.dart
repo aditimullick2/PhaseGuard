@@ -68,6 +68,12 @@ class AgoraAudioCaptureService {
     debugPrint('[AgoraAudioCapture] REMOTE caller audio capture stopped');
   }
 
+  /// Enable/disable capture dynamically (for self-feedback protection)
+  void setCaptureEnabled(bool enabled) {
+    _isCapturing = enabled;
+    debugPrint('[AgoraAudioCapture] Capture ${enabled ? "enabled" : "disabled"}');
+  }
+
   /// Process audio frame from Agora
   void _processAudioFrame(AudioFrame frame) {
     try {

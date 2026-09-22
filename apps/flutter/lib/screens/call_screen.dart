@@ -82,15 +82,9 @@ class _CallScreenState extends ConsumerState<CallScreen>
             debugPrint('⚠️ PhaseGuard: Audio capture stream not available');
           }
 
-          // Listen to AI Scambaiter TTS bytes and inject them into the active call
-          session.scambaiterAudioStream.listen((chunk) {
-            if (callingService.isJoined) {
-              callingService.playScambaiterAudio(chunk);
-              debugPrint('[CallScreen] 🔊 AI scambaiter audio sent to SCAMMER (remote caller)');
-            } else {
-              debugPrint('[CallScreen] ❌ Scambaiter audio NOT sent - isJoined=${callingService.isJoined}');
-            }
-          });
+          // Start call-level Scambaiter session (independent of UI lifecycle)
+          callingService.startScambaiterSession(session.scambaiterAudioStream);
+          debugPrint('[CallScreen] 🎭 Scambaiter session started at call-level');
 
           debugPrint('🛡 PhaseGuard: AI security engine started for call with ${widget.remoteUser.name}');
         } catch (e) {
@@ -109,6 +103,12 @@ class _CallScreenState extends ConsumerState<CallScreen>
       DeviceOrientation.landscapeLeft,
       DeviceOrientation.landscapeRight,
     ]);
+    // Stop call-level Scambaiter session
+    try {
+      final callingService = ref.read(callingServiceProvider);
+      callingService.stopScambaiterSession();
+      debugPrint('[CallScreen] 🎭 Scambaiter session stopped');
+    } catch (_) {}
     // Reset PhaseGuard session state when call ends
     try {
       final session = prov.Provider.of<SessionController>(context, listen: false);

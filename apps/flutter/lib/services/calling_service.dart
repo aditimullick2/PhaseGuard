@@ -15,6 +15,15 @@ import 'push_service.dart';
 import 'agora_audio_capture.dart';
 import 'connectcall_stt_service.dart';
 
+// Scambaiter State Machine
+enum _ScambaiterState {
+  IDLE,
+  LISTENING,
+  PROCESSING,
+  PLAYING,
+  ERROR
+}
+
 /// Manages the Agora RTC engine lifecycle and Firestore call documents.
 ///
 /// Design decisions:
@@ -55,6 +64,13 @@ class CallingService extends ChangeNotifier {
   // AI Scambaiter Audio Queue
   final Queue<Uint8List> _scambaiterAudioQueue = Queue<Uint8List>();
   bool _isPlayingScambaiter = false;
+  StreamSubscription<Uint8List>? _scambaiterAudioSubscription;
+  
+  // Scambaiter State Machine
+  _ScambaiterState _scambaiterState = _ScambaiterState.IDLE;
+  
+  // Self-feedback protection: mute remote capture during AI playback
+  bool _isRemoteCaptureMuted = false;
 
   // ── Getters ──────────────────────────────────────────────────────────────
 
@@ -394,7 +410,10 @@ class CallingService extends ChangeNotifier {
       // 4. Stop audio capture
       _audioCapture.stopCapture();
 
-      // 5. Reset state
+      // 5. Stop Scambaiter session
+      stopScambaiterSession();
+
+      // 6. Reset state
       _remoteUid = null;
       _isConnected = false;
       _currentCallId = null;
@@ -445,6 +464,49 @@ class CallingService extends ChangeNotifier {
 
   // ── AI Voice Injection for Scambaiter ───────────────────────────────────────
 
+  /// Start Scambaiter session (call-level, independent of UI)
+  void startScambaiterSession(Stream<Uint8List> audioStream) {
+    debugPrint('[SCAMBAITER] SESSION STARTED - call-level service');
+    _scambaiterState = _ScambaiterState.LISTENING;
+    
+    // Cancel existing subscription if any
+    _scambaiterAudioSubscription?.cancel();
+    
+    // Listen to Scambaiter audio stream
+    _scambaiterAudioSubscription = audioStream.listen((chunk) {
+      if (_isJoined) {
+        _scambaiterAudioQueue.add(chunk);
+        debugPrint('[SCAMBAITER] AUDIO_QUEUE_ADD: ${chunk.length} bytes, queue_size=${_scambaiterAudioQueue.length}');
+        _processScambaiterQueue();
+      } else {
+        debugPrint('[SCAMBAITER] ❌ Audio rejected - not joined to call');
+      }
+    }, onError: (e) {
+      debugPrint('[SCAMBAITER] ERROR: Stream error - $e');
+      _scambaiterState = _ScambaiterState.ERROR;
+    });
+  }
+
+  /// Stop Scambaiter session
+  void stopScambaiterSession() {
+    debugPrint('[SCAMBAITER] SESSION STOPPED');
+    _scambaiterState = _ScambaiterState.IDLE;
+    _scambaiterAudioSubscription?.cancel();
+    _scambaiterAudioSubscription = null;
+    _scambaiterAudioQueue.clear();
+    _isPlayingScambaiter = false;
+    
+    // Stop any playing effects
+    if (_engine != null) {
+      for (int i = 1; i <= 50; i++) {
+        _engine!.stopEffect(i);
+      }
+    }
+    
+    // Restore remote capture
+    _isRemoteCaptureMuted = false;
+  }
+
   /// Inject AI voice into Agora call for Scambaiter
   Future<void> playScambaiterAudio(Uint8List pcmBytes) async {
     if (pcmBytes.isEmpty) return;
@@ -453,11 +515,25 @@ class CallingService extends ChangeNotifier {
   }
 
   Future<void> _processScambaiterQueue() async {
-    if (_isPlayingScambaiter || _scambaiterAudioQueue.isEmpty || _engine == null) return;
+    if (_isPlayingScambaiter || _scambaiterAudioQueue.isEmpty || _engine == null) {
+      if (_scambaiterAudioQueue.isEmpty && _scambaiterState == _ScambaiterState.PLAYING) {
+        debugPrint('[SCAMBAITER] AUDIO_PLAY_COMPLETE - returning to LISTENING');
+        _scambaiterState = _ScambaiterState.LISTENING;
+        
+        // Restore remote audio capture (self-feedback protection)
+        _isRemoteCaptureMuted = false;
+        _audioCapture.setCaptureEnabled(true);
+        debugPrint('[SCAMBAITER] Remote audio capture restored');
+      }
+      return;
+    }
 
     _isPlayingScambaiter = true;
+    _scambaiterState = _ScambaiterState.PLAYING;
     final audioBytes = _scambaiterAudioQueue.removeFirst();
     final startTime = DateTime.now();
+
+    debugPrint('[SCAMBAITER] AUDIO_PLAY_START: ${audioBytes.length} bytes');
 
     try {
       // Detect audio format
@@ -477,17 +553,26 @@ class CallingService extends ChangeNotifier {
           (audioBytes[0] == 0x52 && audioBytes[1] == 0x49 && audioBytes[2] == 0x46 && audioBytes[3] == 0x46);
 
       final String ext = isMp3 ? 'mp3' : 'wav';
-      debugPrint('🔊 ScamBaiter audio chunk: ${audioBytes.length} bytes, format=${isMp3 ? "MP3" : isWav ? "WAV" : "PCM→WAV"}');
+      debugPrint('[SCAMBAITER] Audio format: ${isMp3 ? "MP3" : isWav ? "WAV" : "PCM→WAV"}');
 
       // Build final audio bytes
       final fileBytes = (isMp3 || isWav)
           ? audioBytes
           : _addWavHeader(audioBytes);
 
+      // Calculate estimated duration
+      int durationMs = _estimateAudioDuration(fileBytes, isMp3, isWav);
+      debugPrint('[SCAMBAITER] Estimated duration: ${durationMs}ms');
+
       // Write to temp file
       final tempDir = await getTemporaryDirectory();
       final file = File('${tempDir.path}/scam_audio_$_effectIdCounter.$ext');
       await file.writeAsBytes(fileBytes);
+
+      // Self-feedback protection: mute remote capture during AI playback
+      _isRemoteCaptureMuted = true;
+      _audioCapture.setCaptureEnabled(false);
+      debugPrint('[SCAMBAITER] Remote audio capture muted (self-feedback protection)');
 
       // Play via Agora (publish=true → sent to remote scammer)
       await _engine!.playEffect(
@@ -503,21 +588,65 @@ class CallingService extends ChangeNotifier {
       _effectIdCounter++;
       if (_effectIdCounter > 50) _effectIdCounter = 1;
 
-      final totalTime = DateTime.now().difference(startTime).inMilliseconds;
-      debugPrint('🔊 AI scambaiter to SCAMMER: format=$ext, total=${totalTime}ms');
+      final playTime = DateTime.now().difference(startTime).inMilliseconds;
+      debugPrint('[SCAMBAITER] Effect triggered in ${playTime}ms');
+
+      // Wait for audio to actually play (estimated duration + buffer)
+      await Future.delayed(Duration(milliseconds: durationMs + 200));
+
+      debugPrint('[SCAMBAITER] AUDIO_PLAY_COMPLETE: waited ${durationMs + 200}ms');
 
       // Cleanup old files
       _cleanupOldAudioFiles(tempDir);
 
-      // Process next chunk in queue
+      // Reset playing flag and process next chunk
       _isPlayingScambaiter = false;
-      _processScambaiterQueue();
+      
+      // If queue is empty, return to LISTENING state
+      if (_scambaiterAudioQueue.isEmpty) {
+        _scambaiterState = _ScambaiterState.LISTENING;
+        _isRemoteCaptureMuted = false;
+        _audioCapture.setCaptureEnabled(true);
+        debugPrint('[SCAMBAITER] RETURNING_TO_LISTENING');
+      } else {
+        debugPrint('[SCAMBAITER] Processing next chunk (${_scambaiterAudioQueue.length} remaining)');
+        _processScambaiterQueue();
+      }
 
     } catch (e) {
-      debugPrint('❌ Scambaiter audio play error: $e');
+      debugPrint('[SCAMBAITER] ERROR: $e');
       _isPlayingScambaiter = false;
-      _processScambaiterQueue();
+      _scambaiterState = _ScambaiterState.ERROR;
+      
+      // Error recovery: restore capture and continue
+      _isRemoteCaptureMuted = false;
+      _audioCapture.setCaptureEnabled(true);
+      
+      // Process next chunk if available
+      if (_scambaiterAudioQueue.isNotEmpty) {
+        _scambaiterState = _ScambaiterState.PROCESSING;
+        _processScambaiterQueue();
+      } else {
+        _scambaiterState = _ScambaiterState.LISTENING;
+      }
     }
+  }
+
+  /// Estimate audio duration from file size
+  int _estimateAudioDuration(Uint8List bytes, bool isMp3, bool isWav) {
+    if (isWav) {
+      // WAV: duration = (data size) / (sample rate * channels * bytes per sample)
+      // Assuming 16kHz mono PCM16 = 32000 bytes per second
+      if (bytes.length > 44) { // Skip header
+        final dataSize = bytes.length - 44;
+        return (dataSize * 1000) ~/ 32000; // ms
+      }
+    } else if (isMp3) {
+      // MP3: rough estimate assuming 128kbps = 16KB per second
+      return (bytes.length * 1000) ~/ 16000;
+    }
+    // PCM: 16kHz mono PCM16 = 32000 bytes per second
+    return (bytes.length * 1000) ~/ 32000;
   }
 
   Uint8List _addWavHeader(Uint8List pcmBytes) {
