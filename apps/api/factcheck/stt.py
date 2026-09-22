@@ -32,9 +32,9 @@ import numpy as np
 logger = logging.getLogger(__name__)
 
 # Minimum audio length before sending to Whisper (seconds)
-_MIN_CHUNK_SECONDS = 1.0
+_MIN_CHUNK_SECONDS = 2.0
 # Maximum (send anyway to avoid unbounded accumulation)
-_MAX_CHUNK_SECONDS = 3.0
+_MAX_CHUNK_SECONDS = 5.0
 # Silence threshold: RMS below this -> skip Whisper call
 _SILENCE_RMS_THRESHOLD = 0.005
 
@@ -109,7 +109,8 @@ async def transcribe_chunk(
                 file=("audio.wav", wav_bytes, "audio/wav"),
                 model=cfg.groq_stt_model,
                 response_format="text",
-                language=language,  # None = auto-detect
+                language=language,  # None = auto-detect, dynamically updated by language_router
+                prompt="This is a phone call conversation in Indian languages (Hindi, English, Bengali, Tamil, Telugu, Marathi, Gujarati, etc). Please transcribe accurately.",
                 temperature=0.0,    # Deterministic for forensic reliability
             )
             text = transcription.strip() if transcription else ""
