@@ -880,11 +880,6 @@ class SessionController extends ChangeNotifier {
       } else {
         debugPrint('⚠️ Voice clone: WS not connected, cannot send voice_id');
       }
-          'call_id': id,
-          'voice_id': voiceId,
-        });
-        debugPrint('📡 Voice clone: sent voice_id=$voiceId to backend session');
-      }
 
       lastActionMessage = 'Scambaiter active · Voice cloned ✅';
       notifyListeners();
