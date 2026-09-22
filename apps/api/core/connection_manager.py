@@ -63,6 +63,11 @@ class CallSession:
     is_processing_turn: bool = False
     current_turn_id: str | None = None
     recent_response_hashes: set[str] = field(default_factory=set)  # For deduplication
+    
+    # Conversation memory for context-aware responses
+    recent_scammer_utterances: list[str] = field(default_factory=list)  # Last 5 scammer transcripts
+    recent_ai_responses: list[str] = field(default_factory=list)  # Last 5 AI responses
+    last_processed_turn_id: str | None = None  # Track last completed turn
 
     # Latest DSP results (for dossier)
     latest_pdi: float = 0.0

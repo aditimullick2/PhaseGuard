@@ -84,6 +84,61 @@ def _is_valid_transcript(transcript: str) -> bool:
     return True
 
 
+def _is_duplicate_utterance(transcript: str, recent_utterances: list[str]) -> bool:
+    """
+    Check if transcript is semantically similar to recent scammer utterances.
+    
+    Uses normalized text comparison to detect repeated intent.
+    """
+    if not recent_utterances:
+        return False
+    
+    # Normalize transcript
+    normalized = transcript.lower().strip()
+    
+    for recent in recent_utterances[-3:]:  # Check last 3 utterances
+        recent_normalized = recent.lower().strip()
+        
+        # Exact match
+        if normalized == recent_normalized:
+            return True
+        
+        # Similarity check (simple ratio for now)
+        if len(normalized) > 5 and len(recent_normalized) > 5:
+            # Check if one is substring of the other
+            if normalized in recent_normalized or recent_normalized in normalized:
+                return True
+    
+    return False
+
+
+def _is_similar_response(response: str, recent_responses: list[str]) -> bool:
+    """
+    Check if AI response is too similar to recent responses.
+    
+    Prevents repeating the same sentence.
+    """
+    if not recent_responses:
+        return False
+    
+    normalized = response.lower().strip()
+    
+    for recent in recent_responses[-2:]:  # Check last 2 responses
+        recent_normalized = recent.lower().strip()
+        
+        # Exact match
+        if normalized == recent_normalized:
+            return True
+        
+        # High similarity (simple check)
+        if len(normalized) > 10 and len(recent_normalized) > 10:
+            similarity = sum(1 for a, b in zip(normalized, recent_normalized) if a == b) / max(len(normalized), len(recent_normalized))
+            if similarity > 0.8:  # 80% similarity threshold
+                return True
+    
+    return False
+
+
 # ── Bispectrum loop ────────────────────────────────────────────────────────────
 
 async def _bispectrum_loop(call_id: str) -> None:
@@ -361,7 +416,7 @@ async def _evidence_capture_loop(call_id: str) -> None:
 
 # ── Scambaiter Turn Execution ──────────────────────────────────────────────────
 
-async def _fire_scambaiter_turn(call_id: str, caller_speech: str, turn_id: str) -> None:
+async def _fire_scambaiter_turn(call_id: str, caller_speech: str, turn_id: str) -> str:
     """
     Generate and synthesize a scambaiter response, then stream binary audio 
     directly back over the WebSocket.
@@ -370,15 +425,19 @@ async def _fire_scambaiter_turn(call_id: str, caller_speech: str, turn_id: str) 
         call_id: Call identifier
         caller_speech: Transcribed scammer speech
         turn_id: Unique turn identifier for deduplication
+        
+    Returns:
+        The full AI response text
     """
     session = manager.get_session(call_id)
     if not session or not caller_speech.strip():
-        return
+        return ""
         
     from scambaiter.persona import generate_scambaiter_response_stream
     from scambaiter.tts import synthesize_speech
     
-    logger.info("[SCAMBAITER][%s][%s] LLM_START: input=%r", call_id, turn_id, caller_speech[:60])
+    logger.info("[SCAMBAITER][%s][%s] LLM_START: input=%r, context=%d", 
+               call_id, turn_id, caller_speech[:60], len(session.scambaiter_log))
     
     full_response_text = ""
     response_hash = None
@@ -406,7 +465,8 @@ async def _fire_scambaiter_turn(call_id: str, caller_speech: str, turn_id: str) 
             logger.warning("[SCAMBAITER][%s][%s] JSON_SEND_FAILED: %s", call_id, turn_id, exc)
 
         # 2. Synthesize audio for this specific sentence chunk
-        logger.info("[SCAMBAITER][%s][%s] TTS_START: sentence=%r", call_id, turn_id, sentence[:40])
+        logger.info("[SCAMBAITER][%s][%s] TTS_START: sentence=%r, voice_id=%r", 
+                   call_id, turn_id, sentence[:40], session.user_voice_id)
         audio_bytes = await synthesize_speech(sentence, call_id=call_id)
         
         if not audio_bytes:
@@ -421,6 +481,13 @@ async def _fire_scambaiter_turn(call_id: str, caller_speech: str, turn_id: str) 
         if response_hash in session.recent_response_hashes:
             logger.warning("[SCAMBAITER][%s][%s] DUPLICATE_RESPONSE_IGNORED: hash=%s", 
                          call_id, turn_id, response_hash[:8])
+            # Continue to next sentence but skip audio for this one
+            continue
+        
+        # Check if response is too similar to recent responses
+        if _is_similar_response(full_response_text.strip(), session.recent_ai_responses):
+            logger.warning("[SCAMBAITER][%s][%s] SIMILAR_RESPONSE_IGNORED: too similar to recent", 
+                         call_id, turn_id)
             continue
         
         session.recent_response_hashes.add(response_hash)
@@ -432,8 +499,8 @@ async def _fire_scambaiter_turn(call_id: str, caller_speech: str, turn_id: str) 
         if session.websocket and session.state not in (CallState.ENDED,):
             try:
                 await session.websocket.send_bytes(audio_bytes)
-                logger.info("[SCAMBAITER][%s][%s] AUDIO_SENT: %d bytes", 
-                           call_id, turn_id, len(audio_bytes))
+                logger.info("[SCAMBAITER][%s][%s] AUDIO_SENT: %d bytes, voice_id=%s", 
+                           call_id, turn_id, len(audio_bytes), session.user_voice_id)
             except Exception as exc:
                 logger.error("[SCAMBAITER][%s][%s] AUDIO_SEND_FAILED: %s", call_id, turn_id, exc)
                 break
@@ -445,8 +512,10 @@ async def _fire_scambaiter_turn(call_id: str, caller_speech: str, turn_id: str) 
     if full_response_text.strip():
         session.scambaiter_log.append({"role": "user", "content": caller_speech})
         session.scambaiter_log.append({"role": "assistant", "content": full_response_text.strip()})
-        logger.info("[SCAMBAITER][%s][%s] TURN_COMPLETE: response=%r", 
-                   call_id, turn_id, full_response_text[:60])
+        logger.info("[SCAMBAITER][%s][%s] TURN_COMPLETE: response=%r, voice_id=%s", 
+                   call_id, turn_id, full_response_text[:60], session.user_voice_id)
+    
+    return full_response_text.strip()
 
 
 async def _scambaiter_loop(call_id: str) -> None:
@@ -455,6 +524,7 @@ async def _scambaiter_loop(call_id: str) -> None:
     then executes the Scambaiter persona loop sequentially.
     
     HARD TURN LOCK: Only one turn processes at a time to prevent overlapping LLM/TTS calls.
+    CONVERSATION MEMORY: Maintains recent utterances and responses for context-aware behavior.
     """
     session = manager.get_session(call_id)
     if not session:
@@ -481,6 +551,17 @@ async def _scambaiter_loop(call_id: str) -> None:
                               call_id, turn_counter, transcript_window[:50])
                 continue
             
+            # Check for duplicate scammer utterance
+            if _is_duplicate_utterance(transcript_window, session.recent_scammer_utterances):
+                logger.warning("[SCAMBAITER][%s][TURN_%d] UTTERANCE_DUPLICATE: %r (similar to recent)", 
+                              call_id, turn_counter, transcript_window[:50])
+                # Still process but with awareness it's a repeat
+            
+            # Add to conversation memory
+            session.recent_scammer_utterances.append(transcript_window)
+            if len(session.recent_scammer_utterances) > 5:
+                session.recent_scammer_utterances.pop(0)
+            
             # Acquire turn lock to prevent overlapping processing
             async with session.scambaiter_turn_lock:
                 if session.is_processing_turn:
@@ -491,12 +572,21 @@ async def _scambaiter_loop(call_id: str) -> None:
                 session.is_processing_turn = True
                 session.current_turn_id = turn_id
                 
-                logger.info("[SCAMBAITER][%s][TURN_%d] TURN_START: transcript=%r", 
-                           call_id, turn_counter, transcript_window[:80])
+                logger.info("[SCAMBAITER][%s][TURN_%d] TURN_START: transcript=%r, context_size=%d", 
+                           call_id, turn_counter, transcript_window[:80], len(session.scambaiter_log))
                 
                 try:
                     # Process the turn
-                    await _fire_scambaiter_turn(call_id, transcript_window, turn_id)
+                    ai_response = await _fire_scambaiter_turn(call_id, transcript_window, turn_id)
+                    
+                    if ai_response:
+                        # Add to conversation memory
+                        session.recent_ai_responses.append(ai_response)
+                        if len(session.recent_ai_responses) > 5:
+                            session.recent_ai_responses.pop(0)
+                        
+                        session.last_processed_turn_id = turn_id
+                    
                     logger.info("[SCAMBAITER][%s][TURN_%d] TURN_COMPLETE", call_id, turn_counter)
                 finally:
                     session.is_processing_turn = False
