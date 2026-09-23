@@ -829,9 +829,10 @@ class SessionController extends ChangeNotifier {
         if (e.toString().contains('401') || e.toString().contains('Unauthorized')) {
           debugPrint('🎭 ScamBaiter: Token expired, refreshing and retrying...');
           await _refreshTokenIfNeeded();
-          if (token != null) {
+          final freshToken = token; // Local variable for null promotion
+          if (freshToken != null) {
             try {
-              activationResult = await _api.activateScambaiter(callId: id, token: token)
+              activationResult = await _api.activateScambaiter(callId: id, token: freshToken)
                   .timeout(const Duration(seconds: 4));
               debugPrint('🎭 ScamBaiter: backend activated after refresh → $activationResult');
             } catch (retryError) {
