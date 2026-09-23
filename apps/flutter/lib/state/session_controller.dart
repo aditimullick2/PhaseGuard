@@ -455,9 +455,46 @@ class SessionController extends ChangeNotifier {
           debugPrint('⚠️ WebSocket error: $msg');
           notifyListeners();
         },
-        onClose: () {
+        onClose: () async {
           debugPrint('⚠️ WebSocket closed');
           _stopHealthCheck();
+
+          // Try to refresh token and reconnect if we still have a callId
+          if (callId != null) {
+            debugPrint('🔄 WebSocket closed - attempting token refresh and reconnect');
+            await _refreshTokenIfNeeded();
+
+            // If we got a new token, try to reconnect
+            if (token != null) {
+              try {
+                debugPrint('🔄 Reconnecting with fresh token');
+                final newUrl = '${_api.baseUrl}/ws/call/$callId?token=${Uri.encodeQueryComponent(token!)}'
+                    .replaceFirst('https://', 'wss://')
+                    .replaceFirst('http://', 'ws://');
+                await _socket.connect(
+                  url: newUrl,
+                  onJson: _onJson,
+                  onBytes: _onBinaryAudio,
+                  onError: (msg) {
+                    error = msg;
+                    debugPrint('⚠️ WebSocket reconnection error: $msg');
+                    notifyListeners();
+                  },
+                  onClose: () {
+                    debugPrint('⚠️ WebSocket reconnection closed');
+                    _stopHealthCheck();
+                    notifyListeners();
+                  },
+                ).timeout(const Duration(seconds: 30));
+                wsConnected = true;
+                debugPrint('✅ WebSocket reconnected successfully');
+              } catch (e) {
+                debugPrint('⚠️ WebSocket reconnection failed: $e');
+                wsConnected = false;
+              }
+            }
+          }
+
           notifyListeners();
         },
       ).timeout(
@@ -729,13 +766,38 @@ class SessionController extends ChangeNotifier {
     return _api.uploadFrame(callId: id, token: t, frameBytes: frameBytes);
   }
 
+  /// Refresh JWT token for an active call session
+  /// Call this when:
+  /// - Token is about to expire (proactive refresh)
+  /// - API call fails with 401 Unauthorized (reactive refresh)
+  /// - WebSocket needs to reconnect with fresh credentials
+  Future<void> _refreshTokenIfNeeded() async {
+    if (callId == null) return;
+
+    try {
+      debugPrint('🔄 AUTH_REFRESH_START: callId=$callId');
+      final refreshResult = await _api.refreshToken(
+        callId: callId!,
+        token: token,
+      ).timeout(const Duration(seconds: 10));
+
+      token = refreshResult['token'] as String;
+      debugPrint('🔄 AUTH_REFRESH_SUCCESS: callId=$callId expires_in=${refreshResult['expires_in_seconds']}s');
+      notifyListeners();
+    } catch (e) {
+      debugPrint('⚠️ AUTH_REFRESH_FAILED: $e');
+      // If refresh fails, we may need to start a new session
+      // But don't throw here - let the caller handle it
+    }
+  }
+
   /// Activate AI scambaiter
   /// Also uploads user's 15-second voice sample for Fish Audio voice cloning.
   /// If voice enrollment succeeds, the cloned voice is used for TTS.
   /// Falls back to generic voice if enrollment fails.
   Future<Map<String, dynamic>> activateScambaiter() async {
     debugPrint('🎭 ScamBaiter: Checking session state - callId=$callId, token=${token != null}, wsConnected=$wsConnected, connecting=$connecting');
-    
+
     // Check if WebSocket is actually connected, not just if we have old credentials
     if (callId == null || token == null || !wsConnected) {
       debugPrint('🎭 ScamBaiter: No active session - starting new session');
@@ -743,8 +805,10 @@ class SessionController extends ChangeNotifier {
       debugPrint('🎭 ScamBaiter: Session started - callId=$callId, wsConnected=$wsConnected');
     } else {
       debugPrint('🎭 ScamBaiter: Using existing session - callId=$callId, wsConnected=$wsConnected');
+      // Try to refresh token before activating scambaiter
+      await _refreshTokenIfNeeded();
     }
-    
+
     isScambaiterActive = true;
     lastActionMessage = 'Scambaiter AI persona active';
     notifyListeners();
@@ -761,6 +825,20 @@ class SessionController extends ChangeNotifier {
         debugPrint('🎭 ScamBaiter: backend activated → $activationResult');
       } catch (e) {
         debugPrint('⚠️ ScamBaiter: backend activation failed: $e (continuing with local)');
+        // If activation fails due to expired token, try refreshing and retry
+        if (e.toString().contains('401') || e.toString().contains('Unauthorized')) {
+          debugPrint('🎭 ScamBaiter: Token expired, refreshing and retrying...');
+          await _refreshTokenIfNeeded();
+          if (token != null) {
+            try {
+              activationResult = await _api.activateScambaiter(callId: id, token: token)
+                  .timeout(const Duration(seconds: 4));
+              debugPrint('🎭 ScamBaiter: backend activated after refresh → $activationResult');
+            } catch (retryError) {
+              debugPrint('⚠️ ScamBaiter: backend activation retry failed: $retryError');
+            }
+          }
+        }
       }
     }
 

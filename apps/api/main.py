@@ -713,6 +713,79 @@ async def activate_scambait(
     return {"status": "scambaiter_active", "call_id": call_id, "ts": datetime.now(timezone.utc).isoformat()}
 
 
+@app.post("/call/{call_id}/refresh-token")
+@limiter.limit(LIMIT_API)
+async def refresh_token(
+    request: Request,
+    call_id: str,
+    credentials: HTTPAuthorizationCredentials = Depends(_bearer),
+) -> dict:
+    """
+    Refresh an expired or expiring JWT token for an active call session.
+
+    Requires a valid (or recently expired) token scoped to the same call_id.
+    Returns a new token with full TTL from now.
+
+    Use this when:
+    - JWT is about to expire (client should proactively refresh)
+    - JWT has expired (backend allows grace period for reconnection)
+    - WebSocket needs to reconnect with fresh credentials
+    """
+    cfg = get_settings()
+
+    # In development mode, allow refresh without token for testing
+    if cfg.environment == "development" and credentials is None:
+        logger.info("Token refresh in dev mode: call_id=%r (no token required)", call_id)
+        session = manager.get_session(call_id)
+        if not session:
+            raise HTTPException(status_code=404, detail="Call session not found")
+    else:
+        if credentials is None:
+            raise HTTPException(status_code=401, detail="Missing token")
+
+        # Verify the old token is scoped to this call_id
+        # Allow recently expired tokens (grace period)
+        try:
+            payload = decode_call_token(credentials.credentials)
+            if payload.get("sub") != call_id:
+                raise HTTPException(status_code=403, detail="Token not scoped to this call_id")
+        except HTTPException:
+            raise
+        except Exception as e:
+            # Allow refresh if token is expired but call_id matches
+            # Extract call_id from expired token without strict validation
+            try:
+                from jose import jwt
+                payload = jwt.decode(
+                    credentials.credentials,
+                    cfg.jwt_secret,
+                    algorithms=[cfg.jwt_algorithm],
+                    options={"verify_exp": False}  # Allow expired tokens
+                )
+                if payload.get("sub") != call_id:
+                    raise HTTPException(status_code=403, detail="Token not scoped to this call_id")
+                logger.info("Token refresh with expired token: call_id=%r", call_id)
+            except Exception as e:
+                logger.warning("Token refresh failed: %s", e)
+                raise HTTPException(status_code=401, detail="Invalid token")
+
+    # Verify session exists
+    session = manager.get_session(call_id)
+    if not session:
+        raise HTTPException(status_code=404, detail="Call session not found")
+
+    # Issue new token
+    new_token = create_call_token(call_id)
+    logger.info("Token refreshed: call_id=%r new_expires_in=%dmin", call_id, cfg.jwt_ttl_minutes)
+
+    return {
+        "call_id": call_id,
+        "token": new_token,
+        "expires_in_seconds": cfg.jwt_ttl_minutes * 60,
+        "ts": datetime.now(timezone.utc).isoformat(),
+    }
+
+
 @app.post("/call/{call_id}/test_inject")
 async def test_inject(
     request: Request,

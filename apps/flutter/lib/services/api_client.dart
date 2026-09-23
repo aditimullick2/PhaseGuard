@@ -60,6 +60,23 @@ class ApiClient {
     );
   }
 
+  Future<Map<String, dynamic>> refreshToken({
+    required String callId,
+    String? token,
+  }) async {
+    final res = await http.post(
+      Uri.parse('$baseUrl/call/$callId/refresh-token'),
+      headers: _headers(token: token),
+    ).timeout(
+      const Duration(seconds: 15),
+      onTimeout: () => http.Response('Timeout', 408),
+    );
+    if (res.statusCode < 200 || res.statusCode >= 300) {
+      throw ApiException('Token refresh failed (${res.statusCode})');
+    }
+    return jsonDecode(res.body) as Map<String, dynamic>;
+  }
+
   Future<EscalationDraft> draftEscalation({
     required String callId,
     required String token,
