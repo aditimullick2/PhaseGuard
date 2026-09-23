@@ -647,13 +647,29 @@ class SessionController extends ChangeNotifier {
     notifyListeners();
   }
 
+  // Track if AI audio is currently being played to prevent duplicate playback
+  bool _isPlayingScambaiterAudio = false;
+
   void _onBinaryAudio(List<int> bytes) {
     // BUG FIX #2: Handle binary audio frames from scambaiter TTS
     // Backend sends scambaiter_turn JSON followed by audio bytes for playback
     if (bytes.isEmpty) return;
+
+    // Prevent duplicate audio from being sent if one is already playing
+    if (_isPlayingScambaiterAudio) {
+      debugPrint('🔊 Scambaiter audio DROPPED - already playing');
+      return;
+    }
+
+    _isPlayingScambaiterAudio = true;
     debugPrint('🔊 Received binary audio frame: ${bytes.length} bytes from scambaiter');
 
     scambaiterAudioStreamController.add(Uint8List.fromList(bytes));
+
+    // Reset flag after audio should have played (assume ~5 seconds max for typical response)
+    Future.delayed(const Duration(seconds: 5), () {
+      _isPlayingScambaiterAudio = false;
+    });
   }
 
   void startLiveVerify() {

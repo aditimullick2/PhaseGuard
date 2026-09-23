@@ -531,16 +531,17 @@ async def _fire_scambaiter_turn(call_id: str, caller_speech: str, turn_id: str) 
         logger.warning("[SCAMBAITER][%s][%s] TTS_FAILED: no audio generated", call_id, turn_id)
         return full_response_text
     
-    logger.info("[SCAMBAITER][%s][%s] TTS_REQUEST_SENT: voice_id=%r", 
+    logger.info("[SCAMBAITER][%s][%s] TTS_REQUEST_SENT: voice_id=%r",
                call_id, turn_id, session.user_voice_id)
-    logger.info("[SCAMBAITER][%s][%s] TTS_COMPLETE: bytes=%d", 
+    logger.info("[SCAMBAITER][%s][%s] TTS_COMPLETE: bytes=%d",
                call_id, turn_id, len(audio_bytes))
-    
-    # 5. Add to response hashes and recent responses
+
+    # 5. Add to response hashes BEFORE sending audio to prevent duplicate sends
     session.recent_response_hashes.add(response_hash)
     if len(session.recent_response_hashes) > 10:
         session.recent_response_hashes.pop()
-    
+
+    # 6. Add to recent responses (after TTS for context)
     session.recent_ai_responses.append(full_response_text.strip())
     if len(session.recent_ai_responses) > 5:
         session.recent_ai_responses.pop(0)
@@ -565,7 +566,7 @@ async def _fire_scambaiter_turn(call_id: str, caller_speech: str, turn_id: str) 
                        call_id, turn_id, len(audio_bytes), session.user_voice_id)
             
             # Mark playback as complete after a short delay to ensure audio is fully sent
-            await asyncio.sleep(0.5)  # 500ms safety delay
+            await asyncio.sleep(0.1)  # Reduced from 500ms to 100ms for faster response
             session.is_ai_playing = False
             session.current_playback_turn_id = None
             logger.info("[SCAMBAITER][%s][%s] PLAYBACK_END", call_id, turn_id)
@@ -625,11 +626,11 @@ async def _scambaiter_loop(call_id: str) -> None:
                               call_id, turn_counter, transcript_window[:50])
                 continue
             
-            # Check for duplicate scammer utterance
+            # Check for duplicate scammer utterance - SKIP PROCESSING if duplicate
             if _is_duplicate_utterance(transcript_window, session.recent_scammer_utterances):
-                logger.warning("[SCAMBAITER][%s][TURN_%d] UTTERANCE_DUPLICATE: %r (similar to recent)", 
+                logger.warning("[SCAMBAITER][%s][TURN_%d] UTTERANCE_DUPLICATE_SKIPPED: %r (similar to recent)", 
                               call_id, turn_counter, transcript_window[:50])
-                # Still process but with awareness it's a repeat
+                continue  # Skip processing duplicate utterances completely
             
             # AI PLAYBACK GATE: Do not process STT while AI is playing
             if session.is_ai_playing:
@@ -826,8 +827,11 @@ async def _stt_loop(call_id: str) -> None:
             if session.state == CallState.SCAMBAITER_ACTIVE:
                 # Bypass fact-checking and queue the transcript directly for the scambaiter loop
                 # We do this immediately instead of waiting for claim_extractor to accumulate 50 chars
-                session.scambaiter_queue.put_nowait(transcript)
-                logger.info("[STT][%s] TRANSCRIPT_QUEUED_FOR_SCAMBAITER: %r", call_id, transcript[:50])
+                try:
+                    session.scambaiter_queue.put_nowait(transcript)
+                    logger.info("[STT][%s] TRANSCRIPT_QUEUED_FOR_SCAMBAITER: %r", call_id, transcript[:50])
+                except asyncio.QueueFull:
+                    logger.warning("[STT][%s] TRANSCRIPT_DROPPED_QUEUE_FULL: scambaiter loop too slow", call_id)
                 # Continue to next audio chunk - DO NOT break the loop
                 continue
 

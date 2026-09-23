@@ -56,7 +56,7 @@ class CallSession:
     stt_task: asyncio.Task | None = None
     evidence_task: asyncio.Task | None = None   # video evidence capture loop
     scambaiter_task: asyncio.Task | None = None # dedicated scambaiter audio loop
-    scambaiter_queue: asyncio.Queue = field(default_factory=asyncio.Queue) # queue for caller transcripts
+    scambaiter_queue: asyncio.Queue = field(default_factory=lambda: asyncio.Queue(maxsize=5)) # queue for caller transcripts (max 5 to prevent pileup)
     
     # Scambaiter turn state machine
     scambaiter_turn_lock: asyncio.Lock = field(default_factory=asyncio.Lock)
