@@ -59,6 +59,7 @@ class SessionController extends ChangeNotifier {
   String? lastSavedPdfPath;
   Uint8List? lastScambaiterAudioBytes; // Store last generated AI voice for injection
   Timer? _audioStreamTimer;
+  bool _voiceEnrolled = false; // Track if voice has been enrolled for this call
 
   // Real backend metrics — start with ZERO baseline (no false positives)
   double pdiScore = 0.0; // ZERO baseline - no false scam detection
@@ -401,6 +402,7 @@ class SessionController extends ChangeNotifier {
     lastDossierBytes = null;
     lastSavedPdfPath = null;
     lastScambaiterAudioBytes = null;
+    _voiceEnrolled = false; // Reset voice enrollment flag for new call
     
     debugPrint('🔄 Security state reset for new call');
   }
@@ -845,9 +847,15 @@ class SessionController extends ChangeNotifier {
 
     // ── Step 2: Upload voice sample for cloning (SYNCHRONOUS) ───
     // Voice MUST be resolved before Scambaiter can process turns
-    debugPrint('🎭 ScamBaiter: VOICE_RESOLUTION_START');
-    await _enrollUserVoiceForCloning(id);
-    debugPrint('🎭 ScamBaiter: VOICE_RESOLUTION_COMPLETE');
+    // Only enroll once per call - skip if already enrolled
+    if (!_voiceEnrolled) {
+      debugPrint('🎭 ScamBaiter: VOICE_RESOLUTION_START (not enrolled yet)');
+      await _enrollUserVoiceForCloning(id);
+      _voiceEnrolled = true;
+      debugPrint('🎭 ScamBaiter: VOICE_RESOLUTION_COMPLETE');
+    } else {
+      debugPrint('🎭 ScamBaiter: VOICE_ALREADY_ENROLLED - skipping enrollment');
+    }
 
     return activationResult;
   }

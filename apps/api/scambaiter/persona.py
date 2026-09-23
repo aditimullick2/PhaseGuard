@@ -167,15 +167,40 @@ async def generate_scambaiter_response(
         
         if not raw_response.strip():
             logger.warning("Scambaiter: LLM returned empty response! Using contextual fallback.")
-            # Use a contextual fallback based on caller speech instead of generic phrase
+            # Use a contextual fallback based on caller speech with more variety
+            import hashlib
+            # Hash-based variety to get different responses for same topic
+            speech_hash = int(hashlib.md5(caller_speech.encode()).hexdigest()[:8], 16)
+            
             if "bank" in caller_speech.lower() or "account" in caller_speech.lower():
-                raw_response = "अच्छा, लेकिन मुझे कोई मैसेज तो नहीं आया। आप किस बैंक से बोल रहे हैं?"
+                fallbacks = [
+                    "अच्छा, लेकिन मुझे कोई मैसेज तो नहीं आया। आप किस बैंक से बोल रहे हैं?",
+                    "बैंक कौन सी? मैं तो SBI और PNB ही जानता हूँ।",
+                    "अरे बैंक वाली बात तो समझ नहीं आई। धीरे बोलिए।",
+                ]
+                raw_response = fallbacks[speech_hash % len(fallbacks)]
             elif "otp" in caller_speech.lower() or "verify" in caller_speech.lower():
-                raw_response = "OTP कहाँ भेजा है? मैं तो अभी फोन देख रहा हूँ, कुछ दिख नहीं रहा।"
+                fallbacks = [
+                    "OTP कहाँ भेजा है? मैं तो अभी फोन देख रहा हूँ, कुछ दिख नहीं रहा।",
+                    "मैंने कोई OTP नहीं माँगा। आप किस बात कर रहे हैं?",
+                    "कौन सा OTP? मुझे SMS तो आया नहीं।",
+                ]
+                raw_response = fallbacks[speech_hash % len(fallbacks)]
             elif "app" in caller_speech.lower() or "install" in caller_speech.lower():
-                raw_response = "कौन सा application? मुझे नाम बताइए, तब देखता हूँ।"
+                fallbacks = [
+                    "कौन सा application? मुझे नाम बताइए, तब देखता हूँ।",
+                    "मैं तो बस WhatsApp और YouTube ही चलाता हूँ।",
+                    "इनस्टाल कैसे करूँ? मुझे बेटा बताएगा।",
+                ]
+                raw_response = fallbacks[speech_hash % len(fallbacks)]
             else:
-                raw_response = "अरे, मैं थोड़ा समझ नहीं पाया। आप फिर से बताइए, धीरे धीरे?"
+                fallbacks = [
+                    "अरे, मैं थोड़ा समझ नहीं पाया। आप फिर से बताइए, धीरे धीरे?",
+                    "हाँ बेटा, कुछ बोल रहे हैं? मैं सुन नहीं पाया।",
+                    "क्या कह रहे हैं? मेरे कान थोड़े कमजोर हैं।",
+                    "आराम से बोलिए, मैं ध्यान से सुन रहा हूँ।",
+                ]
+                raw_response = fallbacks[speech_hash % len(fallbacks)]
 
         # Apply hard identifier filter — cannot be bypassed by the LLM
         sanitized = _sanitize_response(raw_response)
