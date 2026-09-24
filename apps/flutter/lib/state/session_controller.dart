@@ -844,7 +844,19 @@ class SessionController extends ChangeNotifier {
     final id = callId;
     final t = token;
 
-    // ── Step 1: Activate scambaiter mode on backend ──────────────────────────
+    // ── Step 1: Upload voice sample for cloning (BEFORE backend activation) ───
+    // Voice MUST be resolved BEFORE Scambaiter starts processing turns
+    // Only enroll once per call - skip if already enrolled
+    if (!_voiceEnrolled) {
+      debugPrint('🎭 ScamBaiter: VOICE_RESOLUTION_START (not enrolled yet)');
+      await _enrollUserVoiceForCloning(id);
+      _voiceEnrolled = true;
+      debugPrint('🎭 ScamBaiter: VOICE_RESOLUTION_COMPLETE');
+    } else {
+      debugPrint('🎭 ScamBaiter: VOICE_ALREADY_ENROLLED - skipping enrollment');
+    }
+
+    // ── Step 2: Activate scambaiter mode on backend (AFTER voice_id is set) ──────────────────────────
     Map<String, dynamic> activationResult = {'status': 'scambaiter_active'};
     if (id != null && t != null) {
       try {
@@ -869,18 +881,6 @@ class SessionController extends ChangeNotifier {
           }
         }
       }
-    }
-
-    // ── Step 2: Upload voice sample for cloning (SYNCHRONOUS) ───
-    // Voice MUST be resolved before Scambaiter can process turns
-    // Only enroll once per call - skip if already enrolled
-    if (!_voiceEnrolled) {
-      debugPrint('🎭 ScamBaiter: VOICE_RESOLUTION_START (not enrolled yet)');
-      await _enrollUserVoiceForCloning(id);
-      _voiceEnrolled = true;
-      debugPrint('🎭 ScamBaiter: VOICE_RESOLUTION_COMPLETE');
-    } else {
-      debugPrint('🎭 ScamBaiter: VOICE_ALREADY_ENROLLED - skipping enrollment');
     }
 
     return activationResult;
