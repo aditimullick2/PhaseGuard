@@ -65,6 +65,7 @@ class CallingService extends ChangeNotifier {
   final Queue<Uint8List> _scambaiterAudioQueue = Queue<Uint8List>();
   bool _isPlayingScambaiter = false;
   StreamSubscription<Uint8List>? _scambaiterAudioSubscription;
+  Uint8List? _lastPlayedAudioBytes; // Track last played audio for duplicate detection
   
   // Scambaiter State Machine
   _ScambaiterState _scambaiterState = _ScambaiterState.IDLE;
@@ -510,8 +511,36 @@ class CallingService extends ChangeNotifier {
   /// Inject AI voice into Agora call for Scambaiter
   Future<void> playScambaiterAudio(Uint8List pcmBytes) async {
     if (pcmBytes.isEmpty) return;
+
+    // Prevent duplicate audio chunks by checking if similar audio is already in queue
+    for (var queuedAudio in _scambaiterAudioQueue) {
+      if (queuedAudio.length == pcmBytes.length &&
+          _bytesMatch(queuedAudio, pcmBytes, 100)) { // Check first 100 bytes
+        debugPrint('[SCAMBAITER] Audio DUPLICATE detected - skipping');
+        return;
+      }
+    }
+
+    // Also prevent adding if currently playing identical audio
+    if (_isPlayingScambaiter && _lastPlayedAudioBytes != null) {
+      if (_lastPlayedAudioBytes!.length == pcmBytes.length &&
+          _bytesMatch(_lastPlayedAudioBytes!, pcmBytes, 100)) {
+        debugPrint('[SCAMBAITER] Audio DUPLICATE with currently playing - skipping');
+        return;
+      }
+    }
+
     _scambaiterAudioQueue.add(pcmBytes);
     _processScambaiterQueue();
+  }
+
+  // Helper to check if byte arrays match (check first N bytes)
+  bool _bytesMatch(Uint8List a, Uint8List b, int checkLength) {
+    final len = checkLength < a.length && checkLength < b.length ? checkLength : (a.length < b.length ? a.length : b.length);
+    for (int i = 0; i < len; i++) {
+      if (a[i] != b[i]) return false;
+    }
+    return true;
   }
 
   Future<void> _processScambaiterQueue() async {
@@ -531,6 +560,7 @@ class CallingService extends ChangeNotifier {
     _isPlayingScambaiter = true;
     _scambaiterState = _ScambaiterState.PLAYING;
     final audioBytes = _scambaiterAudioQueue.removeFirst();
+    _lastPlayedAudioBytes = audioBytes; // Store for duplicate detection
     final startTime = DateTime.now();
 
     debugPrint('[SCAMBAITER] AUDIO_PLAY_START: ${audioBytes.length} bytes');
