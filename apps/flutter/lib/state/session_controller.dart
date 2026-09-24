@@ -649,11 +649,20 @@ class SessionController extends ChangeNotifier {
 
   // Track if AI audio is currently being played to prevent duplicate playback
   bool _isPlayingScambaiterAudio = false;
+  String? _lastScambaiterAudioHash; // Track hash of last audio to detect duplicates
 
   void _onBinaryAudio(List<int> bytes) {
     // BUG FIX #2: Handle binary audio frames from scambaiter TTS
     // Backend sends scambaiter_turn JSON followed by audio bytes for playback
     if (bytes.isEmpty) return;
+
+    // Generate hash of audio bytes for duplicate detection
+    final audioHash = bytes.take(100).join(','); // Hash first 100 bytes
+    if (audioHash == _lastScambaiterAudioHash) {
+      debugPrint('🔊 Scambaiter audio DUPLICATE HASH - dropping');
+      return;
+    }
+    _lastScambaiterAudioHash = audioHash;
 
     // Prevent duplicate audio from being sent if one is already playing
     if (_isPlayingScambaiterAudio) {
@@ -669,6 +678,7 @@ class SessionController extends ChangeNotifier {
     // Reset flag after audio should have played (assume ~5 seconds max for typical response)
     Future.delayed(const Duration(seconds: 5), () {
       _isPlayingScambaiterAudio = false;
+      _lastScambaiterAudioHash = null; // Reset hash after audio completes
     });
   }
 
