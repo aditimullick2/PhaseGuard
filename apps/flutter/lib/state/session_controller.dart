@@ -884,6 +884,27 @@ class SessionController extends ChangeNotifier {
     if (id == null) return;
 
     try {
+      // ── Step 0: Check if voice_id already exists in SharedPreferences ──────────
+      final prefs = await SharedPreferences.getInstance();
+      final savedVoiceId = prefs.getString('user_voice_id');
+      
+      if (savedVoiceId != null && savedVoiceId.isNotEmpty) {
+        debugPrint('🎤 Voice clone: Using SAVED voice_id=$savedVoiceId (already enrolled)');
+        
+        // Send saved voice_id to backend session
+        if (wsConnected) {
+          _socket.sendJson({
+            'type': 'set_voice_id',
+            'call_id': id,
+            'voice_id': savedVoiceId,
+          });
+          debugPrint('🎤 Voice clone: sent saved voice_id to backend session');
+        } else {
+          debugPrint('⚠️ Voice clone: WS not connected, cannot send voice_id');
+        }
+        return; // Skip enrollment, use saved voice_id
+      }
+
       // ── Step 1: Load voice sample bytes ────────────────────────────────────
       // Priority:
       //   A) SharedPreferences 'user_voice_id_path' (set by VoiceSetupScreen in settings)
@@ -971,6 +992,10 @@ class SessionController extends ChangeNotifier {
       }
 
       debugPrint('✅ Voice clone: VOICE_RESOLUTION_SUCCESS voice_id=$voiceId');
+
+      // ── Step 2.5: Save voice_id to SharedPreferences for future calls ───────
+      await prefs.setString('user_voice_id', voiceId);
+      debugPrint('🎤 Voice clone: SAVED voice_id to SharedPreferences for future calls');
 
       // ── Step 3: Tell backend session to use this voice_id for TTS ──────────
       if (wsConnected) {
