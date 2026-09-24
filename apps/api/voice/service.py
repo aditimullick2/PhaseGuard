@@ -54,7 +54,7 @@ class VoiceService:
             )
             self._db_session.add(db_profile)
             await self._db_session.commit()
-            await self._db_session.refresh(db_profile)
+            # No need to refresh - the object is already in the session after commit
         else:
             if not hasattr(self, '_voice_profiles'):
                 self._voice_profiles = {}
