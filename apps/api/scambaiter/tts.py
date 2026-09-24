@@ -25,7 +25,7 @@ import numpy as np
 
 logger = logging.getLogger(__name__)
 
-_TTS_BACKEND = os.getenv("TTS_BACKEND", "api")  # Default to 'api' (VoiceService) for voice cloning
+_TTS_BACKEND = os.getenv("TTS_BACKEND", "gtts")  # Default to 'gtts' (no voice_id required, free)
 _TTS_LANGUAGE = os.getenv("TTS_LANGUAGE", "hi")  # Hindi default for India-market
 
 

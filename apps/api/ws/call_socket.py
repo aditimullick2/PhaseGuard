@@ -516,15 +516,11 @@ async def _fire_scambaiter_turn(call_id: str, caller_speech: str, turn_id: str) 
         return full_response_text  # Still return text but don't TTS
     
     # 4. Synthesize audio ONCE for the COMPLETE response
-    logger.info("[SCAMBAITER][%s][%s] TTS_START: voice_id=%r, response_len=%d", 
+    logger.info("[SCAMBAITER][%s][%s] TTS_START: voice_id=%r, response_len=%d",
                call_id, turn_id, session.user_voice_id, len(full_response_text))
-    
-    # Voice assertion: if user has configured voice, voice_id must NOT be None
-    if session.user_voice_id is None:
-        logger.error("[SCAMBAITER][%s][%s] TTS_BLOCKED_NO_CONFIGURED_VOICE: voice_id=None", 
-                    call_id, turn_id)
-        return full_response_text  # Return text but don't TTS without configured voice
-    
+
+    # Removed voice_id requirement - TTS will use fallback (gTTS) if no voice configured
+    # This allows Scambaiter to work even without voice enrollment
     audio_bytes = await synthesize_speech(full_response_text, call_id=call_id)
     
     if not audio_bytes:
@@ -913,7 +909,7 @@ async def _stt_loop(call_id: str) -> None:
                             message=verdict["message"],
                         )
                     )
-
+                               
         except asyncio.CancelledError:
             logger.debug("stt_loop cancelled: call_id=%r", call_id)
             logger.info("[STT][%s] REMOTE_AUDIO_CAPTURE_STOP", call_id)
@@ -936,6 +932,7 @@ async def _stt_loop(call_id: str) -> None:
                     "category": "UNKNOWN",
                     "ts": _ts()
                 })
+                
             await asyncio.sleep(2.0)
         except Exception as exc:
             logger.error("stt_loop error [%s]: %s", call_id, exc)
