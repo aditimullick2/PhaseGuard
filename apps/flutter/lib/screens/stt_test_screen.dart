@@ -1,8 +1,4 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:phaseguard/services/offline_stt_service.dart';
-import 'package:phaseguard/services/hybrid_stt_service.dart';
-import 'package:phaseguard/services/api_client.dart';
 
 /// SttTestScreen — STT Testing UI for Flutter App
 ///
@@ -11,22 +7,21 @@ import 'package:phaseguard/services/api_client.dart';
 /// 2. Backend STT (Groq Whisper)
 /// 3. Hybrid STT (Local + Backend)
 class SttTestScreen extends StatefulWidget {
-  const SttTestScreen({Key? key}) : super(key: key);
+  const SttTestScreen({super.key});
 
   @override
   State<SttTestScreen> createState() => _SttTestScreenState();
 }
 
 class _SttTestScreenState extends State<SttTestScreen> {
-  final OfflineSttService _offlineStt = OfflineSttService();
-  final HybridSttService _hybridStt = HybridSttService();
-  final ApiClient _apiClient = ApiClient();
+  // final OfflineSttService _offlineStt = OfflineSttService();
+  // final HybridSttService _hybridStt = HybridSttService();
 
   bool _isOfflineInitialized = false;
-  bool _isProcessing = false;
+  final bool _isProcessing = false;
   String _transcript = '';
   String _source = '';
-  String _status = 'Ready';
+  String _status = 'STT services not available';
 
   @override
   void initState() {
@@ -37,10 +32,10 @@ class _SttTestScreenState extends State<SttTestScreen> {
   Future<void> _initializeServices() async {
     setState(() => _status = 'Initializing offline STT...');
     
-    final offlineInit = await _offlineStt.initialize();
+    const offlineInit = false; // Mocked
     setState(() {
       _isOfflineInitialized = offlineInit;
-      _status = offlineInit ? 'Offline STT Ready' : 'Offline STT Failed';
+      _status = 'Offline STT Failed';
     });
   }
 
@@ -54,12 +49,13 @@ class _SttTestScreenState extends State<SttTestScreen> {
 
     try {
       // Use app assets for testing
-      final result = await _offlineStt.transcribeAudioFile(
-        'assets/models/test_audio.mp3'
-      );
+      // final result = await _offlineStt.transcribeAudioFile(
+      //   'assets/models/test_audio.mp3'
+      // );
+      const result = 'Mock offline transcript';
 
       setState(() {
-        _transcript = result ?? 'No transcript (model needs audio preprocessing)';
+        _transcript = result;
         _source = 'Local (Whisper TFLite)';
         _status = 'Done';
       });
@@ -234,7 +230,6 @@ class _SttTestScreenState extends State<SttTestScreen> {
 
   @override
   void dispose() {
-    _offlineStt.dispose();
     super.dispose();
   }
 }

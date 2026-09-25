@@ -144,7 +144,7 @@ class _AppNavigationState extends State<AppNavigation> {
                     }
                   }
                 },
-                onDeployScambaiter: () {
+                onDeployScambaiter: () async {
                   session.activateScambaiter();
                   Navigator.push(
                     context,

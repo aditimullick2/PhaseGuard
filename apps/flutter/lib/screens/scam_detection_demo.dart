@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:permission_handler/permission_handler.dart';
-import '../services/realtime_scam_detection.dart';
+// import '../services/realtime_scam_detection.dart';
 import '../services/audio_streaming.dart';
 import '../theme/tokens.dart';
 
@@ -17,104 +17,27 @@ class ScamDetectionDemo extends StatefulWidget {
 }
 
 class _ScamDetectionDemoState extends State<ScamDetectionDemo> {
-  final RealtimeScamDetection _scamDetection = RealtimeScamDetection();
+  // TODO: Implement scam detection demo when service files are available
   late final AudioStreaming _audioStreaming;
   
   bool _isInitialized = false;
   bool _isRecording = false;
   bool _hasPermission = false;
   bool _isSpeakerphoneOn = false;
-  String _status = 'Idle';
+  String _status = 'Demo feature not yet implemented';
   String _transcript = '';
   String _lastAlert = '';
   String _callId = '';
   String _audioSource = 'MIC';
   double _audioAmplitude = 0.0;
+  double _localTremorScore = 0.0;
+  double _localPhaseDispersion = 0.0;
   
   @override
   void initState() {
     super.initState();
-    _audioStreaming = AudioStreaming(scamDetection: _scamDetection);
-    _setupEventListeners();
+    _audioStreaming = AudioStreaming();
     _checkPermissions();
-  }
-  
-  void _setupEventListeners() {
-    // Listen for scam alerts
-    _scamDetection.alertController.listen((alert) {
-      setState(() {
-        _lastAlert = alert['message'] ?? 'Unknown alert';
-      });
-      
-      // Show alert dialog
-      _showScamAlert(alert);
-    });
-    
-    // Listen for transcript updates
-    _scamDetection.transcriptStream.listen((text) {
-      setState(() {
-        _transcript += ' $text';
-      });
-    });
-    
-    // Listen for local offline STT transcript
-    // _localSttService.transcriptStream.listen((text) {  // Gradle build issues - use backend Whisper STT
-    //   setState(() {
-    //     _localTranscript = text;
-    //
-    //     // Pass to ScamDetector (Keyword Rules Engine)
-    //     final scamResult = ScamDetector.detectScam(_localTranscript);
-    //     if (scamResult.isScam) {
-    //        _lastAlert = "LOCAL NLP ALERT: ${scamResult.reasoning}";
-    //        _status = 'LOCAL SCAM KEYWORDS DETECTED!';
-    //     }
-    //   });
-    // });
-    
-    // Listen for general events
-    _scamDetection.eventStream.listen((event) {
-      final type = event['type'];
-      
-      setState(() {
-        switch (type) {
-          case 'connected':
-            _status = 'Connected to backend';
-            _callId = event['call_id'] ?? '';
-            break;
-          case 'disconnected':
-            _status = 'Disconnected';
-            break;
-          case 'error':
-            _status = 'Error: ${event['message']}';
-            break;
-          case 'factcheck_update':
-            final status = event['status'] ?? '';
-            if (status == 'CRITICAL') {
-              _status = 'SCAM DETECTED!';
-            } else if (status == 'VERIFYING') {
-              _status = 'Analyzing...';
-            } else {
-              _status = 'Safe';
-            }
-            break;
-        }
-      });
-    });
-
-    // Listen for local DSP events
-    _audioStreaming.localDspStream.listen((dspResult) {
-      setState(() {
-        if (dspResult['metrics'] != null) {
-          _localTremorScore = dspResult['metrics']['tremor_score'] ?? 0.0;
-          _localPhaseDispersion = dspResult['metrics']['phase_dispersion'] ?? 0.0;
-        }
-
-        if (dspResult['is_synthetic'] == true) {
-           _lastAlert = "LOCAL ALERT: ${dspResult['reason']}";
-           _status = 'LOCAL DEEPFAKE DETECTED!';
-        }
-      });
-    });
   }
   
   Future<void> _checkPermissions() async {
@@ -147,14 +70,12 @@ class _ScamDetectionDemoState extends State<ScamDetectionDemo> {
         _status = 'Initializing...';
       });
       
-      await _scamDetection.initCall(
-        callerNumber: '+91XXXXXXXXXX',
-        ingestionMode: 'browser_mic',
-      );
+      // TODO: Implement when service is available
+      await Future.delayed(const Duration(seconds: 1));
       
       setState(() {
         _isInitialized = true;
-        _status = 'Ready to record';
+        _status = 'Demo feature not yet implemented';
       });
     } catch (e) {
       setState(() {
@@ -269,32 +190,7 @@ class _ScamDetectionDemoState extends State<ScamDetectionDemo> {
       });
     }
   }
-  
-  void _showScamAlert(Map<String, dynamic> alert) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('⚠️ SCAM DETECTED'),
-        content: Text(alert['message'] ?? 'Potential scam detected'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Ignore'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-              // TODO: Implement escalation logic
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: PgColors.crit,
-            ),
-            child: const Text('Report Scam'),
-          ),
-        ],
-      ),
-    );
-  }
+
   
   void _switchAudioSource() async {
     final newSource = _audioSource == 'MIC' ? 'VOICE_RECOGNITION' : 'MIC';
@@ -307,7 +203,6 @@ class _ScamDetectionDemoState extends State<ScamDetectionDemo> {
   @override
   void dispose() {
     _audioStreaming.dispose();
-    _scamDetection.dispose();
     super.dispose();
   }
   
@@ -494,7 +389,9 @@ class _ScamDetectionDemoState extends State<ScamDetectionDemo> {
                       ),
                       const SizedBox(width: 8),
                       ElevatedButton(
-                        onPressed: () => _scamDetection.disconnect(),
+                        onPressed: () {
+                          // TODO: Implement when service is available
+                        },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: PgColors.mediumBlue,
                           minimumSize: const Size(48, 48),

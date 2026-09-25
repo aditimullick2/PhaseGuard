@@ -22,6 +22,7 @@ class IncomingCallOverlay extends StatefulWidget {
   final String? claimText;
   final bool? isScamDetected;
   final String? liveTranscript;
+  final bool showVoiceAnalysis;
 
   const IncomingCallOverlay({
     super.key,
@@ -41,6 +42,8 @@ class IncomingCallOverlay extends StatefulWidget {
     this.claimVerificationStatus,
     this.claimText,
     this.isScamDetected,
+    this.liveTranscript,
+    this.showVoiceAnalysis = true,
   });
 
   @override
@@ -387,13 +390,13 @@ class _IncomingCallOverlayState extends State<IncomingCallOverlay> {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: PgSpace.md, vertical: PgSpace.sm),
               decoration: BoxDecoration(
-                color: PgColors.error.withValues(alpha: 0.15),
-                border: Border.all(color: PgColors.error.withValues(alpha: 0.5)),
+                color: PgColors.scam.withValues(alpha: 0.15),
+                border: Border.all(color: PgColors.scam.withValues(alpha: 0.5)),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Row(
                 children: [
-                  const Icon(Icons.videocam_off, color: PgColors.error, size: 20),
+                  const Icon(Icons.videocam_off, color: PgColors.scam, size: 20),
                   const SizedBox(width: PgSpace.sm),
                   const Expanded(
                     child: Column(
@@ -402,7 +405,7 @@ class _IncomingCallOverlayState extends State<IncomingCallOverlay> {
                         Text(
                           'VIDEO LIVENESS: SPOOF DETECTED',
                           style: TextStyle(
-                            color: PgColors.error,
+                            color: PgColors.scam,
                             fontWeight: FontWeight.bold,
                             fontSize: 13,
                           ),

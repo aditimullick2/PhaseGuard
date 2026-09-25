@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'package:flutter/services.dart';
-import 'realtime_scam_detection.dart';
-import 'voice_deepfake_detector.dart';
+// import 'realtime_scam_detection.dart';
+// import 'voice_deepfake_detector.dart';
 
 /// Audio streaming service
 /// 
@@ -9,8 +9,8 @@ import 'voice_deepfake_detector.dart';
 /// Requires speakerphone to be enabled to capture both sides of the call
 /// Streams audio chunks to backend for scam detection
 class AudioStreaming {
-  final RealtimeScamDetection _scamDetection;
-  final VoiceDeepfakeDetector _voiceDetector = VoiceDeepfakeDetector(sampleRate: 16000);
+  // final RealtimeScamDetection _scamDetection;
+  // final VoiceDeepfakeDetector _voiceDetector = VoiceDeepfakeDetector(sampleRate: 16000);
   
   // Stream to broadcast local DSP results to UI
   final StreamController<Map<String, dynamic>> _localDspController = StreamController<Map<String, dynamic>>.broadcast();
@@ -27,8 +27,9 @@ class AudioStreaming {
   // Current audio source: "MIC" or "VOICE_RECOGNITION"
   String _currentAudioSource = "MIC";
   
-  AudioStreaming({required RealtimeScamDetection scamDetection})
-      : _scamDetection = scamDetection;
+  AudioStreaming() {
+    // TODO: Implement when services are available
+  }
   
   bool get isStreaming => _isStreaming;
   bool get isSpeakerphoneOn => _isSpeakerphoneOn;
@@ -124,13 +125,12 @@ class AudioStreaming {
   void _handleAudioEvent(dynamic event) {
     if (event is List<int>) {
       // 1. Process Locally First
-      final audioChunk = Uint8List.fromList(event);
-      final int16List = audioChunk.buffer.asInt16List();
-      final dspResult = _voiceDetector.analyzeAudioBuffer(int16List);
-      _localDspController.add(dspResult);
+      // final int16List = audioChunk.buffer.asInt16List();
+      // final dspResult = _voiceDetector.analyzeAudioBuffer(int16List);
+      // _localDspController.add(dspResult);
       
       // 2. Send to Backend
-      _scamDetection.sendAudioChunk(audioChunk);
+      // _scamDetection.sendAudioChunk(audioChunk);
     } else if (event is Map) {
       // Event (like speakerphone state change)
       final type = event['type'];

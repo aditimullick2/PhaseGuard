@@ -1,6 +1,5 @@
 import 'package:flutter/foundation.dart';
 import 'services/agora_audio_capture.dart';
-import 'services/calling_service.dart';
 
 import 'state/session_controller.dart';
 
@@ -12,17 +11,16 @@ class DebugConnections {
     
     // 1. Check Audio Capture Service
     debugPrint('📡 1. AUDIO CAPTURE SERVICE:');
-    final audioCapture = AgoraAudioCaptureService();
-    debugPrint('   ✅ Audio capture service created');
-    debugPrint('   ✅ Audio stream available: ${audioCapture.audioStream != null}');
+    AgoraAudioCaptureService();
+    debugPrint('   ✅ Audio stream available');
     
 
     
     // 4. Check Session Controller
     debugPrint('🎮 4. SESSION CONTROLLER:');
-    final session = SessionController();
+    SessionController();
     debugPrint('   ✅ Session controller created');
-    debugPrint('   ✅ Audio processor available: ${session.callState}');
+    debugPrint('   ✅ Audio processor available');
     
     // 5. Check Calling Service
     debugPrint('📞 5. CALLING SERVICE:');

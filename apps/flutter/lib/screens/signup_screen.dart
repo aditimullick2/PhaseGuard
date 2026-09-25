@@ -4,7 +4,6 @@ import '../providers/providers.dart';
 import '../components/app_theme.dart';
 import '../components/app_button.dart';
 import '../components/app_text_field.dart';
-import '../components/animated_gif_background.dart';
 import '../components/animated_gradient_bg.dart';
 
 import 'home_screen.dart';
@@ -83,13 +82,9 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
       body: SizedBox.expand(
         child: Stack(
         children: [
-          // Animated GIF Background
+          // Pure-black gradient background — same as Home/Call screens
           const Positioned.fill(
-            child: AnimatedGifBackground(
-              assetPath: 'assets/background/login_bg.gif',
-              overlayOpacity: 0.55,
-              child: SizedBox.shrink(),
-            ),
+            child: AnimatedGradientBg(preset: GradientPreset.subtle),
           ),
 
           SafeArea(

@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/connectcall_call.dart';
-import '../models/connectcall_user.dart';
+import '../models/user.dart';
 import '../providers/providers.dart';
-import '../state/session_controller.dart';
+import '../services/permission_service.dart';
 
 import '../connectcall_components/app_theme.dart';
 import '../connectcall_components/animated_gif_background.dart';
@@ -43,20 +43,6 @@ class _ConnectCallIncomingCallScreenState extends ConsumerState<ConnectCallIncom
     _ring3 = Tween<double>(begin: 0, end: 1).animate(
       CurvedAnimation(parent: _ringCtrl, curve: const Interval(0.4, 1.0)),
     );
-    
-    // Auto-activate scambaiter if scam detected
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      final session = context.read<SessionController>();
-      if (session.isScamDetected) {
-        _autoActivateScambaiter();
-      }
-    });
-  }
-  
-  void _autoActivateScambaiter() {
-    // Auto-activate scambaiter when scammer calls
-    final session = context.read<SessionController>();
-    session.activateScambaiter();
   }
 
   @override
@@ -75,7 +61,7 @@ class _ConnectCallIncomingCallScreenState extends ConsumerState<ConnectCallIncom
     return PopScope(
       canPop: false, // Prevent accidental back navigation
       child: Scaffold(
-        backgroundColor: PgColors.bgPrimary,
+        backgroundColor: AppColors.primaryBackground,
         body: Stack(
           children: [
             // Animated GIF Background
@@ -96,14 +82,14 @@ class _ConnectCallIncomingCallScreenState extends ConsumerState<ConnectCallIncom
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                     decoration: BoxDecoration(
-                      color: PgColors.accent.withValues(alpha: 0.2),
+                      color: AppColors.primary.withValues(alpha: 0.2),
                       borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: PgColors.accent.withValues(alpha: 0.5)),
+                      border: Border.all(color: AppColors.primary.withValues(alpha: 0.5)),
                     ),
                     child: Text(
                       isVideo ? 'Incoming Video Call' : 'Incoming Audio Call',
                       style: TextStyle(
-                        color: PgColors.accent,
+                        color: AppColors.primary,
                         fontSize: 14,
                         fontWeight: FontWeight.bold,
                       ),
@@ -117,7 +103,7 @@ class _ConnectCallIncomingCallScreenState extends ConsumerState<ConnectCallIncom
                     style: TextStyle(
                       fontSize: 32,
                       fontWeight: FontWeight.bold,
-                      color: PgColors.textPrimary,
+                      color: AppColors.primaryText,
                     ),
                   ),
                   const SizedBox(height: 8),

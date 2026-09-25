@@ -12,7 +12,7 @@ import '../components/app_theme.dart';
 import '../components/call_history_tile.dart';
 import '../components/app_button.dart';
 import '../services/permission_service.dart';
-import 'call_screen.dart';
+import 'connectcall_call_screen.dart';
 
 class CallHistoryScreen extends ConsumerStatefulWidget {
   const CallHistoryScreen({super.key});

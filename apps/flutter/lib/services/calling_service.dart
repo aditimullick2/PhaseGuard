@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:collection';
 import 'dart:io';
-import 'dart:math';
 import 'package:agora_rtc_engine/agora_rtc_engine.dart';
 import 'package:agora_token_service/agora_token_service.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -13,7 +12,6 @@ import '../models/user.dart';
 import 'permission_service.dart';
 import 'push_service.dart';
 import 'agora_audio_capture.dart';
-import 'connectcall_stt_service.dart';
 
 // Scambaiter State Machine
 enum _ScambaiterState {
@@ -55,10 +53,6 @@ class CallingService extends ChangeNotifier {
 
   // PhaseGuard STT Integration
   final AgoraAudioCaptureService _audioCapture = AgoraAudioCaptureService();
-  final ConnectCallSttService _sttService = ConnectCallSttService();
-  Timer? _sttTimer;
-  List<int> _audioBuffer = [];
-  bool _scamDetected = false;
   int _effectIdCounter = 1; // Counter for Agora playEffect sound IDs
 
   // AI Scambaiter Audio Queue
@@ -88,6 +82,7 @@ class CallingService extends ChangeNotifier {
   int get networkQuality => _networkQuality;
   String? get currentCallId => _currentCallId;
   Stream<Uint8List>? get audioCaptureStream => _audioCapture.audioStream;
+  bool get isRemoteCaptureMuted => _isRemoteCaptureMuted;
 
   String? _appId;
   String? _appCert;
@@ -1038,12 +1033,6 @@ class CallingService extends ChangeNotifier {
     debugPrint('[CallingService] Call state cleaned up');
   }
 
-  String _randomString(int length) {
-    const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
-    final rng = Random();
-    return List.generate(length, (_) => chars[rng.nextInt(chars.length)])
-        .join();
-  }
 
   @override
   void dispose() {

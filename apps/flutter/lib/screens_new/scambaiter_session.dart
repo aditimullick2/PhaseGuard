@@ -32,11 +32,6 @@ class _ScambaiterSessionState extends State<ScambaiterSession> {
       }
     });
   }
-          });
-        }
-      });
-    });
-  }
 
   @override
   void dispose() {
@@ -671,27 +666,27 @@ class _ScambaiterSessionState extends State<ScambaiterSession> {
                     borderRadius: BorderRadius.circular(PgRadii.button),
                     boxShadow: [
                       BoxShadow(
-                    color: PgColors.accent.withValues(alpha: 0.35),
-                    blurRadius: 8,
-                  ),
-                ],
-              ),
-              child: isSendingPrompt
-                  ? const Padding(
-                      padding: EdgeInsets.all(10),
-                      child: SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                        ),
+                        color: PgColors.accent.withValues(alpha: 0.35),
+                        blurRadius: 8,
                       ),
-                    )
-                  : IconButton(
-                      icon: const Icon(Icons.send_rounded, color: Colors.white, size: 18),
-                      onPressed: () => _handleSendPrompt(session, _promptController.text),
-                    ),
+                    ],
+                  ),
+                  child: isSendingPrompt
+                      ? const Padding(
+                          padding: EdgeInsets.all(10),
+                          child: SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                            ),
+                          ),
+                        )
+                      : IconButton(
+                          icon: const Icon(Icons.send_rounded, color: Colors.white, size: 18),
+                          onPressed: () => _handleSendPrompt(session, _promptController.text),
+                        ),
                 ),
               ],
             ),

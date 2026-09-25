@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:collection';
 import 'dart:io';
-import 'dart:typed_data';
 import 'package:agora_rtc_engine/agora_rtc_engine.dart';
 import 'package:flutter/foundation.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -173,13 +172,9 @@ class InAppCallingService extends ChangeNotifier {
     // Flush in 100ms chunks (3200 bytes) for REAL-TIME streaming
     // 100ms chunks = 10 chunks per second = optimal for real-time speech
     while (_audioAccumulator.length >= targetChunkBytes) {
-      final chunkStartTime = DateTime.now();
       final chunk = Uint8List.fromList(_audioAccumulator.sublist(0, targetChunkBytes));
       _audioAccumulator.removeRange(0, targetChunkBytes);
       _remoteAudioController.add(chunk);
-
-      final chunkTime = DateTime.now().difference(chunkStartTime).inMilliseconds;
-      // debugPrint('[InAppCallingService] 📤 Audio chunk: ${chunk.length} bytes (${chunkTime}ms, REAL-TIME 100ms chunks)');
     }
 
     final totalTime = DateTime.now().difference(startTime).inMilliseconds;

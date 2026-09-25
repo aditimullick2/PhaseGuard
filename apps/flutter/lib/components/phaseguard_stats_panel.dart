@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../state/session_controller.dart';
 import 'app_theme.dart';
+import 'animated_gradient_bg.dart';
 
 class PhaseGuardStatsPanel extends StatelessWidget {
   const PhaseGuardStatsPanel({super.key});

@@ -83,6 +83,7 @@ class _AppButtonState extends State<AppButton> {
 
   @override
   Widget build(BuildContext context) {
+    final isPrimary = widget.variant == 'primary';
     final button = GestureDetector(
       onTapDown: (_) {
         if (!widget.disabled && !widget.loading) {
@@ -102,22 +103,34 @@ class _AppButtonState extends State<AppButton> {
       },
       child: AnimatedScale(
         scale: _isPressed ? 0.95 : 1.0,
-        duration: const Duration(milliseconds: 100),
-        curve: Curves.easeOut,
+        duration: const Duration(milliseconds: 160),
+        curve: Curves.easeOutCubic,
         child: AnimatedOpacity(
           opacity: widget.disabled ? 0.55 : 1.0,
           duration: const Duration(milliseconds: 200),
-          child: Container(
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 160),
             decoration: BoxDecoration(
-              color: _bgColor,
+              color: isPrimary ? null : _bgColor,
+              gradient: isPrimary && !widget.disabled
+                  ? const LinearGradient(
+                      colors: [Color(0xFF1455D9), Color(0xFF2678FF)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    )
+                  : null,
               borderRadius: BorderRadius.circular(_radius),
-              border: Border.all(color: _borderColor, width: 1),
-              boxShadow: widget.variant == 'primary' && !widget.disabled
+              border: Border.all(
+                color: isPrimary ? const Color(0x33FFFFFF) : _borderColor,
+                width: 1,
+              ),
+              boxShadow: isPrimary && !widget.disabled
                   ? [
                       BoxShadow(
-                        color: AppColors.primary.withValues(alpha: 0.3),
-                        blurRadius: 12,
-                        offset: const Offset(0, 4),
+                        color: const Color(0xFF2678FF).withValues(alpha: _isPressed ? 0.70 : 0.45),
+                        blurRadius: _isPressed ? 24 : 18,
+                        spreadRadius: _isPressed ? 2 : 0,
+                        offset: const Offset(0, 2),
                       )
                     ]
                   : null,

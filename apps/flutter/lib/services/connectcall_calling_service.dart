@@ -1,7 +1,5 @@
 import 'dart:async';
 import 'dart:collection';
-import 'dart:math';
-import 'dart:math';
 import 'dart:io';
 import 'package:path_provider/path_provider.dart';
 import 'package:agora_rtc_engine/agora_rtc_engine.dart';
@@ -14,7 +12,6 @@ import '../models/connectcall_user.dart';
 import 'connectcall_permission_service.dart';
 import 'connectcall_push_service.dart';
 import 'connectcall_agora_audio_capture.dart';
-import 'connectcall_stt_service.dart';
 
 /// Manages the Agora RTC engine lifecycle and Firestore call documents.
 ///
@@ -51,10 +48,6 @@ class ConnectCallCallingService extends ChangeNotifier {
 
   // PhaseGuard STT Integration
   final AgoraAudioCaptureService _audioCapture = AgoraAudioCaptureService();
-  final ConnectCallSttService _sttService = ConnectCallSttService();
-  Timer? _sttTimer;
-  List<int> _audioBuffer = [];
-  bool _scamDetected = false;
 
   // ── Getters ──────────────────────────────────────────────────────────────
 
@@ -740,12 +733,6 @@ class ConnectCallCallingService extends ChangeNotifier {
     } catch (_) {}
   }
 
-  String _randomString(int length) {
-    const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
-    final rng = Random();
-    return List.generate(length, (_) => chars[rng.nextInt(chars.length)])
-        .join();
-  }
 
   @override
   void dispose() {

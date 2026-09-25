@@ -5,49 +5,59 @@ library app_theme;
 import 'package:flutter/material.dart';
 
 class AppColors {
-  // Primary palette
-  static const primary = Color(0xFF6C63FF);
-  static const primaryDark = Color(0xFF4F46E5);
-  static const primaryLight = Color(0xFF9C59FF);
+  // Primary palette (Electric Blue: #1455D9 -> #2678FF)
+  static const primary = Color(0xFF2678FF);
+  static const primaryDark = Color(0xFF1455D9);
+  static const primaryLight = Color(0xFF4A90E2);
   static const onPrimary = Colors.white;
-  static const primary10 = Color(0x1A6C63FF);
-  static const primary20 = Color(0x336C63FF);
+  static const primary10 = Color(0x1A2678FF);
+  static const primary20 = Color(0x332678FF);
   static const onPrimary10 = Color(0x1AFFFFFF);
 
   // Secondary
-  static const secondary = Color(0xFF9C59FF);
+  static const secondary = Color(0xFF1455D9);
   static const onSecondary = Colors.white;
-  static const secondary20 = Color(0x339C59FF);
+  static const secondary20 = Color(0x332678FF);
 
   // Tertiary (danger / decline)
   static const tertiary = Color(0xFFEF4444);
 
-  // Background
-  static const primaryBackground = Color(0xFF0F0E1A);
-  static const secondaryBackground = Color(0xFF1E1D2E);
-  static const surfaceVariant = Color(0xFF252438);
-  static const surface30 = Color(0x4D252438);
-  static const surface40 = Color(0x66252438);
-  static const surface20 = Color(0x33252438);
+  // Background (pure/deep black #050505 - #080808)
+  static const primaryBackground = Color(0xFF050505);
+  static const secondaryBackground = Color(0xFF101114);
+  static const surfaceVariant = Color(0xFF15171B);
+  static const surface30 = Color(0x4D15171B);
+  static const surface40 = Color(0x6615171B);
+  static const surface20 = Color(0x3315171B);
 
-  // Text
+  // Text (white primary, muted gray #8A8F98 secondary)
   static const primaryText = Colors.white;
-  static const secondaryText = Color(0xFF9A97C5);
-  static const accent3 = Color(0xFF6A6890);
+  static const secondaryText = Color(0xFF8A8F98);
+  static const accent3 = Color(0xFF6B7280);
 
-  // Borders
-  static const alternate = Color(0xFF3D3B5E);
+  // Borders (1px hairline: rgba(255,255,255,0.08))
+  static const alternate = Color(0x14FFFFFF);
 
-  // Semantic
-  static const success = Color(0xFF4ADE80);
+  // Semantic (green #2ECC71 for safe, red #EF4444 for destructive)
+  static const success = Color(0xFF2ECC71);
   static const error = Color(0xFFEF4444);
   static const warning = Color(0xFFF59E0B);
 
   // Utility
   static const onSurface = Colors.white;
-  static const fullContrast = Color(0x266C63FF);
-  static const onPrimaryContainer = Color(0xFFE0DEFF);
+  static const fullContrast = Color(0x262678FF);
+  static const onPrimaryContainer = Color(0xFFD6E4FF);
   static const onError = Colors.white;
+
+  // Electric Blue Gradient & Glow
+  static const electricBlueStart = Color(0xFF1455D9);
+  static const electricBlueEnd = Color(0xFF2678FF);
+  static const electricGradient = LinearGradient(
+    colors: [electricBlueStart, electricBlueEnd],
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+  );
+  static const electricGlow = Color(0x732678FF); // rgba(38,120,255,0.45)
 }
 
 class AppTextStyles {

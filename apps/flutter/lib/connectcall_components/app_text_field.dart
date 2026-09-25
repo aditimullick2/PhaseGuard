@@ -38,10 +38,7 @@ class AppTextField extends StatelessWidget {
     this.onChanged,
   });
 
-  Color get _bg => switch (variant) {
-        'filled' => AppColors.secondaryBackground,
-        _ => Colors.transparent,
-      };
+
 
   Color get _borderColor {
     if (error) return AppColors.error;

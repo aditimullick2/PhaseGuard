@@ -7,7 +7,7 @@ import '../components/app_text_field.dart';
 import '../components/animated_gif_background.dart';
 import '../components/animated_gradient_bg.dart';
 
-import 'home_screen.dart';
+import 'connectcall_full_home_screen.dart';
 
 class SignupScreen extends ConsumerStatefulWidget {
   const SignupScreen({super.key});

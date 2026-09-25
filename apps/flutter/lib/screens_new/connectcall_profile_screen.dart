@@ -11,7 +11,7 @@ import '../l10n/app_translations.dart';
 import '../components/app_theme.dart';
 import '../components/animated_gif_background.dart';
 import '../components/app_button.dart';
-import 'login_screen.dart';
+import 'connectcall_login_screen.dart';
 
 class ProfileScreen extends ConsumerStatefulWidget {
   final UserModel user;
@@ -196,69 +196,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     } catch (e) {
       _showSnack('Failed to update photo.');
     }
-  }
-
-  Future<void> _handlePermission(Permission permission, String label) async {
-    final status = await permission.request();
-    if (!mounted) return;
-
-    if (status.isGranted) {
-      _showSnack('$label access granted ✓');
-    } else if (status.isPermanentlyDenied) {
-      await showDialog<void>(
-        context: context,
-        builder: (ctx) => Dialog(
-          backgroundColor: AppColors.secondaryBackground,
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-          child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(Icons.block_rounded,
-                    color: AppColors.error, size: 40),
-                const SizedBox(height: 16),
-                Text('$label Permission Denied',
-                    style: AppTextStyles.titleMedium),
-                const SizedBox(height: 12),
-                Text(
-                  '$label access was permanently denied. Open Settings to enable it.',
-                  style: AppTextStyles.bodyMedium
-                      .copyWith(color: AppColors.secondaryText),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 24),
-                Row(
-                  children: [
-                    Expanded(
-                      child: AppButton(
-                        content: 'Cancel',
-                        variant: 'outline',
-                        onTap: () => Navigator.pop(ctx),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: AppButton(
-                        content: 'Open Settings',
-                        onTap: () {
-                          Navigator.pop(ctx);
-                          openAppSettings();
-                        },
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ),
-      );
-    } else {
-      _showSnack('$label access denied. You can change this in Settings.');
-    }
-    _refreshPermissionStatus();
   }
 
   void _showHelpCenter() {

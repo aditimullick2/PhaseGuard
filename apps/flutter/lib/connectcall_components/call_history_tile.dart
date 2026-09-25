@@ -72,14 +72,15 @@ class CallHistoryTile extends StatelessWidget {
                     width: 48,
                     height: 48,
                     decoration: BoxDecoration(
-                      color: AppColors.primary10,
+                      color: const Color(0xFF10141E),
                       shape: BoxShape.circle,
+                      border: Border.all(color: const Color(0x402678FF), width: 1),
                     ),
                     child: Center(
                       child: Text(
                         _initials,
                         style: AppTextStyles.labelMedium.copyWith(
-                          color: AppColors.primary,
+                          color: Colors.white,
                           fontSize: 18,
                           fontWeight: FontWeight.w600,
                         ),
@@ -141,19 +142,26 @@ class CallHistoryTile extends StatelessWidget {
             Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                // Video/audio call back button
+                // Video/audio call back button (electric blue tint with soft glow)
                 GestureDetector(
                   onTap: onCallBack,
                   child: Container(
                     width: 40,
                     height: 40,
                     decoration: BoxDecoration(
-                      color: AppColors.primary10,
+                      color: const Color(0x262678FF),
                       shape: BoxShape.circle,
+                      border: Border.all(color: const Color(0x402678FF), width: 1),
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xFF2678FF).withValues(alpha: 0.25),
+                          blurRadius: 10,
+                        ),
+                      ],
                     ),
                     child: Icon(
                       isVideo ? Icons.videocam_rounded : Icons.call_rounded,
-                      color: AppColors.primary,
+                      color: const Color(0xFF2678FF),
                       size: 20,
                     ),
                   ),
@@ -171,7 +179,7 @@ class CallHistoryTile extends StatelessWidget {
                       decoration: const BoxDecoration(shape: BoxShape.circle),
                       child: const Icon(
                         Icons.delete_outline_rounded,
-                        color: AppColors.secondaryText,
+                        color: Color(0xFF8A8F98),
                         size: 20,
                       ),
                     ),
@@ -219,8 +227,9 @@ class _TabGroupState extends State<TabGroup> {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
+        color: const Color(0xFF101114),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.alternate, width: 1),
+        border: Border.all(color: const Color(0x14FFFFFF), width: 1),
       ),
       child: Padding(
         padding: const EdgeInsets.all(4),
@@ -234,12 +243,26 @@ class _TabGroupState extends State<TabGroup> {
                   widget.onChanged(i);
                 },
                 child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 200),
+                  duration: const Duration(milliseconds: 180),
                   decoration: BoxDecoration(
-                    color: isSelected
-                        ? AppColors.secondary20
-                        : Colors.transparent,
+                    gradient: isSelected
+                        ? const LinearGradient(
+                            colors: [Color(0xFF1455D9), Color(0xFF2678FF)],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          )
+                        : null,
+                    color: isSelected ? null : Colors.transparent,
                     borderRadius: BorderRadius.circular(8),
+                    boxShadow: isSelected
+                        ? [
+                            BoxShadow(
+                              color: const Color(0xFF2678FF).withValues(alpha: 0.40),
+                              blurRadius: 12,
+                              spreadRadius: 0,
+                            ),
+                          ]
+                        : null,
                   ),
                   padding: const EdgeInsets.symmetric(
                       horizontal: 12, vertical: 8),
@@ -248,8 +271,10 @@ class _TabGroupState extends State<TabGroup> {
                     textAlign: TextAlign.center,
                     style: AppTextStyles.labelMedium.copyWith(
                       color: isSelected
-                          ? AppColors.primaryText
-                          : AppColors.secondaryText,
+                          ? Colors.white
+                          : const Color(0xFF8A8F98),
+                      fontWeight:
+                          isSelected ? FontWeight.w700 : FontWeight.w500,
                     ),
                   ),
                 ),

@@ -12,7 +12,6 @@ import '../components/app_theme.dart';
 import '../components/bottom_nav.dart';
 import '../components/avatar_status.dart';
 import '../components/contact_tile.dart';
-import '../components/animated_gif_background.dart';
 import '../components/animated_gradient_bg.dart';
 import '../components/app_button.dart';
 import '../components/security_overlay_modal.dart';
@@ -125,14 +124,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           },
         );
 
-        // Determine background gif per tab
-        final String? bgGif = switch (_selectedIndex) {
-          0 => 'assets/background/home_bg.gif',
-          1 => 'assets/background/contacts_bg.gif',
-          2 => 'assets/background/history_bg.gif',
-          _ => null, // Profile has its own background internally
-        };
-
         return Scaffold(
           backgroundColor: AppColors.primaryBackground,
           extendBody: true,
@@ -140,16 +131,21 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           appBar: _selectedIndex != 3 ? _buildAppBar(user) : null,
           body: Stack(
             children: [
-              // Animated background (tabs 0–2)
-              if (bgGif != null)
-                Positioned.fill(
-                  child: AnimatedGifBackground(
-                    key: ValueKey(_selectedIndex),
-                    assetPath: bgGif,
-                    overlayOpacity: _selectedIndex == 2 ? 0.78 : 0.6,
-                    child: const SizedBox.shrink(),
+              // Subtle dark gradient background (pure black #050505 - #080808)
+              Positioned.fill(
+                child: Container(
+                  decoration: const BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        Color(0xFF080808),
+                        Color(0xFF050505),
+                      ],
+                    ),
                   ),
                 ),
+              ),
 
               // Tab content
               SafeArea(
@@ -531,16 +527,26 @@ class _QuickCard extends StatelessWidget {
                 width: 44,
                 height: 44,
                 decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.15),
+                  color: const Color(0xFF2678FF).withValues(alpha: 0.15),
                   shape: BoxShape.circle,
+                  border: Border.all(
+                    color: const Color(0xFF2678FF).withValues(alpha: 0.35),
+                    width: 1,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFF2678FF).withValues(alpha: 0.25),
+                      blurRadius: 12,
+                    ),
+                  ],
                 ),
-                child: Icon(icon, color: color, size: 22),
+                child: Icon(icon, color: const Color(0xFF2678FF), size: 22),
               ),
               const SizedBox(height: 12),
-              Text(label, style: AppTextStyles.titleSmall),
+              Text(label, style: AppTextStyles.titleSmall.copyWith(color: Colors.white)),
               const SizedBox(height: 2),
               Text(sublabel,
-                  style: AppTextStyles.bodySmall,
+                  style: AppTextStyles.bodySmall.copyWith(color: const Color(0xFF8A8F98)),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis),
             ],
@@ -617,12 +623,18 @@ class _StatItem extends StatelessWidget {
         children: [
           Text(value,
               style: AppTextStyles.titleLarge.copyWith(
-                color: AppColors.primary,
+                color: const Color(0xFF2678FF),
                 fontSize: 28,
                 fontWeight: FontWeight.bold,
+                shadows: [
+                  Shadow(
+                    color: const Color(0xFF2678FF).withValues(alpha: 0.65),
+                    blurRadius: 16,
+                  ),
+                ],
               )),
           const SizedBox(height: 4),
-          Text(label, style: AppTextStyles.bodySmall),
+          Text(label, style: AppTextStyles.bodySmall.copyWith(color: const Color(0xFF8A8F98))),
         ],
       ),
     );

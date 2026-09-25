@@ -9,7 +9,7 @@ import '../providers/providers.dart';
 import '../providers/locale_provider.dart';
 import '../l10n/app_translations.dart';
 import '../components/app_theme.dart';
-import '../components/animated_gif_background.dart';
+
 import '../components/app_button.dart';
 import 'login_screen.dart';
 import 'voice_setup_screen.dart';
@@ -199,69 +199,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     }
   }
 
-  Future<void> _handlePermission(Permission permission, String label) async {
-    final status = await permission.request();
-    if (!mounted) return;
-
-    if (status.isGranted) {
-      _showSnack('$label access granted ✓');
-    } else if (status.isPermanentlyDenied) {
-      await showDialog<void>(
-        context: context,
-        builder: (ctx) => Dialog(
-          backgroundColor: AppColors.secondaryBackground,
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-          child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(Icons.block_rounded,
-                    color: AppColors.error, size: 40),
-                const SizedBox(height: 16),
-                Text('$label Permission Denied',
-                    style: AppTextStyles.titleMedium),
-                const SizedBox(height: 12),
-                Text(
-                  '$label access was permanently denied. Open Settings to enable it.',
-                  style: AppTextStyles.bodyMedium
-                      .copyWith(color: AppColors.secondaryText),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 24),
-                Row(
-                  children: [
-                    Expanded(
-                      child: AppButton(
-                        content: 'Cancel',
-                        variant: 'outline',
-                        onTap: () => Navigator.pop(ctx),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: AppButton(
-                        content: 'Open Settings',
-                        onTap: () {
-                          Navigator.pop(ctx);
-                          openAppSettings();
-                        },
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ),
-      );
-    } else {
-      _showSnack('$label access denied. You can change this in Settings.');
-    }
-    _refreshPermissionStatus();
-  }
-
   void _showHelpCenter() {
     showModalBottomSheet<void>(
       context: context,
@@ -368,10 +305,18 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   alignment: const AlignmentDirectional(0, 0),
                   children: [
                     Positioned.fill(
-                      child: AnimatedGifBackground(
-                        assetPath: 'assets/background/profile_bg.gif',
-                        overlayOpacity: 0.6,
-                        child: const SizedBox.shrink(),
+                      child: Container(
+                        decoration: const BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                            colors: [
+                              Color(0xFF0D1526),
+                              Color(0xFF080808),
+                              Color(0xFF050505),
+                            ],
+                          ),
+                        ),
                       ),
                     ),
                     SafeArea(
@@ -491,14 +436,28 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                             Navigator.push(context, MaterialPageRoute(builder: (_) => const VoiceIdSetupScreen()));
                           },
                           trailing: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
                             decoration: BoxDecoration(
-                              color: AppColors.primary.withValues(alpha: 0.1),
+                              gradient: const LinearGradient(
+                                colors: [Color(0xFF1455D9), Color(0xFF2678FF)],
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                              ),
                               borderRadius: BorderRadius.circular(8),
+                              boxShadow: const [
+                                BoxShadow(
+                                  color: Color(0x732678FF), // rgba(38,120,255,0.45)
+                                  blurRadius: 16,
+                                  spreadRadius: 0,
+                                ),
+                              ],
                             ),
                             child: Text(
                               widget.user.voiceProfileVersion != null ? 'Re-record' : 'Setup',
-                              style: AppTextStyles.labelMedium.copyWith(color: AppColors.primary),
+                              style: AppTextStyles.labelMedium.copyWith(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
                           ),
                         ),

@@ -1,6 +1,5 @@
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
-import 'package:flutter_shader_kit/flutter_shaders.dart';
 
 
 //  AnimatedGradientBg — simulates FbmGradientShaderFill
@@ -46,32 +45,7 @@ class AnimatedGradientBg extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // HERO smoky animated background
-    if (preset == GradientPreset.hero) {
-      return ClipRRect(
-        borderRadius: borderRadius ?? BorderRadius.zero,
-        child: SizedBox(
-          height: height,
-          width: double.infinity,
-          child: CloudShader(
-            style: CloudShaderStyle.realistic,
-            animate: true,
-            animationSpeed: 0.30,
-            cloudDensity: 1.15,
-            noisiness: 0.20,
-            flowSpeed: 0.08,
-            cloudHeight: 2.5,
-            brightness: 0.50,
-            opacity: 0.90,
-            skyColor: const Color(0xFF080D18),
-            cloudColor: const Color(0xFF73767D),
-            child: child,
-          ),
-        ),
-      );
-    }
-
-    // Other presets — keep your existing gradients.
+    // Subtle static dark gradient for hero (replacing smoky nebula texture)
     return Container(
       height: height,
       width: double.infinity,
@@ -88,54 +62,65 @@ class AnimatedGradientBg extends StatelessWidget {
     switch (preset) {
       case GradientPreset.videoCall:
         return const LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
           colors: [
-            Color(0xFF4F46E5),
-            Color(0xFF7C3AED),
-            Color(0xFF8621A6),
-            Color(0xFF161B26),
+            Color(0xFF0E1A33),
+            Color(0xFF091020),
+            Color(0xFF050505),
           ],
         );
 
       case GradientPreset.subtle:
         return const LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
           colors: [
-            Color(0xFF111827),
-            Color(0xFF0F172A),
-            Color(0xFF080D18),
+            Color(0xFF080808),
+            Color(0xFF050505),
           ],
         );
 
       case GradientPreset.card:
         return const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
           colors: [
-            Color(0xFF1E293B),
-            Color(0xFF111827),
+            Color(0xFF15171B),
+            Color(0xFF101114),
           ],
         );
 
       case GradientPreset.incomingCall:
         return const LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
           colors: [
-            Color(0xFF312E81),
-            Color(0xFF111827),
-            Color(0xFF080D18),
+            Color(0xFF0F2248),
+            Color(0xFF091224),
+            Color(0xFF050505),
           ],
         );
 
       case GradientPreset.callActive:
         return const LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
           colors: [
-            Color(0xFF4F46E5),
-            Color(0xFF7C3AED),
-            Color(0xFF111827),
+            Color(0xFF0E1D3D),
+            Color(0xFF081020),
+            Color(0xFF050505),
           ],
         );
 
       case GradientPreset.hero:
         return const LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
           colors: [
-            Color(0xFF080D18),
-            Color(0xFF111827),
+            Color(0xFF0A1224),
+            Color(0xFF080808),
+            Color(0xFF050505),
           ],
         );
 
@@ -144,11 +129,11 @@ class AnimatedGradientBg extends StatelessWidget {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            Color(0xCC6C63FF),
-            Color(0xFF1E1D2E),
-            Color(0xFF0F0E1A),
+            Color(0x331455D9),
+            Color(0xFF101114),
+            Color(0xFF050505),
           ],
-          stops: [0.0, 0.5, 1.0],
+          stops: [0.0, 0.45, 1.0],
         );
     }
   }
@@ -156,7 +141,7 @@ class AnimatedGradientBg extends StatelessWidget {
 
 
 
-//  GlassmorphicContainer — frosted glass effect
+//  GlassmorphicContainer — charcoal surface with hairline border
 
 
 class GlassmorphicContainer extends StatelessWidget {
@@ -181,20 +166,20 @@ class GlassmorphicContainer extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final defaultBgColor = isDark 
-        ? Colors.white.withValues(alpha: 0.05) 
-        : Colors.white.withValues(alpha: 0.6);
+        ? const Color(0xFF101114).withValues(alpha: 0.90) 
+        : Colors.white.withValues(alpha: 0.9);
     final defaultBorder = Border.all(
-        color: Colors.white.withValues(alpha: 0.1), width: 1);
+        color: Colors.white.withValues(alpha: 0.08), width: 1); // 1px hairline border
 
     return Container(
       decoration: BoxDecoration(
         borderRadius: borderRadius ?? BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.05),
-            blurRadius: 32,
-            spreadRadius: -4,
-            offset: const Offset(0, 8),
+            color: Colors.black.withValues(alpha: isDark ? 0.35 : 0.05),
+            blurRadius: 24,
+            spreadRadius: -2,
+            offset: const Offset(0, 6),
           ),
         ],
       ),

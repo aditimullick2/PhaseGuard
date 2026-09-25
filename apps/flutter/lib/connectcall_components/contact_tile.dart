@@ -84,6 +84,7 @@ class ContactTile extends StatelessWidget {
                         _CallIconButton(
                           icon: Icons.videocam_rounded,
                           color: AppColors.primary,
+                          hasGlow: true,
                           onTap: onVideoCall!,
                         ),
                       ],
@@ -106,27 +107,75 @@ class ContactTile extends StatelessWidget {
   }
 }
 
-class _CallIconButton extends StatelessWidget {
+class _CallIconButton extends StatefulWidget {
   final IconData icon;
   final Color color;
+  final bool hasGlow;
   final VoidCallback onTap;
 
-  const _CallIconButton(
-      {required this.icon, required this.color, required this.onTap});
+  const _CallIconButton({
+    required this.icon,
+    required this.color,
+    this.hasGlow = false,
+    required this.onTap,
+  });
+
+  @override
+  State<_CallIconButton> createState() => _CallIconButtonState();
+}
+
+class _CallIconButtonState extends State<_CallIconButton> {
+  bool _isPressed = false;
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: 36,
-        height: 36,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          color: color.withValues(alpha: 0.15),
-          border: Border.all(color: color.withValues(alpha: 0.3)),
+      onTapDown: (_) => setState(() => _isPressed = true),
+      onTapUp: (_) {
+        setState(() => _isPressed = false);
+        widget.onTap();
+      },
+      onTapCancel: () => setState(() => _isPressed = false),
+      child: AnimatedScale(
+        scale: _isPressed ? 0.90 : 1.0,
+        duration: const Duration(milliseconds: 160),
+        curve: Curves.easeOutCubic,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 160),
+          width: 38,
+          height: 38,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: widget.hasGlow
+                ? const Color(0xFF1455D9)
+                : widget.color.withValues(alpha: 0.15),
+            border: Border.all(
+              color: widget.hasGlow
+                  ? const Color(0xFF2678FF)
+                  : widget.color.withValues(alpha: 0.4),
+              width: 1,
+            ),
+            boxShadow: widget.hasGlow
+                ? [
+                    BoxShadow(
+                      color: const Color(0xFF2678FF).withValues(alpha: _isPressed ? 0.75 : 0.45),
+                      blurRadius: _isPressed ? 22 : 16,
+                      spreadRadius: _isPressed ? 1 : 0,
+                    ),
+                  ]
+                : [
+                    BoxShadow(
+                      color: widget.color.withValues(alpha: _isPressed ? 0.4 : 0.15),
+                      blurRadius: 10,
+                    ),
+                  ],
+          ),
+          child: Icon(
+            widget.icon,
+            color: widget.hasGlow ? Colors.white : widget.color,
+            size: 19,
+          ),
         ),
-        child: Icon(icon, color: color, size: 18),
       ),
     );
   }
@@ -153,25 +202,26 @@ class AppSearchBar extends StatelessWidget {
   Widget build(BuildContext context) {
     return GlassmorphicContainer(
       borderRadius: BorderRadius.circular(AppRadius.full),
-      color: Colors.white.withValues(alpha: 0.1),
+      color: const Color(0xFF15171B),
+      border: Border.all(color: const Color(0x14FFFFFF), width: 1),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
         child: Row(
           children: [
-            Icon(Icons.search_rounded,
-                color: AppColors.secondaryText, size: 20),
+            const Icon(Icons.search_rounded,
+                color: Color(0xFF8A8F98), size: 20),
             const SizedBox(width: AppSpacing.md),
             Expanded(
               child: TextField(
                 onChanged: onChanged,
-                style: AppTextStyles.bodyMedium,
+                style: AppTextStyles.bodyMedium.copyWith(color: Colors.white),
                 decoration: InputDecoration(
                   isDense: true,
                   filled: false,
                   fillColor: Colors.transparent,
                   hintText: hint,
                   hintStyle: AppTextStyles.bodyMedium
-                      .copyWith(color: AppColors.accent3),
+                      .copyWith(color: const Color(0xFF6B7280)),
                   border: InputBorder.none,
                   enabledBorder: InputBorder.none,
                   focusedBorder: InputBorder.none,
