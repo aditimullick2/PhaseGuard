@@ -178,7 +178,7 @@ class CallInitResponse(BaseModel):
     expires_in_seconds: int
 
 class ScambaitRequest(BaseModel):
-    pass  # No body needed; call_id from path, token from header
+    voice_id: str | None = None  # Optional voice ID for TTS cloning
 
 class EscalationDraftRequest(BaseModel):
     destination_email: str | None = None
@@ -691,6 +691,7 @@ async def init_call(request: Request, body: CallInitRequest = Body(...)) -> Call
 async def activate_scambait(
     request: Request,
     call_id: str,
+    payload: ScambaitRequest | None = None,
     credentials: HTTPAuthorizationCredentials = Depends(_bearer),
 ) -> dict:
     """
@@ -707,6 +708,10 @@ async def activate_scambait(
     session = manager.get_session(call_id)
     if not session:
         raise HTTPException(status_code=404, detail="Call session not found")
+
+    if payload and payload.voice_id:
+        session.user_voice_id = payload.voice_id
+        logger.info("Voice clone: voice_id=%r stored via REST activation for call_id=%r", payload.voice_id, call_id)
 
     manager.activate_scambaiter(call_id)
     logger.info("Scambaiter activated via REST: call_id=%r", call_id)
