@@ -519,11 +519,7 @@ async def _fire_scambaiter_turn(call_id: str, caller_speech: str, turn_id: str) 
     logger.info("[SCAMBAITER][%s][%s] TTS_START: voice_id=%r, response_len=%d",
                call_id, turn_id, session.user_voice_id, len(full_response_text))
 
-    # Voice assertion: if user has configured voice, voice_id must NOT be None
-    if session.user_voice_id is None:
-        logger.error("[SCAMBAITER][%s][%s] TTS_BLOCKED_NO_CONFIGURED_VOICE: voice_id=None",
-                    call_id, turn_id)
-        return full_response_text  # Return text but don't TTS without configured voice
+    # The TTS engine (synthesize_speech) handles voice fallbacks natively.
 
     audio_bytes = await synthesize_speech(full_response_text, call_id=call_id)
     
