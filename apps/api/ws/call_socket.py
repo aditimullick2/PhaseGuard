@@ -130,17 +130,17 @@ def _is_duplicate_utterance(transcript: str, recent_utterances: list[str]) -> bo
     # Normalize transcript
     normalized = transcript.lower().strip()
     
+    import re
+    transcript_clean = re.sub(r'[^\w\s]', '', normalized)
+    
     for recent in recent_utterances[-3:]:  # Check last 3 utterances
         recent_normalized = recent.lower().strip()
+        recent_clean = re.sub(r'[^\w\s]', '', recent_normalized)
         
-        # Exact match
-        if normalized == recent_normalized:
-            return True
-        
-        # Similarity check (simple ratio for now)
-        if len(normalized) > 5 and len(recent_normalized) > 5:
-            # Check if one is substring of the other
-            if normalized in recent_normalized or recent_normalized in normalized:
+        overlap = sum(1 for word in transcript_clean.split() if word in recent_clean.split())
+        if overlap > 0 and len(transcript_clean.split()) > 0:
+            overlap_ratio = overlap / len(transcript_clean.split())
+            if overlap_ratio > 0.5:
                 return True
     
     return False
@@ -565,11 +565,15 @@ async def _fire_scambaiter_turn(call_id: str, caller_speech: str, turn_id: str) 
             logger.info("[SCAMBAITER][%s][%s] AUDIO_SENT: %d bytes, voice_id=%s", 
                        call_id, turn_id, len(audio_bytes), session.user_voice_id)
             
-            # Mark playback as complete after a short delay to ensure audio is fully sent
-            await asyncio.sleep(0.1)  # Reduced from 500ms to 100ms for faster response
+            # Compute duration from audio_bytes (16kHz, LINEAR16 = 2 bytes per sample)
+            duration_s = len(audio_bytes) / (16000 * 2)
+            duration_s = max(0.3, min(15.0, duration_s))
+            
+            # Wait for audio to actually play out on the client before releasing the gate
+            await asyncio.sleep(duration_s)
             session.is_ai_playing = False
             session.current_playback_turn_id = None
-            logger.info("[SCAMBAITER][%s][%s] PLAYBACK_END", call_id, turn_id)
+            logger.info("[SCAMBAITER][%s][%s] PLAYBACK_END: duration=%.2fs", call_id, turn_id, duration_s)
             logger.info("[SCAMBAITER][%s] AI_PLAYBACK_GATE_OFF", call_id)
             
         except Exception as exc:
@@ -1075,7 +1079,11 @@ async def call_websocket(websocket: WebSocket, call_id: str) -> None:
                         # Level 3 text analysis request from Flutter
                         text = ctrl.get("text", "")
                         if text and session.state == CallState.SCAMBAITER_ACTIVE:
-                            session.scambaiter_queue.put_nowait(text)
+                            # FIX 1: Prevent duplicate audio bug by NOT pushing client-sent transcripts
+                            # into scambaiter_queue when SCAMBAITER_ACTIVE. The backend's own _stt_loop()
+                            # is already feeding the queue, so pushing here causes duplicate turns.
+                            logger.info("Ignoring client transcript analysis request while scambaiter is active to prevent duplicates.")
+                            pass
                         continue
 
                     else:
