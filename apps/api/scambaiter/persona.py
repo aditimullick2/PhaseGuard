@@ -247,6 +247,8 @@ async def _legacy_generate_scambaiter_response(
     call_id: str = "",
 ) -> str | None:
     """
+    Legacy scambaiter response generator (used when voice_agent_enabled=False).
+    """
     import os
 
     from core.config import get_settings

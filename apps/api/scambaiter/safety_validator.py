@@ -14,7 +14,8 @@ _SENSITIVE_CREDENTIALS_PATTERNS = [
 
 # Layer 2: Reject threats, harassment, authority impersonation, emergencies
 _DANGEROUS_BEHAVIOR_PATTERNS = [
-    re.compile(r"\b(police|cbi|fbi|arrest|warrant|prison|jail)\b", re.IGNORECASE),
+    re.compile(r"\b(i am|i'm|we are|we're|this is)\s+(with|from|the)\s+(police|cbi|fbi|irs|government)\b", re.IGNORECASE),
+    re.compile(r"\b(will arrest|put you in jail|send police)\b", re.IGNORECASE),
     re.compile(r"\b(kill|hurt|threat|sue)\b", re.IGNORECASE),
     re.compile(r"emergency", re.IGNORECASE),
     re.compile(r"hospital|accident", re.IGNORECASE),
