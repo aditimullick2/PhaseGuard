@@ -341,6 +341,13 @@ class ExtractedClaim(TypedDict):
     hardcoded_critical: bool               # True if deterministic rule fired
     hardcoded_category: str | None      # Category hint from hardcoded rule, if fired
     multilingual_result: dict | None      # P1: Multilingual keyword detection result
+    claimed_department: str | None
+    claimed_case_number: str | None
+    claimed_reference_number: str | None
+    requested_payment: str | None
+    requested_information: list[str]
+    claimed_deadline: str | None
+    urgency: str  # "LOW" | "MEDIUM" | "HIGH"
 
 
 # ── Deterministic Instant-CRITICAL pattern groups ─────────────────────────────

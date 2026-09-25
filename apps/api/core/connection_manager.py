@@ -123,6 +123,9 @@ class CallSession:
     # Fish Audio reference_id after voice enrollment (set via 'set_voice_id' WS message)
     user_voice_id: str | None = None
 
+    # Voice Agent Structured Context
+    conversation_context: dict[str, Any] | None = None
+
 
 class ConnectionManager:
     """

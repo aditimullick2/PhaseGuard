@@ -208,6 +208,14 @@ class Settings(BaseSettings):
         default=0.6, description="PDI score above which voice is flagged as synthetic"
     )
 
+    # ── Voice-to-Voice Conversation Agent ─────────────────────────────────────
+    voice_agent_enabled: bool = Field(default=False)
+    max_agent_turns: int = Field(default=10)
+    max_context_turns: int = Field(default=8)
+    max_agent_tokens: int = Field(default=300)
+    max_conversation_duration_s: int = Field(default=180)
+    agent_cooldown_seconds: float = Field(default=1.0)
+
     # ── Ingestion mode ────────────────────────────────────────────────────────
     ingestion_mode: Literal["browser_mic", "exotel", "twilio"] = Field(
         default="browser_mic",
