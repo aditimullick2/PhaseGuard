@@ -399,21 +399,25 @@ class _ScambaiterSessionState extends State<ScambaiterSession> {
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
                   color: isCaller
-                      ? PgColors.scam.withValues(alpha: 0.12)
+                      ? (context.read<SessionController>().isScamDetected ? PgColors.scam.withValues(alpha: 0.12) : PgColors.textMuted.withValues(alpha: 0.12))
                       : PgColors.accent.withValues(alpha: 0.12),
                   border: Border.all(
                     color: isCaller
-                        ? PgColors.scam.withValues(alpha: 0.4)
+                        ? (context.read<SessionController>().isScamDetected ? PgColors.scam.withValues(alpha: 0.4) : PgColors.textMuted.withValues(alpha: 0.4))
                         : PgColors.accent.withValues(alpha: 0.4),
                   ),
                   borderRadius: BorderRadius.circular(PgRadii.pill),
                 ),
                 child: Text(
-                  isCaller ? (context.read<SessionController>().callerNumber ?? 'Remote Caller') : 'PhaseGuard AI Persona',
+                  isCaller 
+                      ? (context.read<SessionController>().isScamDetected 
+                          ? 'Scammer (Detected)' 
+                          : (context.read<SessionController>().callerNumber ?? 'Remote Caller')) 
+                      : 'PhaseGuard AI Persona',
                   style: TextStyle(
                     fontSize: 10,
                     fontWeight: FontWeight.w700,
-                    color: isCaller ? PgColors.scam : PgColors.accent,
+                    color: isCaller ? (context.read<SessionController>().isScamDetected ? PgColors.scam : PgColors.textSecondary) : PgColors.accent,
                     letterSpacing: 0.3,
                   ),
                 ),
