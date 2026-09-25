@@ -14,6 +14,7 @@ import '../services/call_socket.dart';
 import '../services/offline_dossier_service.dart';
 import '../services/phone_call_monitor.dart';
 import '../services/deepfake_detector_service.dart';
+import '../services/scam_detector_service.dart';
 
 class SessionController extends ChangeNotifier {
   SessionController({ApiClient? api, CallSocket? socket})
@@ -44,6 +45,7 @@ class SessionController extends ChangeNotifier {
 
   // Deepfake parallel detection
   final _deepfakeDetector = DeepfakeDetectorService();
+  final _scamTextDetector = ScamDetectorService();
   final List<int> _deepfakeAudioBuffer = [];
   bool _isDeepfakeAnalysisRunning = false;
 
@@ -572,7 +574,23 @@ class SessionController extends ChangeNotifier {
           secondaryLanguages = (json['secondary_languages'] as List?)?.cast<String>() ?? [];
           
           notifyListeners(); // Force UI to rebuild with new transcript
-          // Backend handles all scam detection - no local processing
+          
+          // --- LEVEL 1: Local Scam Text Analysis (runs on every transcript update) ---
+          _scamTextDetector.analyze(liveTranscript).then((result) async {
+            if (result.isScam) {
+              isPotentialScam = true;
+              notifyListeners();
+              debugPrint('🚨 [LEVEL 1 LOCAL] Scam detected: ${result.reasoning}');
+            } else if (result.needsWebEscalation) {
+              debugPrint('🔍 [LEVEL 1 LOCAL] Uncertain or fact-check triggered. Escalating to WEB...');
+              // Fallback to web API only if escalated by local model
+              if (wsConnected) {
+                // The websocket is already doing this in the background, but if it wasn't:
+                // final backendAnalysis = await _api.analyzeScamText(liveTranscript);
+                // We rely on backend's 'factcheck_update' to fulfill this escalation in real-time.
+              }
+            }
+          });
         }
         break;
 
