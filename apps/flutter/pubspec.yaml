@@ -71,8 +71,6 @@ flutter:
     - assets/models/scam_detector.tflite
     - assets/models/tflite_metadata.json
     - assets/models/deepfake_detector.tflite
-    - assets/service_account.json
     - connectcall_assets/
     - connectcall_assets/background/
     - connectcall_assets/icons/
-    - connectcall_assets/service_account.json
