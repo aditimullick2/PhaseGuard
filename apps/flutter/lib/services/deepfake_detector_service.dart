@@ -6,6 +6,7 @@ import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:tflite_flutter/tflite_flutter.dart';
 import '../config/app_config.dart';
+import 'connectivity_monitor.dart';
 
 /// PhaseGuard 2-Level Deepfake Audio Detector
 ///
@@ -44,26 +45,29 @@ class DeepfakeDetectorService {
     }
   }
 
-  /// Analyze audio with PARALLEL PROCESSING (Local + Web)
-  /// Jo pehle aaye = use karo, Web result = FINAL
+  /// Analyze audio based on Connectivity (Web Priority, Local Offline)
   Stream<Map<String, dynamic>> analyze(Int16List pcmData) async* {
-    // PARALLEL: Local + Web simultaneously
-    // 1. Immediately run and yield local result (fastest, takes milliseconds)
-    final localFuture = _runLocalLayerAsync(pcmData);
-    final webFuture = _runServerLayerAsync(pcmData);
-    
-    // We yield local first since it's almost guaranteed to be first
-    final localResult = await localFuture;
-    yield localResult;
-    debugPrint('[DeepfakeDetector] First result yielded: local (${((localResult['confidence'] as num).toDouble() * 100).toStringAsFixed(1)}%)');
+    final connectivityMonitor = ConnectivityMonitor();
+    final isConnected = await connectivityMonitor.isConnected();
 
-    // 2. Wait for web result and yield it when it arrives (takes seconds)
-    try {
-      final webResult = await webFuture;
-      yield webResult;
-      debugPrint('[DeepfakeDetector] FINAL result yielded: web (${((webResult['confidence'] as num).toDouble() * 100).toStringAsFixed(1)}%)');
-    } catch (e) {
-      debugPrint('[DeepfakeDetector] Web analysis failed or timed out: $e. Falling back entirely to local.');
+    if (isConnected) {
+      // 1. ONLINE: Web gets priority (Web = FINAL)
+      try {
+        final webResult = await _runServerLayerAsync(pcmData);
+        yield webResult;
+        debugPrint('[DeepfakeDetector] ONLINE: FINAL result yielded from WEB (${((webResult['confidence'] as num).toDouble() * 100).toStringAsFixed(1)}%)');
+      } catch (e) {
+        // Fallback to local if web fails despite internet connection
+        debugPrint('[DeepfakeDetector] Web analysis failed ($e). Falling back to local model.');
+        final localResult = await _runLocalLayerAsync(pcmData);
+        yield localResult;
+      }
+    } else {
+      // 2. OFFLINE: Local model runs ONLY when internet is off
+      debugPrint('[DeepfakeDetector] OFFLINE: Running local TFLite model.');
+      final localResult = await _runLocalLayerAsync(pcmData);
+      yield localResult;
+      debugPrint('[DeepfakeDetector] OFFLINE result yielded: LOCAL (${((localResult['confidence'] as num).toDouble() * 100).toStringAsFixed(1)}%)');
     }
   }
 
