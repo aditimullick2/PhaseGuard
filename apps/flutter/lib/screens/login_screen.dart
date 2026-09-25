@@ -4,7 +4,6 @@ import '../providers/providers.dart';
 import '../components/app_theme.dart';
 import '../components/app_button.dart';
 import '../components/app_text_field.dart';
-import '../components/animated_gif_background.dart';
 import '../components/animated_gradient_bg.dart';
 import '../components/connect_call_logo.dart';
 import 'signup_screen.dart';
@@ -113,19 +112,15 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.primaryBackground,
+      backgroundColor: const Color(0xFF000000),
       extendBody: true,
       extendBodyBehindAppBar: true,
       body: SizedBox.expand(
         child: Stack(
         children: [
-          // Animated GIF Background
+          // Pure black background
           const Positioned.fill(
-            child: AnimatedGifBackground(
-              assetPath: 'assets/background/login_bg.gif',
-              overlayOpacity: 0.55,
-              child: SizedBox.shrink(),
-            ),
+            child: ColoredBox(color: Color(0xFF000000)),
           ),
           
           SafeArea(
@@ -152,6 +147,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       style: AppTextStyles.titleLarge.copyWith(
                         fontSize: 32,
                         fontWeight: FontWeight.w800,
+                        color: Colors.white,
                       ),
                       textAlign: TextAlign.center,
                     ),
@@ -161,7 +157,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     Text(
                       'Connect with anyone, anywhere.',
                       style: AppTextStyles.bodyMedium.copyWith(
-                        color: AppColors.secondaryText,
+                        color: const Color(0xFF888888),
                         fontSize: 15,
                       ),
                       textAlign: TextAlign.center,
@@ -175,7 +171,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       controller: _emailCtrl,
                       keyboardType: TextInputType.emailAddress,
                       icon: const Icon(Icons.email_outlined,
-                          color: AppColors.primary, size: 22),
+                          color: Color(0xFF2678FF), size: 22),
                       validator: (v) {
                         if (v == null || v.trim().isEmpty) {
                           return 'Enter your email';
@@ -193,7 +189,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       controller: _passwordCtrl,
                       obscureText: _obscurePassword,
                       icon: const Icon(Icons.lock_outline_rounded,
-                          color: AppColors.primary, size: 22),
+                          color: Color(0xFF2678FF), size: 22),
                       trailingWidget: GestureDetector(
                         onTap: () => setState(
                             () => _obscurePassword = !_obscurePassword),
@@ -201,7 +197,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           _obscurePassword
                               ? Icons.visibility_off_outlined
                               : Icons.visibility_outlined,
-                          color: AppColors.secondaryText,
+                          color: const Color(0xFF888888),
                           size: 20,
                         ),
                       ),
@@ -242,7 +238,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         child: Text(
                           'Forgot Password?',
                           style: AppTextStyles.bodyMedium.copyWith(
-                            color: AppColors.primary,
+                            color: const Color(0xFF2678FF),
                             fontWeight: FontWeight.w600,
                           ),
                         ),
@@ -255,21 +251,21 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       Container(
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          color: AppColors.error.withValues(alpha: 0.12),
+                          color: const Color(0xFFFF0000).withValues(alpha: 0.12),
                           borderRadius: BorderRadius.circular(10),
                           border: Border.all(
-                              color: AppColors.error.withValues(alpha: 0.3)),
+                              color: const Color(0xFFFF0000).withValues(alpha: 0.3)),
                         ),
                         child: Row(
                           children: [
                             const Icon(Icons.error_outline,
-                                color: AppColors.error, size: 18),
+                                color: Color(0xFFFF0000), size: 18),
                             const SizedBox(width: 8),
                             Expanded(
                               child: Text(
                                 _error!,
                                 style: const TextStyle(
-                                    color: AppColors.error, fontSize: 13),
+                                    color: Color(0xFFFF0000), fontSize: 13),
                               ),
                             ),
                           ],
@@ -291,17 +287,17 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     // Divider
                     Row(
                       children: [
-                        Expanded(child: Divider(color: AppColors.secondaryText.withValues(alpha: 0.3))),
+                        Expanded(child: Divider(color: const Color(0xFF888888).withValues(alpha: 0.3))),
                         Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 16),
                           child: Text(
                             'or continue with',
                             style: AppTextStyles.labelSmall.copyWith(
-                              color: AppColors.secondaryText,
+                              color: const Color(0xFF888888),
                             ),
                           ),
                         ),
-                        Expanded(child: Divider(color: AppColors.secondaryText.withValues(alpha: 0.3))),
+                        Expanded(child: Divider(color: const Color(0xFF888888).withValues(alpha: 0.3))),
                       ],
                     ),
                     const SizedBox(height: 24),
@@ -339,7 +335,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         Text(
                           "Don't have an account?",
                           style: AppTextStyles.bodyMedium.copyWith(
-                            color: AppColors.secondaryText,
+                            color: const Color(0xFF888888),
                           ),
                         ),
                         GestureDetector(
@@ -353,7 +349,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           child: Text(
                             'Create Account',
                             style: AppTextStyles.bodyMedium.copyWith(
-                              color: AppColors.primary,
+                              color: const Color(0xFF2678FF),
                               fontWeight: FontWeight.w600,
                             ),
                           ),

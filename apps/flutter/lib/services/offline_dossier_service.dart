@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:open_filex/open_filex.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';

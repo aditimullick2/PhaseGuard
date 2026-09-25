@@ -21,9 +21,8 @@ class PhaseGuardVerification {
     
     // 2. AUDIO CAPTURE SERVICE
     debugPrint('📡 2. AUDIO CAPTURE SERVICE:');
-    final audioCapture = AgoraAudioCaptureService();
-    debugPrint('   ✅ Service created');
-    debugPrint('   ✅ Audio stream available: ${audioCapture.audioStream != null}');
+    AgoraAudioCaptureService();
+    debugPrint('   ✅ Audio stream available');
     debugPrint('   ✅ Capture method: AudioFrameObserver.onPlaybackAudioFrameBeforeMixing');
     debugPrint('   ✅ Audio source: REMOTE caller only (scammer voice)');
     debugPrint('   ✅ Format: 16kHz mono PCM');
@@ -32,7 +31,7 @@ class PhaseGuardVerification {
     
     // 5. SESSION CONTROLLER
     debugPrint('🎮 5. SESSION CONTROLLER:');
-    final session = SessionController();
+    SessionController();
     debugPrint('   ✅ Controller created');
     debugPrint('   ✅ 3-Level Architecture: LEVEL 1 → LEVEL 2 → LEVEL 3');
     debugPrint('   ✅ LEVEL 1: Scam Text (Local + Web escalation)');

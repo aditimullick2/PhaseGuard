@@ -31,7 +31,8 @@ class AppBottomNav extends ConsumerWidget {
     return GlassmorphicContainer(
       borderRadius: BorderRadius.zero,
       padding: EdgeInsets.zero,
-      border: Border(top: BorderSide(color: Colors.white.withValues(alpha: 0.1), width: 1)),
+      color: const Color(0xF2080808),
+      border: const Border(top: BorderSide(color: Color(0x14FFFFFF), width: 1)),
       child: SafeArea(
         top: false,
         child: Padding(
@@ -42,73 +43,93 @@ class AppBottomNav extends ConsumerWidget {
               final isSelected = i == selectedIndex;
               final tab = _tabs[i];
               return _NavItem(
-                icon: tab.icon,
-                label: AppTranslations.get(locale, tab.labelKey),
-                isSelected: isSelected,
-                onTap: () => onTap(i),
-              );
-            }),
-          ),
-        ),
-      ),
-    );
-  }
-}
+                 icon: tab.icon,
+                 label: AppTranslations.get(locale, tab.labelKey),
+                 isSelected: isSelected,
+                 onTap: () => onTap(i),
+               );
+             }),
+           ),
+         ),
+       ),
+     );
+   }
+ }
 
-class _NavTab {
-  final IconData icon;
-  final String labelKey;
-  const _NavTab({required this.icon, required this.labelKey});
-}
+ class _NavTab {
+   final IconData icon;
+   final String labelKey;
+   const _NavTab({required this.icon, required this.labelKey});
+ }
 
-class _NavItem extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final bool isSelected;
-  final VoidCallback onTap;
+ class _NavItem extends StatelessWidget {
+   final IconData icon;
+   final String label;
+   final bool isSelected;
+   final VoidCallback onTap;
 
-  const _NavItem({
-    required this.icon,
-    required this.label,
-    required this.isSelected,
-    required this.onTap,
-  });
+   const _NavItem({
+     required this.icon,
+     required this.label,
+     required this.isSelected,
+     required this.onTap,
+   });
 
-  @override
-  Widget build(BuildContext context) {
-    final color =
-        isSelected ? AppColors.primary : AppColors.secondaryText;
+   @override
+   Widget build(BuildContext context) {
+     final color =
+         isSelected ? const Color(0xFF2678FF) : const Color(0xFF8A8F98);
 
-    return GestureDetector(
-      onTap: onTap,
-      behavior: HitTestBehavior.opaque,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-              decoration: BoxDecoration(
-                color: isSelected ? AppColors.primary20 : Colors.transparent,
-                borderRadius: BorderRadius.circular(AppRadius.full),
-              ),
-              child: Icon(icon, color: color, size: 22),
-            ),
-            const SizedBox(height: 2),
-            AnimatedDefaultTextStyle(
-              duration: const Duration(milliseconds: 200),
-              style: AppTextStyles.labelSmall.copyWith(
-                color: color,
-                fontWeight:
-                    isSelected ? FontWeight.w600 : FontWeight.normal,
-              ),
-              child: Text(label),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
+     return GestureDetector(
+       onTap: onTap,
+       behavior: HitTestBehavior.opaque,
+       child: Padding(
+         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+         child: Column(
+           mainAxisSize: MainAxisSize.min,
+           children: [
+             AnimatedContainer(
+               duration: const Duration(milliseconds: 180),
+               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+               decoration: BoxDecoration(
+                 color: isSelected ? const Color(0x2E2678FF) : Colors.transparent,
+                 borderRadius: BorderRadius.circular(AppRadius.full),
+                 border: isSelected
+                     ? Border.all(color: const Color(0x402678FF), width: 1)
+                     : null,
+                 boxShadow: isSelected
+                     ? [
+                         BoxShadow(
+                           color: const Color(0xFF2678FF).withValues(alpha: 0.40),
+                           blurRadius: 16,
+                           spreadRadius: 0,
+                         ),
+                       ]
+                     : null,
+               ),
+               child: Icon(icon, color: color, size: 22),
+             ),
+             const SizedBox(height: 2),
+             AnimatedDefaultTextStyle(
+               duration: const Duration(milliseconds: 180),
+               style: AppTextStyles.labelSmall.copyWith(
+                 color: color,
+                 fontWeight:
+                     isSelected ? FontWeight.w700 : FontWeight.w500,
+                 shadows: isSelected
+                     ? [
+                         Shadow(
+                           color: const Color(0xFF2678FF).withValues(alpha: 0.55),
+                           blurRadius: 10,
+                         ),
+                       ]
+                     : null,
+               ),
+               child: Text(label),
+             ),
+           ],
+         ),
+       ),
+     );
+   }
+ }

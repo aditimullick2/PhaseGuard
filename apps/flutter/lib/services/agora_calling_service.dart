@@ -1,6 +1,6 @@
 import 'dart:async';
+import 'dart:collection';
 import 'dart:io';
-import 'dart:typed_data';
 import 'package:agora_rtc_engine/agora_rtc_engine.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
@@ -19,11 +19,11 @@ class AgoraCallingService extends ChangeNotifier {
   bool _isMuted = false;
   bool _isSpeakerEnabled = false;
   bool _isCameraMuted = false;
-  bool _isSpeaker = false;
   bool _isVideoCall = false;
   bool _isJoined = false;
   bool _isConnected = false;
   int? _remoteUid;
+  int? _localUid;
   Timer? _callDurationTimer;
   int _callDuration = 0;
   String _connectionState = 'Disconnected';
@@ -320,7 +320,8 @@ class AgoraCallingService extends ChangeNotifier {
 
   void _onJoinChannelSuccess(RtcConnection connection, int elapsed) {
     _isJoined = true;
-    debugPrint('✅ Joined channel successfully');
+    _localUid = connection.localUid;
+    debugPrint('✅ Joined channel successfully (local uid: $_localUid)');
     notifyListeners();
   }
 
@@ -489,8 +490,6 @@ class AgoraCallingService extends ChangeNotifier {
   }
 
   // ── Scambaiter Audio Injection ───────────────────────────────────────────
-
-  int _effectIdCounter = 1;
 
   Uint8List _addWavHeader(Uint8List pcmBytes) {
     int channels = 1;

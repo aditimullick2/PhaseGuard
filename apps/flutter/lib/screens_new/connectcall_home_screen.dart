@@ -5,7 +5,6 @@ import '../providers/providers.dart';
 import '../providers/locale_provider.dart';
 import '../l10n/app_translations.dart';
 import '../models/user.dart';
-import '../models/call.dart';
 
 import '../services/permission_service.dart';
 import '../components/app_theme.dart';
@@ -17,10 +16,10 @@ import '../components/animated_gradient_bg.dart';
 import '../components/app_button.dart';
 
 
-import 'call_screen.dart';
-import 'incoming_call_screen.dart';
-import 'call_history_screen.dart';
-import 'profile_screen.dart';
+// import 'call_screen.dart';
+import 'connectcall_call_screen.dart';
+// import 'call_history_screen.dart';
+// import 'profile_screen.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -31,8 +30,7 @@ class HomeScreen extends ConsumerStatefulWidget {
 
 class _HomeScreenState extends ConsumerState<HomeScreen> {
   int _selectedIndex = 0;
-  String? _lastShownCallId;
-  bool ConnectCallCallingService.globalIsShowingIncomingCall = false;
+  // bool ConnectCallCallingService.globalIsShowingIncomingCall = false;
   Timer? _incomingCallTimer;
 
   @override
@@ -69,60 +67,61 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         }
 
         // Incoming call listener with debouncing
-        ref.listen<AsyncValue<CallModel?>>(
-          incomingCallsProvider(user.uid),
-          (previous, next) {
-            final call = next.value;
-            if (call == null) {
-              ConnectCallCallingService.globalIsShowingIncomingCall = false;
-              _incomingCallTimer?.cancel();
-              return;
-            }
-            
-            // Prevent duplicate incoming call screens
-            if (ConnectCallCallingService.globalIsShowingIncomingCall) {
-              debugPrint('[HomeScreen] Incoming call already showing, skipping duplicate');
-              return;
-            }
-            
-            // Debounce: wait 500ms before showing to prevent rapid duplicates
-            _incomingCallTimer?.cancel();
-            _incomingCallTimer = Timer(const Duration(milliseconds: 500), () {
-              if (!mounted) return;
-              
-              // Check again if still showing to prevent race conditions
-              if (ConnectCallCallingService.globalIsShowingIncomingCall) {
-                debugPrint('[HomeScreen] Incoming call already showing after debounce, skipping');
-                return;
-              }
-              
-              if (_lastShownCallId == call.callId) return;
-              _lastShownCallId = call.callId;
-              ConnectCallCallingService.globalIsShowingIncomingCall = true;
-
-              debugPrint('[HomeScreen] Showing incoming call screen for call: ${call.callId}');
-              
-              Navigator.of(context).push(
-                PageRouteBuilder(
-                  pageBuilder: (_, __, ___) => ConnectCallIncomingCallScreen(call: call),
-                  transitionsBuilder: (_, animation, __, child) => SlideTransition(
-                    position: Tween<Offset>(
-                      begin: const Offset(0, 1),
-                      end: Offset.zero,
-                    ).animate(CurvedAnimation(
-                        parent: animation, curve: Curves.easeOutCubic)),
-                    child: child,
-                  ),
-                  transitionDuration: const Duration(milliseconds: 400),
-                ),
-              ).then((_) {
-                // Reset flag when incoming call screen is dismissed
-                ConnectCallCallingService.globalIsShowingIncomingCall = false;
-                debugPrint('[HomeScreen] Incoming call screen dismissed');
-              });
-            });
-          },
-        );
+        // TODO: Implement when ConnectCallCallingService is available
+        // ref.listen<AsyncValue<CallModel?>>(
+        //   incomingCallsProvider(user.uid),
+        //   (previous, next) {
+        //     final call = next.value;
+        //     if (call == null) {
+        //       // ConnectCallCallingService.globalIsShowingIncomingCall = false;
+        //       _incomingCallTimer?.cancel();
+        //       return;
+        //     }
+        //     
+        //     // Prevent duplicate incoming call screens
+        //     // if (ConnectCallCallingService.globalIsShowingIncomingCall) {
+        //     //   debugPrint('[HomeScreen] Incoming call already showing, skipping duplicate');
+        //     //   return;
+        //     // }
+        //     
+        //     // Debounce: wait 500ms before showing to prevent rapid duplicates
+        //     _incomingCallTimer?.cancel();
+        //     _incomingCallTimer = Timer(const Duration(milliseconds: 500), () {
+        //       if (!mounted) return;
+        //       
+        //       // Check again if still showing to prevent race conditions
+        //       // if (ConnectCallCallingService.globalIsShowingIncomingCall) {
+        //       //   debugPrint('[HomeScreen] Incoming call already showing after debounce, skipping');
+        //       //   return;
+        //       // }
+        //       
+        //       if (_lastShownCallId == call.callId) return;
+        //       _lastShownCallId = call.callId;
+        //       // ConnectCallCallingService.globalIsShowingIncomingCall = true;
+        //
+        //       debugPrint('[HomeScreen] Showing incoming call screen for call: ${call.callId}');
+        //       
+        //       Navigator.of(context).push(
+        //         PageRouteBuilder(
+        //           pageBuilder: (_, __, ___) => ConnectCallIncomingCallScreen(call: call),
+        //           transitionsBuilder: (_, animation, __, child) => SlideTransition(
+        //             position: Tween<Offset>(
+        //               begin: const Offset(0, 1),
+        //               end: Offset.zero,
+        //             ).animate(CurvedAnimation(
+        //                 parent: animation, curve: Curves.easeOutCubic)),
+        //             child: child,
+        //           ),
+        //           transitionDuration: const Duration(milliseconds: 400),
+        //         ),
+        //       ).then((_) {
+        //         // Reset flag when incoming call screen is dismissed
+        //         // ConnectCallCallingService.globalIsShowingIncomingCall = false;
+        //         debugPrint('[HomeScreen] Incoming call screen dismissed');
+        //       });
+        //     });
+        //   },
+        // );
 
         // Determine background gif per tab
         final String? bgGif = switch (_selectedIndex) {
@@ -163,8 +162,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           _startCallFromHome(callee, type, user),
                     ),
                   1 => _ContactsTab(currentUser: user),
-                  2 => const CallHistoryScreen(),
-                  _ => ProfileScreen(user: user),
+                  2 => const Center(child: Text('Call History - Coming Soon')),
+                  _ => const Center(child: Text('Profile - Coming Soon')),
                 },
               ),
             ],

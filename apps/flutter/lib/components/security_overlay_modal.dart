@@ -1,13 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:path_provider/path_provider.dart';
-import 'dart:io';
+import 'package:provider/provider.dart' as provider;
 import '../services/offline_dossier_service.dart';
 import '../state/session_controller.dart';
-import '../providers/providers.dart';
 import 'app_theme.dart';
-import 'dart:ui' as ui;
 
 // ─────────────────────────────────────────────────────────────
 // Shared helpers
@@ -83,12 +78,12 @@ String _levelBody(_SecurityLevel lvl, SessionController s) {
 // Full Security Overlay Modal  (shown via bottom sheet)
 // ─────────────────────────────────────────────────────────────
 
-class SecurityOverlayModal extends ConsumerWidget {
+class SecurityOverlayModal extends StatelessWidget {
   const SecurityOverlayModal({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final session = context.watch<SessionController>();
+  Widget build(BuildContext context) {
+    final session = provider.Provider.of<SessionController>(context);
     final level   = _evaluate(session);
     final color   = _levelColor(level);
 
@@ -661,7 +656,7 @@ class SecurityPill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final session = context.watch<SessionController>();
+    final session = provider.Provider.of<SessionController>(context);
     final level   = _evaluate(session);
     final color   = _levelColor(level);
 
@@ -711,115 +706,169 @@ class SecurityPill extends StatelessWidget {
 // Gives elderly users a glanceable security status at a glance
 // ─────────────────────────────────────────────────────────────
 
-class PhaseGuardHomeCard extends StatelessWidget {
+class PhaseGuardHomeCard extends StatefulWidget {
   const PhaseGuardHomeCard({super.key});
 
   @override
+  State<PhaseGuardHomeCard> createState() => _PhaseGuardHomeCardState();
+}
+
+class _PhaseGuardHomeCardState extends State<PhaseGuardHomeCard>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _ctrl;
+  late Animation<double> _pulse;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 2000),
+    )..repeat(reverse: true);
+    _pulse = CurvedAnimation(parent: _ctrl, curve: Curves.easeInOut);
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final session = context.watch<SessionController>();
+    final session = provider.Provider.of<SessionController>(context);
     final level   = _evaluate(session);
     final color   = _levelColor(level);
     final isActive = session.wsConnected || session.isCallAudioCaptureActive;
 
-    return GestureDetector(
-      onTap: () => showModalBottomSheet(
-        context: context,
-        backgroundColor: Colors.transparent,
-        isScrollControlled: true,
-        builder: (_) => const SecurityOverlayModal(),
-      ),
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(24),
-          gradient: LinearGradient(
-            colors: [
-              color.withValues(alpha: 0.15),
-              Colors.black.withValues(alpha: 0.35),
-            ],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
+    return AnimatedBuilder(
+      animation: _pulse,
+      builder: (context, child) {
+        return GestureDetector(
+          onTap: () => showModalBottomSheet(
+            context: context,
+            backgroundColor: Colors.transparent,
+            isScrollControlled: true,
+            builder: (_) => const SecurityOverlayModal(),
           ),
-          border: Border.all(
-            color: color.withValues(alpha: 0.4),
-            width: 1.5,
-          ),
-        ),
-        child: Row(
-          children: [
-            // Big icon
-            Container(
-              width: 56, height: 56,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: color.withValues(alpha: 0.15),
-                border: Border.all(color: color.withValues(alpha: 0.4), width: 1.5),
-              ),
-              child: Icon(_levelIcon(level), color: color, size: 28),
-            ),
-            const SizedBox(width: 16),
-
-            // Text
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(children: [
-                    Text(
-                      'PhaseGuard',
-                      style: AppTextStyles.titleSmall.copyWith(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    // Live indicator dot
-                    AnimatedContainer(
-                      duration: const Duration(milliseconds: 500),
-                      width: 8, height: 8,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: isActive ? AppColors.success : Colors.grey,
-                      ),
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      isActive ? 'LIVE' : 'STANDBY',
-                      style: AppTextStyles.labelSmall.copyWith(
-                        color: isActive ? AppColors.success : Colors.grey,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 10,
-                        letterSpacing: 1,
-                      ),
-                    ),
-                  ]),
-                  const SizedBox(height: 4),
-                  Text(
-                    _levelTitle(level),
-                    style: AppTextStyles.labelLarge.copyWith(
-                      color: color,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    _levelBody(level, session).split('\n').first,
-                    style: AppTextStyles.bodySmall.copyWith(
-                      color: Colors.white60,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
+          child: Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(24),
+              gradient: const LinearGradient(
+                colors: [
+                  Color(0xFF15171B),
+                  Color(0xFF101114),
                 ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
               ),
+              border: Border.all(
+                color: const Color(0x14FFFFFF), // Hairline border
+                width: 1,
+              ),
+              // Ambient blue glow behind the card
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFF2678FF).withValues(alpha: 0.16 + (0.12 * _pulse.value)),
+                  blurRadius: 28,
+                  spreadRadius: 1,
+                  offset: const Offset(0, 4),
+                ),
+              ],
             ),
+            child: Row(
+              children: [
+                // Shield Icon with subtle animated breathing blue pulse
+                Container(
+                  width: 56,
+                  height: 56,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: const Color(0xFF0F1524),
+                    border: Border.all(
+                      color: const Color(0xFF2678FF).withValues(alpha: 0.40 + (0.50 * _pulse.value)),
+                      width: 1.5,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFF2678FF).withValues(alpha: 0.40 * _pulse.value),
+                        blurRadius: 16,
+                        spreadRadius: 2 * _pulse.value,
+                      ),
+                    ],
+                  ),
+                  child: Icon(_levelIcon(level), color: color, size: 28),
+                ),
+                const SizedBox(width: 16),
 
-            // Chevron
-            Icon(Icons.chevron_right_rounded, color: color.withValues(alpha: 0.7), size: 22),
-          ],
-        ),
-      ),
+                // Text
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(children: [
+                        Text(
+                          'PhaseGuard',
+                          style: AppTextStyles.titleSmall.copyWith(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        // Live indicator dot
+                        AnimatedContainer(
+                          duration: const Duration(milliseconds: 500),
+                          width: 8, height: 8,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: isActive ? AppColors.success : const Color(0xFF8A8F98),
+                          ),
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          isActive ? 'LIVE' : 'STANDBY',
+                          style: AppTextStyles.labelSmall.copyWith(
+                            color: isActive ? AppColors.success : const Color(0xFF8A8F98),
+                            fontWeight: FontWeight.bold,
+                            fontSize: 10,
+                            letterSpacing: 1,
+                          ),
+                        ),
+                      ]),
+                      const SizedBox(height: 4),
+                      Text(
+                        _levelTitle(level),
+                        style: AppTextStyles.labelLarge.copyWith(
+                          color: color,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        _levelBody(level, session).split('\n').first,
+                        style: AppTextStyles.bodySmall.copyWith(
+                          color: const Color(0xFF8A8F98),
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                ),
+
+                // Chevron in electric blue tint
+                const Icon(
+                  Icons.chevron_right_rounded,
+                  color: Color(0xFF2678FF),
+                  size: 22,
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 }

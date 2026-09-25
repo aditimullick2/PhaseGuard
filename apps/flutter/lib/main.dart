@@ -205,48 +205,52 @@ class _PhaseGuardAppState extends riverpod.ConsumerState<PhaseGuardApp>
   }
 
   ThemeData _buildTheme() {
-    const seedColor = Color(0xFF6C63FF); 
+    const seedColor = Color(0xFF2678FF); // Electric Blue (#1455D9 -> #2678FF)
     return ThemeData(
       useMaterial3: true,
       colorScheme: ColorScheme.fromSeed(
         seedColor: seedColor,
         brightness: Brightness.dark,
+        surface: const Color(0xFF101114),
       ),
-      scaffoldBackgroundColor: const Color(0xFF0F0E1A),
+      scaffoldBackgroundColor: const Color(0xFF050505),
       fontFamily: 'Roboto',
       appBarTheme: const AppBarTheme(
-        backgroundColor: Color(0xFF1A1930),
+        backgroundColor: Colors.transparent,
         foregroundColor: Colors.white,
         elevation: 0,
         centerTitle: true,
       ),
       cardTheme: CardThemeData(
-        color: const Color(0xFF1E1D2E),
+        color: const Color(0xFF101114),
         elevation: 0,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: const BorderSide(color: Color(0x14FFFFFF), width: 1),
+        ),
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: const Color(0xFF252438),
+        fillColor: const Color(0xFF15171B),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
-          borderSide: BorderSide.none,
+          borderSide: const BorderSide(color: Color(0x14FFFFFF), width: 1),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
-          borderSide: const BorderSide(color: Color(0xFF3D3B5E), width: 1),
+          borderSide: const BorderSide(color: Color(0x14FFFFFF), width: 1),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
-          borderSide: const BorderSide(color: seedColor, width: 2),
+          borderSide: const BorderSide(color: seedColor, width: 1.5),
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
           borderSide: const BorderSide(color: Colors.redAccent, width: 1),
         ),
-        labelStyle: const TextStyle(color: Color(0xFF9A97C5)),
-        hintStyle: const TextStyle(color: Color(0xFF6A6890)),
-        prefixIconColor: const Color(0xFF9A97C5),
+        labelStyle: const TextStyle(color: Color(0xFF8A8F98)),
+        hintStyle: const TextStyle(color: Color(0xFF6B7280)),
+        prefixIconColor: const Color(0xFF8A8F98),
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
@@ -269,9 +273,9 @@ class _PhaseGuardAppState extends riverpod.ConsumerState<PhaseGuardApp>
         ),
       ),
       bottomNavigationBarTheme: const BottomNavigationBarThemeData(
-        backgroundColor: Color(0xFF1A1930),
-        selectedItemColor: Color(0xFF6C63FF),
-        unselectedItemColor: Color(0xFF6A6890),
+        backgroundColor: Color(0xFF080808),
+        selectedItemColor: Color(0xFF2678FF),
+        unselectedItemColor: Color(0xFF8A8F98),
         type: BottomNavigationBarType.fixed,
       ),
     );

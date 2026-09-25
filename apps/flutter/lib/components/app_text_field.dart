@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'dart:ui' as ui;
 import 'app_theme.dart';
-import 'animated_gradient_bg.dart';
 
 
 //  AppTextField 
@@ -38,10 +37,7 @@ class AppTextField extends StatelessWidget {
     this.onChanged,
   });
 
-  Color get _bg => switch (variant) {
-        'filled' => AppColors.secondaryBackground,
-        _ => Colors.transparent,
-      };
+
 
   Color get _borderColor {
     if (error) return AppColors.error;
@@ -147,10 +143,10 @@ class AppTextField extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-//  AuthInput — full auth input with rounded border (matches AuthInputWidget)
+//  AuthInput — full auth input with electric-blue focus glow
 // ─────────────────────────────────────────────────────────────────────────────
 
-class AuthInput extends StatelessWidget {
+class AuthInput extends StatefulWidget {
   final String label;
   final String hint;
   final Widget? icon;
@@ -177,7 +173,44 @@ class AuthInput extends StatelessWidget {
   });
 
   @override
+  State<AuthInput> createState() => _AuthInputState();
+}
+
+class _AuthInputState extends State<AuthInput> {
+  late final FocusNode _focusNode;
+  bool _isFocused = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _focusNode = widget.focusNode ?? FocusNode();
+    _focusNode.addListener(_onFocusChange);
+  }
+
+  void _onFocusChange() {
+    setState(() => _isFocused = _focusNode.hasFocus);
+  }
+
+  @override
+  void dispose() {
+    // Only dispose if we created it (not passed in from outside)
+    if (widget.focusNode == null) {
+      _focusNode.removeListener(_onFocusChange);
+      _focusNode.dispose();
+    } else {
+      _focusNode.removeListener(_onFocusChange);
+    }
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final Color borderColor = widget.isError
+        ? AppColors.error
+        : _isFocused
+            ? const Color(0xFF2678FF)
+            : const Color(0x14FFFFFF); // rgba(255,255,255,0.08) hairline
+
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -185,36 +218,54 @@ class AuthInput extends StatelessWidget {
         Padding(
           padding: const EdgeInsets.only(left: 4),
           child: Text(
-            label,
+            widget.label,
             style: AppTextStyles.labelMedium.copyWith(
-              color: isError ? AppColors.error : AppColors.secondaryText,
+              color: widget.isError
+                  ? AppColors.error
+                  : _isFocused
+                      ? const Color(0xFF2678FF)
+                      : AppColors.secondaryText,
             ),
           ),
         ),
-        const SizedBox(height: 4),
-        GlassmorphicContainer(
-          borderRadius: BorderRadius.circular(12),
-          padding: EdgeInsets.zero,
-          color: Colors.white.withValues(alpha: 0.1),
+        const SizedBox(height: 6),
+        AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          curve: Curves.easeOutCubic,
+          decoration: BoxDecoration(
+            color: const Color(0xFF101114), // dark charcoal surface
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: borderColor, width: _isFocused ? 1.5 : 1.0),
+            boxShadow: _isFocused
+                ? [
+                    BoxShadow(
+                      color: const Color(0xFF2678FF).withValues(alpha: 0.18),
+                      blurRadius: 16,
+                      spreadRadius: 0,
+                    ),
+                  ]
+                : null,
+          ),
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                if (icon != null) ...[icon!, const SizedBox(width: 14)],
+                if (widget.icon != null) ...[widget.icon!, const SizedBox(width: 14)],
                 Expanded(
                   child: TextFormField(
-                    controller: controller,
-                    focusNode: focusNode,
-                    obscureText: obscureText,
-                    keyboardType: keyboardType,
-                    validator: validator,
+                    controller: widget.controller,
+                    focusNode: _focusNode,
+                    obscureText: widget.obscureText,
+                    keyboardType: widget.keyboardType,
+                    validator: widget.validator,
                     style: AppTextStyles.bodyMedium,
+                    cursorColor: const Color(0xFF2678FF),
                     decoration: InputDecoration(
                       isDense: true,
                       filled: false,
                       fillColor: Colors.transparent,
-                      hintText: hint,
+                      hintText: widget.hint,
                       hintStyle: AppTextStyles.bodyMedium
                           .copyWith(color: AppColors.accent3),
                       border: InputBorder.none,
@@ -227,9 +278,9 @@ class AuthInput extends StatelessWidget {
                     ),
                   ),
                 ),
-                if (trailingWidget != null) ...[
+                if (widget.trailingWidget != null) ...[
                   const SizedBox(width: 8),
-                  trailingWidget!,
+                  widget.trailingWidget!,
                 ],
               ],
             ),

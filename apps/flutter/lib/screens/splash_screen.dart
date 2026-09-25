@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/providers.dart';
-import '../components/animated_gif_background.dart';
+
 import '../components/connect_call_logo.dart';
 import 'login_screen.dart';
 import 'home_screen.dart';
@@ -30,10 +30,9 @@ class SplashScreen extends ConsumerWidget {
     });
 
     return Scaffold(
-      backgroundColor: const Color(0xFF0F0E1A),
-      body: AnimatedGifBackground(
-        assetPath: 'assets/background/splash_bg.gif',
-        overlayOpacity: 0.3,
+      backgroundColor: const Color(0xFF050505),
+      body: Container(
+        color: const Color(0xFF050505),
         child: Center(
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -59,7 +58,7 @@ class SplashScreen extends ConsumerWidget {
                 const Text(
                   'Crystal-clear calls, always.',
                   style: TextStyle(
-                    color: Color(0xFF9A97C5),
+                    color: Color(0xFF8A8F98),
                     fontSize: 15,
                     letterSpacing: 0.3,
                   ),
@@ -82,7 +81,7 @@ class SplashScreen extends ConsumerWidget {
                           Text(
                             '$error',
                             style: const TextStyle(
-                                color: Color(0xFF9A97C5), fontSize: 13),
+                                color: Color(0xFF8A8F98), fontSize: 13),
                             textAlign: TextAlign.center,
                           ),
                         ],
@@ -142,9 +141,16 @@ class _ThreeDotLoaderState extends State<_ThreeDotLoader>
               width: 10,
               height: 10,
               margin: const EdgeInsets.symmetric(horizontal: 4),
-              decoration: const BoxDecoration(
-                color: Color(0xFF6C63FF),
+              decoration: BoxDecoration(
+                color: const Color(0xFF2678FF),
                 shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFF2678FF).withValues(alpha: 0.5 * phase),
+                    blurRadius: 8,
+                    spreadRadius: 1,
+                  ),
+                ],
               ),
             ),
           ),

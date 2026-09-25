@@ -155,8 +155,8 @@ class _InAppCallingScreenState extends State<InAppCallingScreen> {
             height: 120,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              gradient: LinearGradient(
-                colors: [Colors.blue.shade400, Colors.purple.shade400],
+              gradient: const LinearGradient(
+                colors: [Color(0xFF1455D9), Color(0xFF2678FF)],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),

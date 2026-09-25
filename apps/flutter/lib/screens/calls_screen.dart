@@ -5,11 +5,11 @@ import '../services/bluetooth_sco_capture.dart';
 import '../services/call_socket.dart';
 import '../services/shizuku_capture.dart';
 import '../services/priority_recording.dart';
-import '../services/realtime_scam_detection.dart';
+// import '../services/realtime_scam_detection.dart';
 import '../theme/tokens.dart';
 import '../widgets/glass_card.dart';
 import '../widgets/section_title.dart';
-import 'scam_detection_demo.dart';
+// import 'scam_detection_demo.dart';
 import 'local_scam_detection.dart';
 
 class CallsScreen extends StatefulWidget {
@@ -907,25 +907,26 @@ class _CallsListViewState extends State<_CallsListView> {
                   ),
                 ],
               ),
-              ElevatedButton(
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const ScamDetectionDemo(),
-                    ),
-                  );
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: PgColors.accentBlue,
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                ),
-                child: const Text(
-                  'Open Demo',
-                  style: TextStyle(fontSize: 12),
-                ),
-              ),
-              const SizedBox(width: 8),
+              // Demo temporarily disabled due to missing service files
+              // ElevatedButton(
+              //   onPressed: () {
+              //     Navigator.push(
+              //       context,
+              //       MaterialPageRoute(
+              //         builder: (context) => const ScamDetectionDemo(),
+              //       ),
+              //     );
+              //   },
+              //   style: ElevatedButton.styleFrom(
+              //     backgroundColor: PgColors.accentBlue,
+              //     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              //   ),
+              //   child: const Text(
+              //     'Open Demo',
+              //     style: TextStyle(fontSize: 12),
+              //   ),
+              // ),
+              // const SizedBox(width: 8),
               ElevatedButton(
                 onPressed: () {
                   Navigator.push(

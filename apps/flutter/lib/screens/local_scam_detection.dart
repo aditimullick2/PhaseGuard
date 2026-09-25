@@ -1,6 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import '../services/llama_scam_detector.dart';
+// import '../services/llama_scam_detector.dart';
 import '../services/scam_detector.dart';
 import '../theme/tokens.dart';
 import '../widgets/glass_card.dart';
@@ -16,71 +16,13 @@ class LocalScamDetectionScreen extends StatefulWidget {
 
 class _LocalScamDetectionScreenState extends State<LocalScamDetectionScreen> {
   final TextEditingController _transcriptController = TextEditingController();
-  final LlamaScamDetector _llamaDetector = LlamaScamDetector();
 
   Map<String, dynamic>? _lastResult;
   bool _isAnalyzing = false;
 
-  // Model download state
-  bool _isDownloading = false;
-  double _downloadProgress = 0.0;
-  bool _modelReady = false;
-  String _modelSource = 'checking...';
-
-  StreamSubscription<double>? _progressSub;
-
   @override
   void initState() {
     super.initState();
-    _initModel();
-  }
-
-  Future<void> _initModel() async {
-    // Check if model already copied to storage
-    final ready = await _llamaDetector.isModelReady();
-
-    if (ready) {
-      setState(() {
-        _modelSource = 'local_llm (device storage)';
-      });
-      // Load silently in background
-      await _llamaDetector.loadModel();
-      if (mounted) {
-        setState(() {
-          _modelReady = _llamaDetector.isLoaded;
-          _modelSource = _modelReady ? 'local_llm ✅' : 'rule_based_fallback';
-        });
-      }
-    } else {
-      // Need to copy from assets — subscribe to progress stream
-      _progressSub = _llamaDetector.copyProgress.listen((progress) {
-        if (mounted) {
-          setState(() {
-            _downloadProgress = progress;
-            _isDownloading = progress < 1.0;
-          });
-        }
-      });
-
-      setState(() {
-        _isDownloading = true;
-        _modelSource = 'copying model from app assets...';
-      });
-
-      await _llamaDetector.loadModel();
-
-      await _progressSub?.cancel();
-
-      if (mounted) {
-        setState(() {
-          _isDownloading = false;
-          _modelReady = _llamaDetector.isLoaded;
-          _modelSource = _modelReady
-              ? 'local_llm ✅ (TinyLlama-1.1B Q4)'
-              : 'rule_based_fallback (download failed)';
-        });
-      }
-    }
   }
 
   Future<void> _analyzeTranscript() async {
@@ -91,23 +33,16 @@ class _LocalScamDetectionScreenState extends State<LocalScamDetectionScreen> {
       _lastResult = null;
     });
 
-    Map<String, dynamic> result;
-
-    if (_modelReady) {
-      // Real LLM inference
-      result = await _llamaDetector.detectScam(_transcriptController.text);
-    } else {
-      // Rule-based fallback while model loads/downloads
-      await Future.delayed(const Duration(milliseconds: 80));
-      final scamResult = ScamDetector.detectScam(_transcriptController.text);
-      result = {
-        'is_scam': scamResult.isScam,
-        'category': scamResult.category,
-        'reasoning': scamResult.reasoning,
-        'confidence': scamResult.isScam ? 0.85 : 0.10,
-        'source': 'rule_based_fallback',
-      };
-    }
+    // Use rule-based detection
+    await Future.delayed(const Duration(milliseconds: 80));
+    final scamResult = ScamDetector.detectScam(_transcriptController.text);
+    final result = {
+      'is_scam': scamResult.isScam,
+      'category': scamResult.category,
+      'reasoning': scamResult.reasoning,
+      'confidence': scamResult.isScam ? 0.85 : 0.10,
+      'source': 'rule_based',
+    };
 
     if (mounted) {
       setState(() {
@@ -166,7 +101,7 @@ class _LocalScamDetectionScreenState extends State<LocalScamDetectionScreen> {
                       SizedBox(
                         width: double.infinity,
                         child: ElevatedButton(
-                          onPressed: (_isAnalyzing || _isDownloading)
+                          onPressed: _isAnalyzing
                               ? null
                               : _analyzeTranscript,
                           style: ElevatedButton.styleFrom(
@@ -180,11 +115,7 @@ class _LocalScamDetectionScreenState extends State<LocalScamDetectionScreen> {
                                   child: CircularProgressIndicator(
                                       color: Colors.white, strokeWidth: 2),
                                 )
-                              : Text(
-                                  _modelReady
-                                      ? 'Analyze with LLM'
-                                      : 'Analyze (Rule-based)',
-                                ),
+                              : const Text('Analyze (Rule-based)'),
                         ),
                       ),
                     ],
@@ -221,73 +152,26 @@ class _LocalScamDetectionScreenState extends State<LocalScamDetectionScreen> {
   }
 
   Widget _buildModelStatusBanner() {
-    if (_isDownloading) {
-      return GlassCard(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                const SizedBox(
-                  height: 16,
-                  width: 16,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                ),
-                const SizedBox(width: PgSpace.s),
-                const Expanded(
-                  child: Text(
-                    'Downloading TinyLlama model (one-time)...',
-                    style: TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                ),
-                Text(
-                  '${(_downloadProgress * 100).toStringAsFixed(0)}%',
-                  style: const TextStyle(fontWeight: FontWeight.bold),
-                ),
-              ],
-            ),
-            const SizedBox(height: PgSpace.s),
-            LinearProgressIndicator(
-              value: _downloadProgress,
-              backgroundColor: Colors.grey.shade300,
-              color: PgColors.primary,
-            ),
-            const SizedBox(height: PgSpace.s),
-            const Text(
-              '~670 MB download (Wi-Fi recommended). Rule-based detection active meanwhile.',
-              style: TextStyle(fontSize: 12, color: Colors.grey),
-            ),
-          ],
-        ),
-      );
-    }
-
-    final color = _modelReady ? Colors.green : Colors.orange;
-    final icon = _modelReady ? '🧠' : '⚡';
-    final label = _modelReady
-        ? 'TinyLlama-1.1B Q4 — On-device LLM active'
-        : 'Rule-based detector active (model loading...)';
-
     return GlassCard(
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(icon, style: const TextStyle(fontSize: 20)),
-          const SizedBox(width: PgSpace.s),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  label,
-                  style: TextStyle(
-                      fontWeight: FontWeight.bold, color: color),
+          Row(
+            children: [
+              const Icon(Icons.info_outline, color: PgColors.primary),
+              const SizedBox(width: PgSpace.s),
+              const Expanded(
+                child: Text(
+                  'Local LLM model not available - using rule-based detection',
+                  style: TextStyle(fontWeight: FontWeight.bold),
                 ),
-                Text(
-                  'Source: $_modelSource',
-                  style: const TextStyle(fontSize: 11, color: Colors.grey),
-                ),
-              ],
-            ),
+              ),
+            ],
+          ),
+          const SizedBox(height: PgSpace.s),
+          const Text(
+            'Rule-based scam detection is active. Local LLM integration coming soon.',
+            style: TextStyle(fontSize: 12, color: Colors.grey),
           ),
         ],
       ),
@@ -379,8 +263,6 @@ class _LocalScamDetectionScreenState extends State<LocalScamDetectionScreen> {
 
   @override
   void dispose() {
-    _progressSub?.cancel();
-    _llamaDetector.dispose();
     _transcriptController.dispose();
     super.dispose();
   }

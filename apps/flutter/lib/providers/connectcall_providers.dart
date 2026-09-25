@@ -2,12 +2,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../services/auth_service.dart';
 import '../services/user_service.dart';
-import '../services/calling_service.dart';
 import '../services/permission_service.dart';
 import '../services/notification_service.dart';
 import '../services/push_service.dart';
 import '../models/user.dart';
 import '../models/call.dart';
+import '../services/connectcall_calling_service.dart';
 
 //  Service Providers 
 
@@ -17,8 +17,8 @@ final userServiceProvider = Provider<UserService>((ref) => UserService());
 
 /// CallingService is a ChangeNotifier — use ChangeNotifierProvider so widgets
 /// rebuild when notifyListeners() is called (mute state, connection state, etc.)
-final callingServiceProvider = ChangeNotifierProvider<CallingService>((ref) {
-  final service = CallingService();
+final callingServiceProvider = ChangeNotifierProvider<ConnectCallCallingService>((ref) {
+  final service = ConnectCallCallingService();
   ref.onDispose(() => service.dispose());
   return service;
 });

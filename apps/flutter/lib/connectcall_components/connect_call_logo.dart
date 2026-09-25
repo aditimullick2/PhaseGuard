@@ -9,7 +9,7 @@ class PhaseGuardLogo extends StatelessWidget {
     super.key,
     this.size = 56.0,
     this.showGlow = false,
-    this.glowColor = const Color(0xFF6C63FF),
+    this.glowColor = const Color(0xFF2678FF),
   });
 
   @override

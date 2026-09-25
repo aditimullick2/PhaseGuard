@@ -6,7 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path_provider/path_provider.dart';
 import '../providers/providers.dart';
-import 'home_screen.dart';
+
 import '../components/app_theme.dart';
 import '../components/app_button.dart';
 import '../components/animated_gradient_bg.dart';
@@ -23,7 +23,6 @@ class _VoiceIdSetupScreenState extends ConsumerState<VoiceIdSetupScreen> {
   bool _isRecording = false;
   int _secondsLeft = 15;
   Timer? _timer;
-  String? _voiceIdPath;
   bool _isSetupComplete = false;
 
   @override
@@ -100,7 +99,6 @@ class _VoiceIdSetupScreenState extends ConsumerState<VoiceIdSetupScreen> {
     
     setState(() {
       _isRecording = false;
-      _voiceIdPath = path;
       _isSetupComplete = true;
     });
 

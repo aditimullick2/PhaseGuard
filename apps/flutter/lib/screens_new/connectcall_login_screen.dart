@@ -6,9 +6,9 @@ import '../components/app_button.dart';
 import '../components/app_text_field.dart';
 import '../components/animated_gif_background.dart';
 import '../components/animated_gradient_bg.dart';
-import '../components/connect_call_logo.dart';
-import 'signup_screen.dart';
-import 'home_screen.dart';
+import '../connectcall_components/connect_call_logo.dart';
+import 'connectcall_signup_screen.dart';
+import 'connectcall_full_home_screen.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -139,7 +139,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     const SizedBox(height: 48),
                     // Floating Logo / Icon (Center Aligned)
                     const Center(
-                      child: ConnectCallLogo(
+                      child: PhaseGuardLogo(
                         size: 56, 
                         showGlow: true,
                       ),

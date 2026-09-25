@@ -1,7 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
 import 'lib/services/scam_detector.dart';
-import 'lib/services/hybrid_scam_detector.dart';
 
 void main() async {
   final file = File('../api/ai_training/dataset.jsonl');

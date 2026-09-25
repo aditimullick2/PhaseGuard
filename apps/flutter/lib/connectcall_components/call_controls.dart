@@ -7,7 +7,7 @@ import 'app_theme.dart';
 //  Used in audio call screen.
 // ─────────────────────────────────────────────────────────────────────────────
 
-class ControlButton extends StatelessWidget {
+class ControlButton extends StatefulWidget {
   final Widget icon;
   final bool isDanger;
   final double size;
@@ -24,39 +24,76 @@ class ControlButton extends StatelessWidget {
   });
 
   @override
+  State<ControlButton> createState() => _ControlButtonState();
+}
+
+class _ControlButtonState extends State<ControlButton> {
+  bool _pressed = false;
+
+  @override
   Widget build(BuildContext context) {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
         GestureDetector(
-          onTap: onTap,
-          child: Container(
-            width: size,
-            height: size,
-            decoration: BoxDecoration(
-              color: isDanger ? AppColors.tertiary : AppColors.onPrimary10,
-              shape: BoxShape.circle,
-              boxShadow: isDanger
-                  ? [
-                      BoxShadow(
-                        color: AppColors.tertiary.withValues(alpha: 0.4),
-                        blurRadius: 20,
-                        spreadRadius: 4,
-                      )
-                    ]
-                  : null,
+          onTapDown: (_) => setState(() => _pressed = true),
+          onTapUp: (_) {
+            setState(() => _pressed = false);
+            widget.onTap?.call();
+          },
+          onTapCancel: () => setState(() => _pressed = false),
+          child: AnimatedScale(
+            scale: _pressed ? 0.90 : 1.0,
+            duration: const Duration(milliseconds: 160),
+            curve: Curves.easeOutCubic,
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 160),
+              width: widget.size,
+              height: widget.size,
+              decoration: BoxDecoration(
+                color: widget.isDanger
+                    ? const Color(0xFFEF4444)
+                    : const Color(0xFF151D2C),
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: widget.isDanger
+                      ? const Color(0xFFFF6B6B)
+                      : const Color(0xFF2678FF).withValues(alpha: 0.5),
+                  width: 1.5,
+                ),
+                boxShadow: widget.isDanger
+                    ? [
+                        BoxShadow(
+                          color: const Color(0xFFEF4444).withValues(alpha: _pressed ? 0.75 : 0.50),
+                          blurRadius: _pressed ? 28 : 22,
+                          spreadRadius: _pressed ? 4 : 2,
+                          offset: const Offset(0, 4),
+                        ),
+                      ]
+                    : [
+                        BoxShadow(
+                          color: const Color(0xFF2678FF).withValues(alpha: _pressed ? 0.70 : 0.45),
+                          blurRadius: _pressed ? 24 : 18,
+                          spreadRadius: _pressed ? 2 : 0,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+              ),
+              child: Center(child: widget.icon),
             ),
-            child: Center(child: icon),
           ),
         ),
-        if (label != null) ...[
-          const SizedBox(height: 6),
+        if (widget.label != null) ...[
+          const SizedBox(height: 8),
           Text(
-            label!,
-            style: AppTextStyles.bodySmall,
+            widget.label!,
+            style: AppTextStyles.bodySmall.copyWith(
+              color: const Color(0xFF8A8F98),
+              fontWeight: FontWeight.w500,
+            ),
           ),
         ] else ...[
-          const SizedBox(height: 6),
+          const SizedBox(height: 8),
           Text(
             ' ', // Placeholder to keep the icons vertically aligned
             style: AppTextStyles.bodySmall,
@@ -397,5 +434,5 @@ class PermissionItem extends StatelessWidget {
 
 // Add AppColors extension for easy access in components
 extension AppColorsExt on AppColors {
-  static const primary10 = Color(0x1A6C63FF);
+  static const primary10 = Color(0x1A2678FF);
 }

@@ -38,22 +38,8 @@ class AvatarStatus extends StatelessWidget {
     return '$first$last'.toUpperCase();
   }
 
-  List<Color> get _gradientColors {
-    final palettes = [
-      [const Color(0xFF6C63FF), const Color(0xFF9C59FF)],
-      [const Color(0xFF06B6D4), const Color(0xFF3B82F6)],
-      [const Color(0xFFF59E0B), const Color(0xFFEF4444)],
-      [const Color(0xFF10B981), const Color(0xFF06B6D4)],
-      [const Color(0xFFEC4899), const Color(0xFF8B5CF6)],
-    ];
-    final idx = name.isEmpty ? 0 : name.codeUnitAt(0) % palettes.length;
-    return palettes[idx];
-  }
-
   @override
   Widget build(BuildContext context) {
-    final ringColor = online ? AppColors.primary : AppColors.alternate;
-
     return GestureDetector(
       onTap: onTap,
       child: SizedBox(
@@ -62,21 +48,38 @@ class AvatarStatus extends StatelessWidget {
         child: Stack(
           clipBehavior: Clip.none,
           children: [
-            // Outer ring
+            // Outer ring: disciplined thin electric blue ring with subtle glow when online
             Container(
               width: size,
               height: size,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                border: Border.all(color: ringColor, width: 2),
+                border: Border.all(
+                  color: const Color(0xFF2678FF).withValues(alpha: online ? 0.75 : 0.30),
+                  width: 1.5,
+                ),
+                boxShadow: online
+                    ? [
+                        BoxShadow(
+                          color: const Color(0xFF2678FF).withValues(alpha: 0.25),
+                          blurRadius: 10,
+                          spreadRadius: 0,
+                        ),
+                      ]
+                    : null,
               ),
               child: Padding(
                 padding: const EdgeInsets.all(2),
                 child: Container(
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
+                    // Consistent dark-navy/charcoal fill across all contacts
                     gradient: _imageProvider == null
-                        ? LinearGradient(colors: _gradientColors)
+                        ? const LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: [Color(0xFF151C2C), Color(0xFF0E131F)],
+                          )
                         : null,
                     image: _imageProvider != null
                         ? DecorationImage(
@@ -93,6 +96,7 @@ class AvatarStatus extends StatelessWidget {
                               color: Colors.white,
                               fontSize: size * 0.33,
                               fontWeight: FontWeight.bold,
+                              letterSpacing: 0.5,
                             ),
                           ),
                         )
