@@ -409,7 +409,7 @@ class _ScambaiterSessionState extends State<ScambaiterSession> {
                   borderRadius: BorderRadius.circular(PgRadii.pill),
                 ),
                 child: Text(
-                  isCaller ? 'Scammer (Caller)' : 'PhaseGuard AI Persona',
+                  isCaller ? (context.read<SessionController>().callerNumber ?? 'Remote Caller') : 'PhaseGuard AI Persona',
                   style: TextStyle(
                     fontSize: 10,
                     fontWeight: FontWeight.w700,
