@@ -443,8 +443,15 @@ Scambaiter is an AI-powered engagement tool that talks to scammers to waste thei
 ### Persona: "Ramesh Ji"
 - **Character:** 72-year-old retired schoolteacher from Lucknow
 - **Personality:** Easily confused by technology, polite but clueless
-- **Goal:** Keep scammer on the line as long as possible
-- **Safety:** Never shares real personal/financial information
+- **Goal:** Keep scammer on the line as long as possible by asking highly specific, context-aware questions
+- **Safety:** Hard-constrained to NEVER share real personal/financial information and NEVER impersonate authorities
+
+### Dynamic Agent Capabilities
+- **Contextual Memory:** Maintains a rolling window of recent turns, preventing repetitive questions and generic responses.
+- **Cross-Turn Contradiction Detection:** Tracks claims across turns (e.g., changes in organization, amounts, identities) to catch scammers in lies.
+- **Category-Aware Planning:** Prioritizes questions based on the identified scam type (e.g., asks about jurisdiction for "Digital Arrest" scams, bank name for "UPI Fraud").
+- **Reasoning-First Generation:** Forces the LLM to extract a *specific detail* from the caller's last sentence before drafting a question, ensuring responses are hyper-relevant and never generic.
+- **Natural Deflection:** Automatically switches to confused `COUNTER_QUESTION`s ("I couldn't hear you, beta") if the scammer just uses filler words.
 
 ### How Scambaiter Works
 
