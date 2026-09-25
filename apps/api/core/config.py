@@ -45,6 +45,7 @@ class Settings(BaseSettings):
 
     # ── Groq (STT + LLM) ──────────────────────────────────────────────────────
     groq_api_key: str = Field(default="", description="Groq API key")
+    scambaiter_groq_api_key: str = Field(default="", description="Optional separate Groq key for Scambaiter")
     groq_stt_model: str = Field(default="whisper-large-v3-turbo")
     groq_llm_model: str = Field(default="llama-3.1-8b-instant")
 
@@ -63,6 +64,7 @@ class Settings(BaseSettings):
     
     # ── Tavily (AI Search - Primary Factcheck) ────────────────────────────────
     tavily_api_key: str = Field(default="", description="Tavily API key")
+    scambaiter_tavily_api_key: str = Field(default="", description="Optional separate Tavily key for Scambaiter web searches")
 
     # ── Jina (Raw Text Search Fallback) ───────────────────────────────────────
     jina_api_key: str = Field(default="", description="Jina AI API key")
@@ -209,7 +211,7 @@ class Settings(BaseSettings):
     )
 
     # ── Voice-to-Voice Conversation Agent ─────────────────────────────────────
-    voice_agent_enabled: bool = Field(default=False)
+    voice_agent_enabled: bool = Field(default=True)
     max_agent_turns: int = Field(default=10)
     max_context_turns: int = Field(default=8)
     max_agent_tokens: int = Field(default=300)

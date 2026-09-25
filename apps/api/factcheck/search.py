@@ -6,9 +6,10 @@ from duckduckgo_search import DDGS
 
 logger = logging.getLogger(__name__)
 
-async def _search_tavily(query: str) -> dict:
+async def _search_tavily(query: str, use_scambaiter_key: bool = False) -> dict:
     from core.config import get_settings
-    tavily_api_key = get_settings().tavily_api_key
+    settings = get_settings()
+    tavily_api_key = settings.scambaiter_tavily_api_key if use_scambaiter_key and settings.scambaiter_tavily_api_key else settings.tavily_api_key
     if not tavily_api_key:
         raise ValueError("TAVILY_API_KEY not set")
     
@@ -73,7 +74,7 @@ async def _search_ddg(query: str) -> dict:
         raise ValueError("Empty results")
     return {"source_tier": "DuckDuckGo", "context": context[:2500], "success": True}
 
-async def execute_resilient_search(query: str) -> dict:
+async def execute_resilient_search(query: str, use_scambaiter_key: bool = False) -> dict:
     """
     Sequential Fallback Search Pipeline:
     Tries Tavily first. If it fails or times out, falls back to Serper, then DuckDuckGo, then Jina.
@@ -82,7 +83,7 @@ async def execute_resilient_search(query: str) -> dict:
     
     # 1. Tavily (AI Search - Best Quality)
     try:
-        res = await _search_tavily(query)
+        res = await _search_tavily(query, use_scambaiter_key=use_scambaiter_key)
         if res.get("success"):
             logger.info("Search succeeded via Tavily")
             return res

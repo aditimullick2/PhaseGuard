@@ -357,7 +357,7 @@ def generate_forensic_pdf(
         story.append(Paragraph("6. AI Scambaiter Exchange Log", _HEADING_STYLE))
         story.append(Paragraph(
             "The following exchanges were conducted by the PhaseGuard AI scambaiter persona "
-            "('Ramesh Ji') to delay the scammer and gather additional evidence.",
+            "(imitating the user naturally) to delay the scammer and gather additional evidence.",
             _BODY_STYLE,
         ))
         for i, exchange in enumerate(scambaiter_log):
