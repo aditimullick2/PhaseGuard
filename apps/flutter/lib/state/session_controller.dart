@@ -13,6 +13,7 @@ import '../services/api_client.dart';
 import '../services/call_socket.dart';
 import '../services/offline_dossier_service.dart';
 import '../services/phone_call_monitor.dart';
+import '../services/deepfake_detector_service.dart';
 
 class SessionController extends ChangeNotifier {
   SessionController({ApiClient? api, CallSocket? socket})
@@ -40,6 +41,11 @@ class SessionController extends ChangeNotifier {
   // Audio streaming state
   AudioRecorder? _audioRecorder;
   StreamSubscription<List<int>>? _micStreamSub;
+
+  // Deepfake parallel detection
+  final _deepfakeDetector = DeepfakeDetectorService();
+  final List<int> _deepfakeAudioBuffer = [];
+  bool _isDeepfakeAnalysisRunning = false;
 
   // Call audio capture via privileged VOICE_CALL source (Shizuku-granted)
   static const _callAudioChannel = EventChannel('com.phaseguard/call_audio');
@@ -1276,6 +1282,32 @@ class SessionController extends ChangeNotifier {
     if (liveTranscript == 'Listening for scammer speech...') {
       liveTranscript = 'Scammer speaking... (audio detected)';
       notifyListeners();
+    }
+
+    // --- LEVEL 2: Local + Web Parallel Deepfake Analysis ---
+    _deepfakeAudioBuffer.addAll(int16List);
+    if (_deepfakeAudioBuffer.length >= 16000 && !_isDeepfakeAnalysisRunning) {
+      _isDeepfakeAnalysisRunning = true;
+      final pcmToAnalyze = Int16List.fromList(_deepfakeAudioBuffer.sublist(0, 16000));
+      // Keep 500ms overlap (8000 samples)
+      _deepfakeAudioBuffer.removeRange(0, 8000);
+      
+      _deepfakeDetector.analyze(pcmToAnalyze).listen((result) {
+        final conf = (result['confidence'] as num?)?.toDouble() ?? 0.0;
+        final syn = result['is_synthetic'] == true;
+        // Only update if it detects a deepfake with high confidence, or update UI
+        if (syn && conf > 0.65) {
+           isSynthetic = true;
+           pdiScore = max(pdiScore, conf);
+           syntheticVoiceScore = max(syntheticVoiceScore, conf);
+           if (conf > _peakPdiScore) _peakPdiScore = conf;
+           notifyListeners();
+        }
+      }, onDone: () {
+        _isDeepfakeAnalysisRunning = false;
+      }, onError: (e) {
+        _isDeepfakeAnalysisRunning = false;
+      });
     }
 
     // STREAM AUDIO TO WEB BACKEND FOR ALL PROCESSING

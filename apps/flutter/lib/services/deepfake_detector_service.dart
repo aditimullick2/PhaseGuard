@@ -46,17 +46,25 @@ class DeepfakeDetectorService {
 
   /// Analyze audio with PARALLEL PROCESSING (Local + Web)
   /// Jo pehle aaye = use karo, Web result = FINAL
-  Future<Map<String, dynamic>> analyze(Int16List pcmData) async {
+  Stream<Map<String, dynamic>> analyze(Int16List pcmData) async* {
     // PARALLEL: Local + Web simultaneously
+    // 1. Immediately run and yield local result (fastest, takes milliseconds)
     final localFuture = _runLocalLayerAsync(pcmData);
     final webFuture = _runServerLayerAsync(pcmData);
+    
+    // We yield local first since it's almost guaranteed to be first
+    final localResult = await localFuture;
+    yield localResult;
+    debugPrint('[DeepfakeDetector] First result yielded: local (${((localResult['confidence'] as num).toDouble() * 100).toStringAsFixed(1)}%)');
 
-    // Wait for whichever completes first
-    final results = await Future.any([localFuture, webFuture]);
-
-    debugPrint('[DeepfakeDetector] First result: ${results['layer']} (${((results['confidence'] as num).toDouble() * 100).toStringAsFixed(1)}%)');
-
-    return results;
+    // 2. Wait for web result and yield it when it arrives (takes seconds)
+    try {
+      final webResult = await webFuture;
+      yield webResult;
+      debugPrint('[DeepfakeDetector] FINAL result yielded: web (${((webResult['confidence'] as num).toDouble() * 100).toStringAsFixed(1)}%)');
+    } catch (e) {
+      debugPrint('[DeepfakeDetector] Web analysis failed or timed out: $e. Falling back entirely to local.');
+    }
   }
 
   Future<Map<String, dynamic>> _runLocalLayerAsync(Int16List pcmData) async {
