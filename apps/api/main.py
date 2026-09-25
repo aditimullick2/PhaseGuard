@@ -670,7 +670,21 @@ async def init_call(request: Request, body: CallInitRequest = Body(...)) -> Call
     token = create_call_token(call_id)
 
     # Create session in connection manager
-    manager.create_session(call_id, ingestion_mode=body.ingestion_mode, caller_number=body.caller_number)
+    session = manager.create_session(call_id, ingestion_mode=body.ingestion_mode, caller_number=body.caller_number)
+
+    # ── Auto-load global voice settings ──
+    import os
+    global_sample_path = "samples/user_voices/global_voice.wav"
+    if not os.path.exists(global_sample_path):
+        global_sample_path = "samples/user_voices/global_voice.mp3"
+    
+    if os.path.exists(global_sample_path):
+        session.user_voice_sample_path = global_sample_path
+        
+    global_id_path = "samples/user_voices/global_voice_id.txt"
+    if os.path.exists(global_id_path):
+        with open(global_id_path, "r") as f:
+            session.user_voice_id = f.read().strip()
 
     # Use request host for WebSocket URL (works for both local and Render)
     scheme = "wss" if request.url.scheme == "https" else "ws"
@@ -712,6 +726,12 @@ async def activate_scambait(
     if payload and payload.voice_id:
         session.user_voice_id = payload.voice_id
         logger.info("Voice clone: voice_id=%r stored via REST activation for call_id=%r", payload.voice_id, call_id)
+        
+        # Save globally for future calls
+        import os
+        os.makedirs("samples/user_voices", exist_ok=True)
+        with open("samples/user_voices/global_voice_id.txt", "w") as f:
+            f.write(payload.voice_id)
 
     manager.activate_scambaiter(call_id)
     logger.info("Scambaiter activated via REST: call_id=%r", call_id)
@@ -933,8 +953,12 @@ async def upload_voice_sample(
         with open(file_path, "wb") as buffer:
             shutil.copyfileobj(file.file, buffer)
             
+        # Copy to global fallback so user doesn't have to upload again next time
+        global_path = os.path.join(upload_dir, f"global_voice{file_extension}")
+        shutil.copy2(file_path, global_path)
+            
         session.user_voice_sample_path = file_path
-        logger.info("Saved user voice sample for voice cloning: call_id=%r path=%r", call_id, file_path)
+        logger.info("Saved user voice sample for voice cloning: call_id=%r path=%r (and global fallback)", call_id, file_path)
         return {"status": "ok", "path": file_path}
     except Exception as e:
         logger.error("Failed to save user voice sample: %s", e)
