@@ -13,6 +13,7 @@ import '../components/app_theme.dart';
 import '../components/app_button.dart';
 import 'login_screen.dart';
 import 'voice_setup_screen.dart';
+import 'family_shield_screen.dart';
 
 class ProfileScreen extends ConsumerStatefulWidget {
   final UserModel user;
@@ -454,6 +455,41 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                             ),
                             child: Text(
                               widget.user.voiceProfileVersion != null ? 'Re-record' : 'Setup',
+                              style: AppTextStyles.labelMedium.copyWith(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ),
+                        Divider(
+                            color: Colors.white.withValues(alpha: 0.05), height: 1),
+                        _buildSettingRow(
+                          icon: Icons.shield_rounded,
+                          title: 'Family Shield',
+                          subtitle: 'Trusted family voice verification',
+                          onTap: () {
+                            Navigator.push(context, MaterialPageRoute(builder: (_) => const FamilyShieldScreen()));
+                          },
+                          trailing: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+                            decoration: BoxDecoration(
+                              gradient: const LinearGradient(
+                                colors: [Color(0xFF6C63FF), Color(0xFF8B85FF)],
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                              ),
+                              borderRadius: BorderRadius.circular(8),
+                              boxShadow: const [
+                                BoxShadow(
+                                  color: Color(0x736C63FF), // rgba(108,99,255,0.45)
+                                  blurRadius: 16,
+                                  spreadRadius: 0,
+                                ),
+                              ],
+                            ),
+                            child: Text(
+                              'Manage',
                               style: AppTextStyles.labelMedium.copyWith(
                                 color: Colors.white,
                                 fontWeight: FontWeight.bold,

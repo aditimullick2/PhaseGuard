@@ -105,6 +105,10 @@ class _ActiveCallScreenState extends State<ActiveCallScreen> {
     _scambaiterAudioSub?.cancel();
     _callSub?.cancel();
 
+    // Stop Family Shield verification
+    final session = context.read<SessionController>();
+    session.stopFamilyShieldVerification();
+
     final duration = widget.callingService.callDurationSeconds;
     await widget.signalingService.endCall(widget.call.callId, durationSeconds: duration);
     await widget.callingService.leaveCall();
@@ -355,6 +359,8 @@ class _ActiveCallScreenState extends State<ActiveCallScreen> {
         ? session.liveTranscript
         : 'Listening to remote call audio for fraudulent patterns...';
 
+    final familyResult = session.familyVerificationResult;
+
     return SingleChildScrollView(
       padding: const EdgeInsets.symmetric(horizontal: PgSpace.md, vertical: 8),
       child: Column(
@@ -469,6 +475,12 @@ class _ActiveCallScreenState extends State<ActiveCallScreen> {
             ),
           ),
 
+          // Family Shield Verification Result (Shows when available)
+          if (familyResult != null) ...[
+            const SizedBox(height: 14),
+            _buildFamilyShieldCard(familyResult),
+          ],
+
           // Scam Intervention Banner (Shows when scam detected)
           if (isScam) ...[
             const SizedBox(height: 14),
@@ -556,6 +568,147 @@ class _ActiveCallScreenState extends State<ActiveCallScreen> {
                     ],
                   ),
                 ],
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFamilyShieldCard(dynamic familyResult) {
+    // Determine card color based on status
+    Color cardColor;
+    IconData statusIcon;
+    String statusText;
+    
+    switch (familyResult.status) {
+      case 'MATCHED':
+        cardColor = PgColors.accent;
+        statusIcon = Icons.check_circle_rounded;
+        statusText = 'Voice Matched';
+        break;
+      case 'NO_MATCH':
+        cardColor = PgColors.scam;
+        statusIcon = Icons.warning_rounded;
+        statusText = 'Voice Mismatch';
+        break;
+      case 'UNCERTAIN':
+        cardColor = Colors.orange;
+        statusIcon = Icons.help_outline_rounded;
+        statusText = 'Uncertain Match';
+        break;
+      case 'UNAVAILABLE':
+        cardColor = PgColors.textSecondary;
+        statusIcon = Icons.info_outline_rounded;
+        statusText = 'No Voice Profiles';
+        break;
+      default:
+        cardColor = PgColors.textSecondary;
+        statusIcon = Icons.help_outline_rounded;
+        statusText = 'Unable to Verify';
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: cardColor.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(PgRadii.card),
+        border: Border.all(color: cardColor.withValues(alpha: 0.4), width: 1.5),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(statusIcon, color: cardColor, size: 18),
+              const SizedBox(width: 8),
+              Text(
+                'FAMILY SHIELD',
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.bold,
+                  color: cardColor,
+                  letterSpacing: 0.8,
+                ),
+              ),
+              const Spacer(),
+              Text(
+                statusText,
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.bold,
+                  color: cardColor,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          if (familyResult.matchedContactName != null) ...[
+            Row(
+              children: [
+                Text(
+                  'Voice matches: ',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: PgColors.textPrimary,
+                  ),
+                ),
+                Text(
+                  familyResult.matchedContactName,
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                    color: cardColor,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 4),
+          ],
+          Row(
+            children: [
+              Text(
+                'Confidence: ',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: PgColors.textSecondary,
+                ),
+              ),
+              Text(
+                '${(familyResult.confidence * 100).toStringAsFixed(0)}%',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                  color: cardColor,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                'Similarity: ',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: PgColors.textSecondary,
+                ),
+              ),
+              Text(
+                '${(familyResult.similarity * 100).toStringAsFixed(0)}%',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                  color: cardColor,
+                ),
+              ),
+            ],
+          ),
+          if (familyResult.message.isNotEmpty) ...[
+            const SizedBox(height: 6),
+            Text(
+              familyResult.message,
+              style: TextStyle(
+                fontSize: 11,
+                color: PgColors.textSecondary,
+                fontStyle: FontStyle.italic,
               ),
             ),
           ],

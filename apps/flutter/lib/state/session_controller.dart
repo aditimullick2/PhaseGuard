@@ -16,6 +16,7 @@ import '../services/offline_dossier_service.dart';
 import '../services/phone_call_monitor.dart';
 import '../services/deepfake_detector_service.dart';
 import '../services/scam_detector_service.dart';
+import '../services/family_shield_service.dart';
 
 class SessionController extends ChangeNotifier {
   SessionController({ApiClient? api, CallSocket? socket})
@@ -97,6 +98,121 @@ class SessionController extends ChangeNotifier {
   // Stream to forward binary audio chunks from scambaiter TTS to the active call screen
   final StreamController<Uint8List> scambaiterAudioStreamController = StreamController<Uint8List>.broadcast();
   Stream<Uint8List> get scambaiterAudioStream => scambaiterAudioStreamController.stream;
+
+  // Family Shield verification state
+  final FamilyShieldService _familyShieldService = FamilyShieldService();
+  FamilyVerificationResult? familyVerificationResult;
+  Timer? _familyShieldVerificationTimer;
+  final List<int> _familyShieldAudioBuffer = [];
+  bool _isFamilyShieldAnalysisRunning = false;
+
+  void startFamilyShieldVerification() {
+    if (_familyShieldVerificationTimer != null) return;
+    
+    debugPrint('🛡️ Family Shield: Starting periodic verification');
+    
+    // Buffer audio for 3-5 seconds before verification (16kHz 16-bit mono = 32000 bytes/sec)
+    _familyShieldVerificationTimer = Timer.periodic(const Duration(seconds: 4), (timer) async {
+      const minBytes = 32000 * 3; // At least 3 seconds of 16kHz mono 16-bit PCM
+      if (_familyShieldAudioBuffer.length < minBytes) {
+        debugPrint('🛡️ Family Shield: Buffering audio (${_familyShieldAudioBuffer.length}/$minBytes bytes)');
+        return;
+      }
+      
+      if (_isFamilyShieldAnalysisRunning) {
+        debugPrint('🛡️ Family Shield: Analysis already in progress, skipping');
+        return;
+      }
+      
+      _isFamilyShieldAnalysisRunning = true;
+      
+      try {
+        // Convert raw PCM audio buffer to valid WAV with 44-byte RIFF header
+        final audioBytes = Uint8List.fromList(_familyShieldAudioBuffer);
+        final wavBytes = _pcm16ToWav(audioBytes, 16000);
+        final base64Audio = base64Encode(wavBytes);
+        
+        // Clear buffer for next cycle
+        _familyShieldAudioBuffer.clear();
+        
+        // Verify speaker
+        final result = await _familyShieldService.verifySpeaker(
+          audioData: base64Audio,
+        );
+        
+        familyVerificationResult = result;
+        debugPrint('🛡️ Family Shield: Verification result - ${result.status}, confidence: ${result.confidence.toStringAsFixed(2)}');
+        notifyListeners();
+      } catch (e) {
+        debugPrint('🛡️ Family Shield: Verification failed: $e');
+      } finally {
+        _isFamilyShieldAnalysisRunning = false;
+      }
+    });
+  }
+
+  void stopFamilyShieldVerification() {
+    _familyShieldVerificationTimer?.cancel();
+    _familyShieldVerificationTimer = null;
+    _familyShieldAudioBuffer.clear();
+    familyVerificationResult = null;
+    debugPrint('🛡️ Family Shield: Stopped verification');
+  }
+
+  void _feedAudioToFamilyShield(Uint8List chunk) {
+    // Buffer audio for Family Shield verification
+    if (_familyShieldVerificationTimer != null) {
+      _familyShieldAudioBuffer.addAll(chunk);
+      // Keep buffer size reasonable (max 10 seconds = 320,000 bytes at 16kHz 16-bit mono)
+      const maxBytes = 32000 * 10;
+      if (_familyShieldAudioBuffer.length > maxBytes) {
+        _familyShieldAudioBuffer.removeRange(0, _familyShieldAudioBuffer.length - maxBytes);
+      }
+    }
+  }
+
+  /// Package raw 16kHz mono PCM into a standard 44-byte WAV container.
+  static Uint8List _pcm16ToWav(Uint8List pcmBytes, int sampleRate) {
+    final int byteRate = sampleRate * 2;
+    final int dataSize = pcmBytes.length;
+    final int totalSize = 36 + dataSize;
+    final ByteData header = ByteData(44);
+
+    // "RIFF"
+    header.setUint8(0, 0x52);
+    header.setUint8(1, 0x49);
+    header.setUint8(2, 0x46);
+    header.setUint8(3, 0x46);
+    header.setUint32(4, totalSize, Endian.little);
+    // "WAVE"
+    header.setUint8(8, 0x57);
+    header.setUint8(9, 0x41);
+    header.setUint8(10, 0x56);
+    header.setUint8(11, 0x45);
+    // "fmt "
+    header.setUint8(12, 0x66);
+    header.setUint8(13, 0x6D);
+    header.setUint8(14, 0x74);
+    header.setUint8(15, 0x20);
+    header.setUint32(16, 16, Endian.little);
+    header.setUint16(20, 1, Endian.little);
+    header.setUint16(22, 1, Endian.little);
+    header.setUint32(24, sampleRate, Endian.little);
+    header.setUint32(28, byteRate, Endian.little);
+    header.setUint16(32, 2, Endian.little);
+    header.setUint16(34, 16, Endian.little);
+    // "data"
+    header.setUint8(36, 0x64);
+    header.setUint8(37, 0x61);
+    header.setUint8(38, 0x74);
+    header.setUint8(39, 0x61);
+    header.setUint32(40, dataSize, Endian.little);
+
+    final Uint8List wav = Uint8List(44 + dataSize);
+    wav.setRange(0, 44, header.buffer.asUint8List());
+    wav.setRange(44, 44 + dataSize, pcmBytes);
+    return wav;
+  }
 
 
 
@@ -412,6 +528,9 @@ class SessionController extends ChangeNotifier {
     lastSavedPdfPath = null;
     lastScambaiterAudioBytes = null;
     _voiceEnrolled = false; // Reset voice enrollment flag for new call
+    
+    // Reset Family Shield verification
+    stopFamilyShieldVerification();
     
     debugPrint('🔄 Security state reset for new call');
   }
@@ -1235,6 +1354,9 @@ class SessionController extends ChangeNotifier {
     if (!wsConnected && !connecting) {
       await startSession(callerNumber: callerNumber);
     }
+
+    // Start Family Shield verification for in-app calls
+    startFamilyShieldVerification();
   }
 
   /// Video snapshots now use backend processing only
@@ -1280,6 +1402,9 @@ class SessionController extends ChangeNotifier {
   /// Backend handles all scam detection, deepfake analysis, and scambaiter responses
   void processInAppCallAudioChunk(Uint8List chunk) {
     if (chunk.isEmpty) return;
+
+    // Feed audio to Family Shield verification buffer
+    _feedAudioToFamilyShield(chunk);
 
     // Silence detection (VAD): compute RMS amplitude
     double sumSq = 0.0;
@@ -1582,6 +1707,7 @@ class SessionController extends ChangeNotifier {
     _phoneSub?.cancel();
     _stopHealthCheck();
     _socket.disconnect();
+    stopFamilyShieldVerification();
     super.dispose();
   }
 

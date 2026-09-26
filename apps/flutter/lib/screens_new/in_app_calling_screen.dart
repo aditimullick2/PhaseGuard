@@ -126,12 +126,21 @@ class _InAppCallingScreenState extends State<InAppCallingScreen> {
                   child: _buildCallControls(callingService),
                 ),
 
-                // Scam detection indicator (integrated with PhaseGuard)
+                // Scam detection indicator & Family Shield (integrated with PhaseGuard)
                 Positioned(
                   top: 40,
                   left: 20,
                   right: 20,
-                  child: _buildScamDetectionStatus(sessionController),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      _buildScamDetectionStatus(sessionController),
+                      if (sessionController.familyVerificationResult != null) ...[
+                        const SizedBox(height: 8),
+                        _buildFamilyShieldStatus(sessionController),
+                      ],
+                    ],
+                  ),
                 ),
               ],
             );
@@ -396,6 +405,92 @@ class _InAppCallingScreenState extends State<InAppCallingScreen> {
             ),
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFamilyShieldStatus(SessionController sessionController) {
+    final result = sessionController.familyVerificationResult;
+    if (result == null) return const SizedBox.shrink();
+
+    Color color;
+    IconData icon;
+    String statusTitle;
+    String statusDesc;
+
+    switch (result.status) {
+      case 'MATCHED':
+        color = Colors.green;
+        icon = Icons.verified_user_rounded;
+        statusTitle = result.matchedContactName != null
+            ? 'Voice matches ${result.matchedContactName}'
+            : 'Voice Matched';
+        statusDesc = result.matchedRelationship?.isNotEmpty == true
+            ? 'Likely ${result.matchedRelationship} (${(result.confidence * 100).toInt()}% match)'
+            : 'Probable voice match (${(result.confidence * 100).toInt()}% match)';
+        break;
+      case 'NO_MATCH':
+        color = Colors.redAccent;
+        icon = Icons.warning_rounded;
+        statusTitle = 'Voice Mismatch';
+        statusDesc = 'Caller voice does not match trusted contacts';
+        break;
+      case 'UNCERTAIN':
+        color = Colors.orange;
+        icon = Icons.help_outline_rounded;
+        statusTitle = 'Uncertain Speaker';
+        statusDesc = 'Speaker could not be verified with confidence';
+        break;
+      case 'INSUFFICIENT_AUDIO':
+        color = Colors.grey;
+        icon = Icons.hourglass_top_rounded;
+        statusTitle = 'Analyzing Voice';
+        statusDesc = 'Collecting audio samples...';
+        break;
+      default:
+        color = Colors.grey;
+        icon = Icons.info_outline_rounded;
+        statusTitle = 'Family Shield';
+        statusDesc = result.message.isNotEmpty ? result.message : 'Active';
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: Colors.black.withValues(alpha: 0.8),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: color, width: 1.5),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, color: color, size: 20),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  statusTitle,
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: color,
+                    fontSize: 12,
+                  ),
+                ),
+                Text(
+                  statusDesc,
+                  style: const TextStyle(
+                    fontSize: 11,
+                    color: Colors.white70,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
           ),
         ],
       ),

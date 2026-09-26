@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart' as provider;
 import '../services/offline_dossier_service.dart';
+import '../services/family_shield_service.dart';
 import '../state/session_controller.dart';
 import 'app_theme.dart';
 
@@ -312,6 +313,12 @@ class SecurityOverlayModal extends StatelessWidget {
             ),
             const SizedBox(height: 20),
 
+            // ── Family Shield Card ──
+            if (session.familyVerificationResult != null) ...[
+              _FamilyShieldCard(result: session.familyVerificationResult!),
+              const SizedBox(height: 20),
+            ],
+
             // ── Detail rows ──
             _DetailRow(
               icon: Icons.record_voice_over_rounded,
@@ -347,6 +354,25 @@ class SecurityOverlayModal extends StatelessWidget {
                       ? AppColors.success
                       : Colors.orangeAccent,
             ),
+            if (session.familyVerificationResult != null) ...[
+              const Divider(color: Colors.white12, height: 20),
+              _DetailRow(
+                icon: Icons.shield_rounded,
+                label: 'Family Shield',
+                value: session.familyVerificationResult!.status == 'MATCHED'
+                    ? (session.familyVerificationResult!.matchedContactName != null
+                        ? 'Matches ${session.familyVerificationResult!.matchedContactName}'
+                        : 'Voice Matched')
+                    : (session.familyVerificationResult!.status == 'NO_MATCH'
+                        ? 'No Match'
+                        : session.familyVerificationResult!.status),
+                valueColor: session.familyVerificationResult!.status == 'MATCHED'
+                    ? AppColors.success
+                    : session.familyVerificationResult!.status == 'NO_MATCH'
+                        ? AppColors.error
+                        : Colors.orangeAccent,
+              ),
+            ],
 
             // ── Live transcript snippet ──
             const SizedBox(height: 20),
@@ -872,3 +898,114 @@ class _PhaseGuardHomeCardState extends State<PhaseGuardHomeCard>
     );
   }
 }
+
+class _FamilyShieldCard extends StatelessWidget {
+  final FamilyVerificationResult result;
+
+  const _FamilyShieldCard({required this.result});
+
+  @override
+  Widget build(BuildContext context) {
+    Color cardColor;
+    IconData icon;
+    String title;
+    String subtitle;
+
+    switch (result.status) {
+      case 'MATCHED':
+        cardColor = AppColors.success;
+        icon = Icons.verified_user_rounded;
+        title = result.matchedContactName != null
+            ? 'Voice matches ${result.matchedContactName}'
+            : 'Voice matched trusted contact';
+        subtitle = result.matchedRelationship?.isNotEmpty == true
+            ? 'Likely ${result.matchedRelationship} • ${(result.confidence * 100).toInt()}% match score'
+            : 'Probable voice match • ${(result.confidence * 100).toInt()}% match score';
+        break;
+      case 'NO_MATCH':
+        cardColor = AppColors.error;
+        icon = Icons.warning_amber_rounded;
+        title = 'Voice does not match trusted contacts';
+        subtitle = 'Voice characteristics differ from enrolled profiles';
+        break;
+      case 'UNCERTAIN':
+        cardColor = Colors.orangeAccent;
+        icon = Icons.help_outline_rounded;
+        title = 'Speaker could not be verified';
+        subtitle = 'Borderline voice similarity • Caution advised';
+        break;
+      case 'INSUFFICIENT_AUDIO':
+        cardColor = Colors.white54;
+        icon = Icons.hourglass_top_rounded;
+        title = 'Analyzing speaker voice...';
+        subtitle = 'Buffering audio samples for verification';
+        break;
+      default:
+        cardColor = Colors.white54;
+        icon = Icons.info_outline_rounded;
+        title = 'Family Shield';
+        subtitle = result.message.isNotEmpty ? result.message : 'Active';
+    }
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: cardColor.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: cardColor.withValues(alpha: 0.35)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(icon, color: cardColor, size: 18),
+              const SizedBox(width: 8),
+              Text(
+                'FAMILY SHIELD',
+                style: AppTextStyles.labelMedium.copyWith(
+                  color: cardColor,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 0.8,
+                ),
+              ),
+              const Spacer(),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                decoration: BoxDecoration(
+                  color: cardColor.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  result.status,
+                  style: AppTextStyles.labelSmall.copyWith(
+                    color: cardColor,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 10,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Text(
+            title,
+            style: AppTextStyles.bodyMedium.copyWith(
+              color: Colors.white,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            subtitle,
+            style: AppTextStyles.bodySmall.copyWith(
+              color: Colors.white70,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
